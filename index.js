@@ -252,26 +252,38 @@ async function initSession(userId) {
         
         // QR Code Event
         client.on('qr', (qr) => {
-            console.log(`📱 QR Code generated for user: ${userId}`);
+            console.log(`📱 QR Code generated for user: ${userId} (no saved session found)`);
             qrCodes.set(userId, qr);
             sessionStatuses.set(userId, 'qr');
         });
         
         // Ready Event
-        client.on('ready', () => {
+        client.on('ready', async () => {
             console.log(`✅ Client ready for user: ${userId}`);
             sessionStatuses.set(userId, 'connected');
             qrCodes.delete(userId);
+            
+            // Get WhatsApp info
+            try {
+                const info = client.info;
+                console.log(`   📞 Connected as: ${info.pushname} (${info.wid.user})`);
+            } catch (e) {}
         });
         
-        // Authenticated Event
+        // Authenticated Event - RESTORED FROM MONGODB
         client.on('authenticated', () => {
-            console.log(`🔐 Client authenticated for user: ${userId}`);
+            console.log(`🔐 Client authenticated for user: ${userId} (session restored from MongoDB)`);
+            sessionStatuses.set(userId, 'authenticated');
         });
         
         // Remote Session Saved
         client.on('remote_session_saved', () => {
             console.log(`💾 Remote session saved for user: ${userId}`);
+        });
+        
+        // Loading screen (restoring session)
+        client.on('loading_screen', (percent, message) => {
+            console.log(`⏳ [${userId}] Loading: ${percent}% - ${message}`);
         });
         
         // Disconnected Event
