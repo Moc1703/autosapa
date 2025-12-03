@@ -340,8 +340,8 @@ function renderGroupSelect() {
     }
     
     list.innerHTML = groups.map(g => `
-        <div class="group-select-item" onclick="toggleGroupSelect(this, '${escapeAttr(g.id)}')">
-            <input type="checkbox" value="${escapeAttr(g.id)}" onclick="event.stopPropagation(); updateSelectedCount()">
+        <div class="group-select-item" onclick="toggleGroupSelect(this, '${escapeAttr(g.groupId)}')">
+            <input type="checkbox" value="${escapeAttr(g.groupId)}" onclick="event.stopPropagation(); updateSelectedCount()">
             <span>${escapeHtml(g.name)}</span>
         </div>
     `).join('');

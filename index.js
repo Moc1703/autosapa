@@ -1560,6 +1560,71 @@ app.get('/api/:userId/stats', (req, res) => {
     });
 });
 
+// ===== MEDIA LIBRARY =====
+app.get('/api/:userId/media', (req, res) => {
+    const { userId } = req.params;
+    const userUploadsDir = path.join(UPLOADS_DIR, userId);
+    
+    if (!fs.existsSync(userUploadsDir)) {
+        fs.mkdirSync(userUploadsDir, { recursive: true });
+        return res.json([]);
+    }
+    
+    try {
+        const files = fs.readdirSync(userUploadsDir);
+        const mediaFiles = files
+            .filter(f => /\.(jpg|jpeg|png|gif|webp|mp4|mp3|pdf|doc|docx)$/i.test(f))
+            .map(f => ({
+                filename: f,
+                url: `/uploads/${userId}/${f}`,
+                size: fs.statSync(path.join(userUploadsDir, f)).size,
+                createdAt: fs.statSync(path.join(userUploadsDir, f)).birthtime
+            }));
+        res.json(mediaFiles);
+    } catch (e) {
+        res.json([]);
+    }
+});
+
+app.post('/api/:userId/media', upload.single('file'), (req, res) => {
+    const { userId } = req.params;
+    const userUploadsDir = path.join(UPLOADS_DIR, userId);
+    
+    if (!fs.existsSync(userUploadsDir)) {
+        fs.mkdirSync(userUploadsDir, { recursive: true });
+    }
+    
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    // Move file to user's upload directory
+    const oldPath = req.file.path;
+    const newPath = path.join(userUploadsDir, req.file.filename);
+    fs.renameSync(oldPath, newPath);
+    
+    res.json({
+        success: true,
+        filename: req.file.filename,
+        url: `/uploads/${userId}/${req.file.filename}`
+    });
+});
+
+app.delete('/api/:userId/media/:filename', (req, res) => {
+    const { userId, filename } = req.params;
+    const filePath = path.join(UPLOADS_DIR, userId, filename);
+    
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: 'File not found' });
+    }
+});
+
+// Serve user uploads
+app.use('/uploads', express.static(UPLOADS_DIR));
+
 // ===== LEGACY ENDPOINTS (for backward compatibility) =====
 app.get('/api/status', (req, res) => {
     // Return first connected session status or disconnected
