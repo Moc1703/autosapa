@@ -22,6 +22,26 @@ if (!userId) {
 
 const API = '';
 const getUserApi = () => `/api/${userId}`;
+
+// Helper function for authenticated API calls
+async function apiFetch(endpoint, options = {}) {
+    const defaultHeaders = {
+        'Authorization': `Bearer ${authToken}`
+    };
+    
+    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+        defaultHeaders['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(options.body);
+    }
+    
+    return fetch(endpoint, {
+        ...options,
+        headers: {
+            ...defaultHeaders,
+            ...options.headers
+        }
+    });
+}
 let groups = [];
 let autoReplies = [];
 let schedules = [];
@@ -126,7 +146,10 @@ async function backgroundSyncGroups() {
     const trySync = async () => {
         attempts++;
         try {
-            const res = await fetch(getUserApi() + '/groups/sync', { method: 'POST' });
+            const res = await apiFetch(getUserApi() + '/groups/sync', { 
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
             const data = await res.json();
             
             if (data.total > 0) {
@@ -302,7 +325,7 @@ async function loadData() {
 
 async function loadGroups() {
     try {
-        const res = await fetch(getUserApi() + '/groups');
+        const res = await apiFetch(getUserApi() + '/groups');
         groups = await res.json();
         renderGroupsList();
         renderGroupSelect();
@@ -458,7 +481,7 @@ async function sendBroadcast() {
             imageData = await toBase64(selectedImage);
         }
         
-        const res = await fetch(getUserApi() + '/broadcast', {
+        const res = await apiFetch(getUserApi() + '/broadcast', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message, groups: selected, image: imageData })
@@ -495,9 +518,9 @@ function showResult(data) {
 async function loadStats() {
     try {
         const [histRes, groupRes, replyRes] = await Promise.all([
-            fetch(getUserApi() + '/history'),
-            fetch(getUserApi() + '/groups'),
-            fetch(getUserApi() + '/autoreplies')
+            apiFetch(getUserApi() + '/history'),
+            apiFetch(getUserApi() + '/groups'),
+            apiFetch(getUserApi() + '/autoreplies')
         ]);
         
         const hist = await histRes.json();
@@ -541,7 +564,7 @@ async function saveGroup() {
     if (!name || !id) return toast('Please fill all fields', 'error');
     
     try {
-        await fetch(getUserApi() + '/groups', {
+        await apiFetch(getUserApi() + '/groups', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, id })
@@ -559,7 +582,7 @@ async function deleteGroup(id) {
     if (!confirm('Delete this group?')) return;
     
     try {
-        await fetch(getUserApi() + '/groups/' + encodeURIComponent(id), { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/groups/' + encodeURIComponent(id), { method: 'DELETE' });
         toast('Group deleted', 'success');
         loadGroups();
     } catch (e) {
@@ -572,7 +595,7 @@ async function discoverGroups() {
     document.getElementById('discoveredList').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
     
     try {
-        const res = await fetch(getUserApi() + '/whatsapp-groups');
+        const res = await apiFetch(getUserApi() + '/whatsapp-groups');
         const data = await res.json();
         
         if (!data.length) {
@@ -597,7 +620,7 @@ async function discoverGroups() {
 
 async function addDiscoveredGroup(id, name) {
     try {
-        await fetch(getUserApi() + '/groups', {
+        await apiFetch(getUserApi() + '/groups', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, id })
@@ -612,7 +635,7 @@ async function addDiscoveredGroup(id, name) {
 // ===== CONTACTS =====
 async function loadContacts() {
     try {
-        const res = await fetch(getUserApi() + '/contacts');
+        const res = await apiFetch(getUserApi() + '/contacts');
         contacts = await res.json();
         renderContacts();
     } catch (e) {
@@ -652,7 +675,7 @@ async function saveContact() {
     if (!name || !number) return toast('Please fill all fields', 'error');
     
     try {
-        await fetch(getUserApi() + '/contacts', {
+        await apiFetch(getUserApi() + '/contacts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, number })
@@ -670,7 +693,7 @@ async function deleteContact(id) {
     if (!confirm('Delete this contact?')) return;
     
     try {
-        await fetch(getUserApi() + '/contacts/' + id, { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/contacts/' + id, { method: 'DELETE' });
         toast('Deleted', 'success');
         loadContacts();
     } catch (e) {
@@ -681,7 +704,7 @@ async function deleteContact(id) {
 // ===== AUTO REPLY =====
 async function loadAutoReplies() {
     try {
-        const res = await fetch(getUserApi() + '/autoreplies');
+        const res = await apiFetch(getUserApi() + '/autoreplies');
         autoReplies = await res.json();
         renderAutoReplies();
     } catch (e) {
@@ -742,7 +765,7 @@ async function saveAutoReply() {
             imageData = await toBase64(replyImage);
         }
         
-        await fetch(getUserApi() + '/autoreplies', {
+        await apiFetch(getUserApi() + '/autoreplies', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ keyword, matchType, response, image: imageData, enabled: true })
@@ -761,7 +784,7 @@ async function toggleAutoReply(id) {
         const reply = autoReplies.find(r => r.id === id);
         if (!reply) return;
         
-        await fetch(getUserApi() + '/autoreplies/' + id, {
+        await apiFetch(getUserApi() + '/autoreplies/' + id, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...reply, enabled: !reply.enabled })
@@ -776,7 +799,7 @@ async function deleteAutoReply(id) {
     if (!confirm('Delete this auto reply?')) return;
     
     try {
-        await fetch(getUserApi() + '/autoreplies/' + id, { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/autoreplies/' + id, { method: 'DELETE' });
         toast('Deleted', 'success');
         loadAutoReplies();
     } catch (e) {
@@ -787,7 +810,7 @@ async function deleteAutoReply(id) {
 // ===== COMMANDS =====
 async function loadCommands() {
     try {
-        const res = await fetch(getUserApi() + '/commands');
+        const res = await apiFetch(getUserApi() + '/commands');
         commands = await res.json();
         renderCommands();
     } catch (e) {
@@ -837,7 +860,7 @@ async function saveCommand() {
     try {
         if (editingCommandId) {
             // Update existing
-            await fetch(getUserApi() + '/commands/' + editingCommandId, {
+            await apiFetch(getUserApi() + '/commands/' + editingCommandId, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ command, response })
@@ -846,7 +869,7 @@ async function saveCommand() {
             toast('Command updated!', 'success');
         } else {
             // Create new
-            await fetch(getUserApi() + '/commands', {
+            await apiFetch(getUserApi() + '/commands', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ command, response })
@@ -872,7 +895,7 @@ async function deleteCommand(id) {
     if (!confirm('Delete this command?')) return;
     
     try {
-        await fetch(getUserApi() + '/commands/' + id, { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/commands/' + id, { method: 'DELETE' });
         toast('Deleted', 'success');
         loadCommands();
     } catch (e) {
@@ -883,7 +906,7 @@ async function deleteCommand(id) {
 // ===== SCHEDULES =====
 async function loadSchedules() {
     try {
-        const res = await fetch(getUserApi() + '/schedules');
+        const res = await apiFetch(getUserApi() + '/schedules');
         schedules = await res.json();
         renderSchedules();
     } catch (e) {
@@ -978,7 +1001,7 @@ async function saveSchedule() {
             imageData = await toBase64(scheduleImage);
         }
         
-        await fetch(getUserApi() + '/schedules', {
+        await apiFetch(getUserApi() + '/schedules', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message, scheduledTime, groups: selectedGroups, repeat: repeat || null, image: imageData })
@@ -996,7 +1019,7 @@ async function deleteSchedule(id) {
     if (!confirm('Delete this schedule?')) return;
     
     try {
-        await fetch(getUserApi() + '/schedules/' + id, { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/schedules/' + id, { method: 'DELETE' });
         toast('Deleted', 'success');
         loadSchedules();
     } catch (e) {
@@ -1007,7 +1030,7 @@ async function deleteSchedule(id) {
 // ===== TEMPLATES =====
 async function loadTemplates() {
     try {
-        const res = await fetch(getUserApi() + '/templates');
+        const res = await apiFetch(getUserApi() + '/templates');
         templates = await res.json();
         renderTemplates();
     } catch (e) {
@@ -1089,7 +1112,7 @@ async function saveTemplate() {
     try {
         if (editingTemplateId) {
             // Update existing
-            await fetch(getUserApi() + '/templates/' + editingTemplateId, {
+            await apiFetch(getUserApi() + '/templates/' + editingTemplateId, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, message })
@@ -1098,7 +1121,7 @@ async function saveTemplate() {
             toast('Template updated!', 'success');
         } else {
             // Create new
-            await fetch(getUserApi() + '/templates', {
+            await apiFetch(getUserApi() + '/templates', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, message })
@@ -1117,7 +1140,7 @@ async function deleteTemplate(id) {
     if (!confirm('Delete this template?')) return;
     
     try {
-        await fetch(getUserApi() + '/templates/' + id, { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/templates/' + id, { method: 'DELETE' });
         toast('Deleted', 'success');
         loadTemplates();
     } catch (e) {
@@ -1128,7 +1151,7 @@ async function deleteTemplate(id) {
 // ===== HISTORY =====
 async function loadHistory() {
     try {
-        const res = await fetch(getUserApi() + '/history');
+        const res = await apiFetch(getUserApi() + '/history');
         history = await res.json();
         renderHistory();
         loadStats();
@@ -1165,7 +1188,7 @@ async function clearHistory() {
     if (!confirm('Clear all history?')) return;
     
     try {
-        await fetch(getUserApi() + '/history', { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/history', { method: 'DELETE' });
         toast('History cleared', 'success');
         loadHistory();
     } catch (e) {
@@ -1198,7 +1221,7 @@ function exportCSV() {
 // ===== SETTINGS =====
 async function loadSettings() {
     try {
-        const res = await fetch(getUserApi() + '/settings');
+        const res = await apiFetch(getUserApi() + '/settings');
         settings = await res.json();
         
         // Settings use nested structure: settings.queue.enabled, settings.auth.enabled
@@ -1225,7 +1248,7 @@ async function toggleSetting(key) {
     else if (key === 'auth') payload.auth = { enabled: isActive };
     
     try {
-        await fetch(getUserApi() + '/settings', {
+        await apiFetch(getUserApi() + '/settings', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1250,7 +1273,7 @@ async function addBlacklist() {
     if (!number) return toast('Please enter a number', 'error');
     
     try {
-        await fetch(getUserApi() + '/blacklist', {
+        await apiFetch(getUserApi() + '/blacklist', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ number })
@@ -1268,7 +1291,7 @@ async function showBlacklist() {
     document.getElementById('blacklistContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
     
     try {
-        const res = await fetch(getUserApi() + '/blacklist');
+        const res = await apiFetch(getUserApi() + '/blacklist');
         blacklist = await res.json();
         
         if (!blacklist.length) {
@@ -1292,7 +1315,7 @@ async function showBlacklist() {
 
 async function removeBlacklist(id) {
     try {
-        await fetch(getUserApi() + '/blacklist/' + id, { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/blacklist/' + id, { method: 'DELETE' });
         toast('Unblocked', 'success');
         showBlacklist();
     } catch (e) {
@@ -1303,7 +1326,7 @@ async function removeBlacklist(id) {
 // ===== BACKUP =====
 async function downloadBackup() {
     try {
-        const res = await fetch(getUserApi() + '/backup');
+        const res = await apiFetch(getUserApi() + '/backup');
         const data = await res.json();
         
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1332,7 +1355,7 @@ async function restoreBackup(event) {
         const text = await file.text();
         const data = JSON.parse(text);
         
-        await fetch(getUserApi() + '/backup/restore', {
+        await apiFetch(getUserApi() + '/backup/restore', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -1353,7 +1376,7 @@ async function viewLogs() {
     document.getElementById('logsContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
     
     try {
-        const res = await fetch(getUserApi() + '/messagelogs');
+        const res = await apiFetch(getUserApi() + '/messagelogs');
         const logs = await res.json();
         
         if (!logs.length) {
@@ -1437,7 +1460,7 @@ let quickActions = [];
 
 async function loadQuickActions() {
     try {
-        const res = await fetch(getUserApi() + '/quickactions');
+        const res = await apiFetch(getUserApi() + '/quickactions');
         quickActions = await res.json();
         renderQuickActions();
     } catch (e) {
@@ -1469,7 +1492,7 @@ async function deleteQuickAction(id) {
     if (!confirm('Delete this quick action?')) return;
     
     try {
-        await fetch(getUserApi() + '/quickactions/' + id, { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/quickactions/' + id, { method: 'DELETE' });
         toast('Deleted', 'success');
         loadQuickActions();
     } catch (e) {
@@ -1484,7 +1507,7 @@ async function executeQuickAction(id) {
     toast('Executing ' + action.name + '...', 'info');
     
     try {
-        const res = await fetch(getUserApi() + '/quickactions/' + id + '/execute', { method: 'POST' });
+        const res = await apiFetch(getUserApi() + '/quickactions/' + id + '/execute', { method: 'POST' });
         const data = await res.json();
         
         if (data.success !== undefined) {
@@ -1511,7 +1534,7 @@ async function saveQuickAction() {
     const selectedGroups = [...document.querySelectorAll('#groupSelectList input:checked')].map(cb => cb.value);
     
     try {
-        await fetch(getUserApi() + '/quickactions', {
+        await apiFetch(getUserApi() + '/quickactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, message, icon, groups: selectedGroups })
@@ -1530,7 +1553,7 @@ let mediaFiles = [];
 
 async function loadMedia() {
     try {
-        const res = await fetch(getUserApi() + '/media');
+        const res = await apiFetch(getUserApi() + '/media');
         mediaFiles = await res.json();
         renderMedia();
     } catch (e) {
@@ -1564,7 +1587,7 @@ async function deleteMedia(filename) {
     if (!confirm('Delete this image?')) return;
     
     try {
-        await fetch(getUserApi() + '/media/' + filename, { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/media/' + filename, { method: 'DELETE' });
         toast('Deleted', 'success');
         loadMedia();
     } catch (e) {
@@ -1578,7 +1601,7 @@ let selectedCategory = 'all';
 
 async function loadCategories() {
     try {
-        const res = await fetch(getUserApi() + '/categories');
+        const res = await apiFetch(getUserApi() + '/categories');
         categories = await res.json();
         renderCategoryChips();
     } catch (e) {
@@ -1610,7 +1633,7 @@ function filterByCategory(category) {
 
 async function setGroupCategory(groupId, category) {
     try {
-        await fetch(getUserApi() + '/groups/' + encodeURIComponent(groupId) + '/category', {
+        await apiFetch(getUserApi() + '/groups/' + encodeURIComponent(groupId) + '/category', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ category })
@@ -1625,7 +1648,7 @@ async function setGroupCategory(groupId, category) {
 // ===== IMPORT/EXPORT GROUPS =====
 async function exportGroups() {
     try {
-        const res = await fetch(getUserApi() + '/groups/export');
+        const res = await apiFetch(getUserApi() + '/groups/export');
         const data = await res.json();
         
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1649,7 +1672,7 @@ async function importGroups(event) {
         const text = await file.text();
         const data = JSON.parse(text);
         
-        await fetch(getUserApi() + '/groups/import', {
+        await apiFetch(getUserApi() + '/groups/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -1685,7 +1708,10 @@ async function syncGroups() {
     const trySync = async () => {
         attempts++;
         try {
-            const res = await fetch(getUserApi() + '/groups/sync', { method: 'POST' });
+            const res = await apiFetch(getUserApi() + '/groups/sync', { 
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
             const data = await res.json();
             
             if (data.total > 0) {
@@ -1730,7 +1756,7 @@ async function syncGroups() {
 // ===== PIN GROUPS =====
 async function togglePinGroup(groupId) {
     try {
-        const res = await fetch(getUserApi() + '/groups/' + encodeURIComponent(groupId) + '/pin', {
+        const res = await apiFetch(getUserApi() + '/groups/' + encodeURIComponent(groupId) + '/pin', {
             method: 'PUT'
         });
         const data = await res.json();
@@ -1745,7 +1771,7 @@ async function togglePinGroup(groupId) {
 // ===== DUPLICATE SCHEDULE =====
 async function duplicateSchedule(id) {
     try {
-        await fetch(getUserApi() + '/schedules/' + id + '/duplicate', { method: 'POST' });
+        await apiFetch(getUserApi() + '/schedules/' + id + '/duplicate', { method: 'POST' });
         toast('Schedule duplicated!', 'success');
         loadSchedules();
     } catch (e) {
@@ -1758,7 +1784,7 @@ async function retryBroadcast(historyId) {
     toast('Retrying failed messages...', 'info');
     
     try {
-        const res = await fetch(getUserApi() + '/history/' + historyId + '/retry', { method: 'POST' });
+        const res = await apiFetch(getUserApi() + '/history/' + historyId + '/retry', { method: 'POST' });
         const data = await res.json();
         
         toast(`Retry complete! ✅ ${data.success || 0} sent`, 'success');
@@ -1771,7 +1797,7 @@ async function retryBroadcast(historyId) {
 // ===== ANALYTICS =====
 async function loadAnalytics() {
     try {
-        const res = await fetch(getUserApi() + '/analytics');
+        const res = await apiFetch(getUserApi() + '/analytics');
         const data = await res.json();
         renderAnalyticsChart(data);
     } catch (e) {
@@ -1805,7 +1831,7 @@ async function forwardMessage(messageId) {
     if (!selectedGroups.length) return toast('Please select groups first', 'error');
     
     try {
-        const res = await fetch(getUserApi() + '/forward', {
+        const res = await apiFetch(getUserApi() + '/forward', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messageId, groups: selectedGroups })
@@ -1824,7 +1850,7 @@ async function previewMessage() {
     if (!message) return toast('Please enter a message first', 'error');
     
     try {
-        const res = await fetch(getUserApi() + '/preview', {
+        const res = await apiFetch(getUserApi() + '/preview', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message })
@@ -1847,7 +1873,7 @@ async function saveDraft() {
     const message = document.getElementById('quickMessage').value.trim();
     
     try {
-        await fetch(getUserApi() + '/draft', {
+        await apiFetch(getUserApi() + '/draft', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message })
@@ -1860,7 +1886,7 @@ async function saveDraft() {
 
 async function loadDraft() {
     try {
-        const res = await fetch(getUserApi() + '/draft');
+        const res = await apiFetch(getUserApi() + '/draft');
         const data = await res.json();
         
         if (data.message) {
@@ -1878,7 +1904,7 @@ async function showGroupMembers(groupId) {
     document.getElementById('membersList').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
     
     try {
-        const res = await fetch(getUserApi() + '/groups/' + encodeURIComponent(groupId) + '/members');
+        const res = await apiFetch(getUserApi() + '/groups/' + encodeURIComponent(groupId) + '/members');
         const data = await res.json();
         
         if (!data.length) {
@@ -1921,7 +1947,7 @@ async function bulkDeleteGroups() {
     if (!confirm(`Delete ${bulkSelected.length} groups?`)) return;
     
     try {
-        await fetch(getUserApi() + '/groups/bulk-delete', {
+        await apiFetch(getUserApi() + '/groups/bulk-delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids: bulkSelected })
@@ -1938,7 +1964,7 @@ async function bulkDeleteGroups() {
 // ===== AUTO REPLY STATS =====
 async function loadAutoReplyStats() {
     try {
-        const res = await fetch(getUserApi() + '/autoreplies/stats');
+        const res = await apiFetch(getUserApi() + '/autoreplies/stats');
         const data = await res.json();
         
         const container = document.getElementById('autoReplyStats');
@@ -1964,7 +1990,7 @@ async function clearMessageLogs() {
     if (!confirm('Clear all message logs?')) return;
     
     try {
-        await fetch(getUserApi() + '/messagelogs', { method: 'DELETE' });
+        await apiFetch(getUserApi() + '/messagelogs', { method: 'DELETE' });
         toast('Logs cleared', 'success');
         document.getElementById('logsContent').innerHTML = '<div class="empty-state"><p class="text-muted">No message logs</p></div>';
     } catch (e) {
@@ -1989,7 +2015,7 @@ async function broadcastByCategory(category) {
             imageData = await toBase64(selectedImage);
         }
         
-        const res = await fetch(getUserApi() + '/broadcast/category', {
+        const res = await apiFetch(getUserApi() + '/broadcast/category', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message, category, image: imageData })
@@ -2011,7 +2037,7 @@ async function broadcastByCategory(category) {
 // ===== GROUPS STATS =====
 async function loadGroupsStats() {
     try {
-        const res = await fetch(getUserApi() + '/groups/stats');
+        const res = await apiFetch(getUserApi() + '/groups/stats');
         const data = await res.json();
         
         const container = document.getElementById('groupsStatsContainer');
@@ -2039,7 +2065,7 @@ async function loadGroupsStats() {
 // ===== SCHEDULES PREVIEW =====
 async function loadSchedulesPreview() {
     try {
-        const res = await fetch(getUserApi() + '/schedules/preview');
+        const res = await apiFetch(getUserApi() + '/schedules/preview');
         const data = await res.json();
         
         const container = document.getElementById('upcomingSchedules');
@@ -2066,7 +2092,7 @@ async function bulkDeleteTemplates(ids) {
     if (!confirm(`Delete ${ids.length} templates?`)) return;
     
     try {
-        await fetch(getUserApi() + '/templates/bulk-delete', {
+        await apiFetch(getUserApi() + '/templates/bulk-delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids })
@@ -2083,7 +2109,7 @@ async function bulkDeleteSchedules(ids) {
     if (!confirm(`Delete ${ids.length} schedules?`)) return;
     
     try {
-        await fetch(getUserApi() + '/schedules/bulk-delete', {
+        await apiFetch(getUserApi() + '/schedules/bulk-delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids })
