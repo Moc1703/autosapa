@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1764736643078",
+    "keyword": "kak aku berminat",
+    "response": "Silahkan isi drivenya ya",
+    "matchType": "contains",
+    "enabled": true,
+    "createdAt": "2025-12-03T04:37:23.078Z",
+    "triggerCount": 1,
+    "lastTriggered": "2025-12-03T06:39:19.095Z"
+  },
+  {
+    "id": "1764736678669",
+    "keyword": "share lagi atau share ulang",
+    "response": "Boleh ya",
+    "matchType": "contains",
+    "enabled": true,
+    "createdAt": "2025-12-03T04:37:58.669Z"
+  },
+  {
+    "id": "1764736760073",
+    "keyword": "kak boleh share ulang?",
+    "response": "Gak",
+    "matchType": "contains",
+    "enabled": true,
+    "createdAt": "2025-12-03T04:39:20.073Z"
+  },
+  {
+    "id": "1764742541933",
+    "keyword": "share ulang",
+    "response": "Oke kak",
+    "matchType": "anyword",
+    "enabled": true,
+    "createdAt": "2025-12-03T06:15:41.933Z",
+    "triggerCount": 2,
+    "lastTriggered": "2025-12-03T06:51:25.767Z"
+  }
+]

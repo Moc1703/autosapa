@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+</head>
+<body>
+    <h2>Right-click and "Save image as..." untuk save icons</h2>
+    <div>
+        <h3>192x192 Icon:</h3>
+        <canvas id="icon192" width="192" height="192"></canvas>
+    </div>
+    <div style="margin-top: 20px;">
+        <h3>512x512 Icon:</h3>
+        <canvas id="icon512" width="512" height="512"></canvas>
+    </div>
+    
+    <script>
+        function drawIcon(canvas) {
+            const ctx = canvas.getContext('2d');
+            const size = canvas.width;
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // WhatsApp icon (simplified)
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size * 0.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('📱', size / 2, size / 2);
+        }
+        
+        drawIcon(document.getElementById('icon192'));
+        drawIcon(document.getElementById('icon512'));
+        
+        // Convert to downloadable images
+        setTimeout(() => {
+            const icon192 = document.getElementById('icon192');
+            const icon512 = document.getElementById('icon512');
+            
+            icon192.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'icon-192.png';
+                console.log('Icon 192 ready. Right-click canvas to save.');
+            });
+            
+            icon512.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'icon-512.png';
+                console.log('Icon 512 ready. Right-click canvas to save.');
+            });
+        }, 100);
+    </script>
+</body>
+</html>
+
+

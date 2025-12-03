@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan QR - WhatsApp Bot</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .scan-container {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .logo {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        h1 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 32px;
+        }
+        
+        #qr-container {
+            background: #f9fafb;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            min-height: 280px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #qr-container img {
+            border-radius: 8px;
+        }
+        
+        .status {
+            padding: 12px 24px;
+            border-radius: 100px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status.loading {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status.qr {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status.connected {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .instructions {
+            margin-top: 24px;
+            text-align: left;
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        
+        .instructions h3 {
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+        
+        .instructions ol {
+            color: #6b7280;
+            font-size: 13px;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .user-id {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="scan-container">
+        <div class="logo">📱</div>
+        <h1>Connect WhatsApp</h1>
+        <p class="subtitle">Scan QR code with your WhatsApp</p>
+        
+        <div id="qr-container">
+            <div class="spinner"></div>
+        </div>
+        
+        <div class="status loading" id="status">
+            <span>⏳</span>
+            <span id="status-text">Initializing...</span>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <ol>
+                <li>Open WhatsApp on your phone</li>
+                <li>Tap Menu (⋮) → Linked Devices</li>
+                <li>Tap "Link a Device"</li>
+                <li>Point your phone at this QR code</li>
+            </ol>
+        </div>
+        
+        <p class="user-id">Session ID: <span id="user-id-display">-</span></p>
+    </div>
+
+    <script>
+        // Get userId from URL params or generate one
+        const urlParams = new URLSearchParams(window.location.search);
+        let userId = urlParams.get('userId') || localStorage.getItem('wa_userId');
+        
+        if (!userId) {
+            userId = 'user_' + Date.now().toString(36);
+            localStorage.setItem('wa_userId', userId);
+        }
+        
+        document.getElementById('user-id-display').textContent = userId;
+        
+        const qrContainer = document.getElementById('qr-container');
+        const statusEl = document.getElementById('status');
+        const statusText = document.getElementById('status-text');
+        
+        let qrCode = null;
+        let currentQR = null;
+        
+        function updateStatus(type, text) {
+            statusEl.className = 'status ' + type;
+            statusText.textContent = text;
+        }
+        
+        async function startSession() {
+            try {
+                updateStatus('loading', 'Starting WhatsApp...');
+                qrContainer.innerHTML = `
+                    <div class="spinner"></div>
+                    <p style="color:#6b7280; margin-top:16px; font-size:14px;">
+                        Launching browser...<br>
+                        <small>This may take 10-30 seconds</small>
+                    </p>
+                `;
+                
+                const response = await fetch('/api/session/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+                
+                const data = await response.json();
+                console.log('Session started:', data);
+                
+                if (data.status === 'connected') {
+                    onConnected();
+                    return;
+                }
+                
+                // Update status while waiting for QR
+                updateStatus('loading', 'Generating QR code...');
+                qrContainer.innerHTML = `
+                    <div class="spinner"></div>
+                    <p style="color:#6b7280; margin-top:16px; font-size:14px;">
+                        Waiting for QR code...
+                    </p>
+                `;
+                
+                // Start polling
+                pollForQR();
+                
+            } catch (error) {
+                console.error('Failed to start session:', error);
+                updateStatus('error', 'Failed to start session');
+                qrContainer.innerHTML = '<p style="color:#991b1b">❌ Connection error</p>';
+            }
+        }
+        
+        async function pollForQR() {
+            try {
+                const response = await fetch(`/api/session/qr/${userId}`);
+                const data = await response.json();
+                
+                console.log('QR poll response:', data);
+                
+                if (data.status === 'connected') {
+                    onConnected();
+                    return;
+                }
+                
+                if (data.qr && data.qr !== currentQR) {
+                    currentQR = data.qr;
+                    renderQR(data.qr);
+                    updateStatus('qr', 'Scan QR code now!');
+                } else if (!data.qr) {
+                    updateStatus('loading', 'Generating QR code...');
+                }
+                
+                // Continue polling
+                setTimeout(pollForQR, 2000);
+                
+            } catch (error) {
+                console.error('Poll error:', error);
+                setTimeout(pollForQR, 3000);
+            }
+        }
+        
+        function renderQR(qrText) {
+            qrContainer.innerHTML = '';
+            
+            qrCode = new QRCode(qrContainer, {
+                text: qrText,
+                width: 220,
+                height: 220,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.L
+            });
+        }
+        
+        function onConnected() {
+            updateStatus('connected', 'Connected!');
+            localStorage.setItem('wa_userId', userId);
+            
+            // Show success and redirect immediately
+            document.querySelector('.scan-container').innerHTML = `
+                <div class="logo">✅</div>
+                <h1>WhatsApp Connected!</h1>
+                <p class="subtitle">Redirecting to dashboard...</p>
+                <p style="color:#6b7280; font-size:13px; margin-top:16px;">
+                    Groups will sync automatically in background
+                </p>
+            `;
+            
+            // Redirect to app after 2 seconds
+            setTimeout(() => {
+                window.location.href = `/app.html?userId=${userId}`;
+            }, 2000);
+        }
+        
+        // Check if already connected
+        async function checkExistingSession() {
+            try {
+                const response = await fetch(`/api/session/status/${userId}`);
+                const data = await response.json();
+                
+                if (data.status === 'connected') {
+                    onConnected();
+                    return true;
+                }
+            } catch (e) {
+                // Ignore
+            }
+            return false;
+        }
+        
+        // Initialize
+        (async () => {
+            const isConnected = await checkExistingSession();
+            if (!isConnected) {
+                startSession();
+            }
+        })();
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,17 @@
+{
+  "auth": {
+    "enabled": false,
+    "username": "admin",
+    "password": "admin123"
+  },
+  "queue": {
+    "enabled": true,
+    "delayMs": 2000
+  },
+  "typing": {
+    "enabled": true
+  },
+  "webhook": {
+    "secret": "webhook-secret-key"
+  }
+}

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="WhatsApp Bot Dashboard - Schedule & broadcast messages to multiple groups">
+    <title>WhatsApp Bot Dashboard</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- App Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- PWA Install Prompt -->
+    <div class="install-prompt" id="installPrompt" style="display: none;">
+        <div class="install-content">
+            <span>📱 Install app untuk akses lebih cepat</span>
+            <button onclick="installApp()" class="install-btn">Install</button>
+            <button onclick="dismissInstall()" class="dismiss-btn">✕</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>📱 WA Bot</h1>
+                <div class="status-indicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Checking...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('groups')">
+                👥 Groups
+            </button>
+            <button class="tab-btn" onclick="switchTab('broadcast')">
+                📢 Broadcast
+            </button>
+            <button class="tab-btn" onclick="switchTab('schedule')">
+                📅 Schedule
+            </button>
+            <button class="tab-btn" onclick="switchTab('message')">
+                ✉️ Message
+            </button>
+        </nav>
+
+        <!-- Tab: Groups -->
+        <div class="tab-content active" id="tab-groups">
+            <div class="card">
+                <h2>👥 Groups Management</h2>
+                
+                <div class="discover-section">
+                    <button class="discover-btn" onclick="loadWhatsAppGroups()">
+                        🔍 Load My Groups
+                    </button>
+                    <p class="help-text">Click to auto-detect all WhatsApp groups</p>
+                </div>
+
+                <div id="whatsappGroupsList" class="whatsapp-groups-list" style="display: none;">
+                    <h3>Available Groups:</h3>
+                    <div id="whatsappGroupsContent"></div>
+                </div>
+
+                <div class="divider">OR</div>
+                
+                <div class="add-group-form">
+                    <input type="text" id="groupName" placeholder="Group Name (e.g., Job Hunters)">
+                    <input type="text" id="groupId" placeholder="Group ID (e.g., 120363...@g.us)">
+                    <button onclick="addGroup()">➕ Add Manually</button>
+                </div>
+
+                <h3 class="section-title">Saved Groups:</h3>
+                <div class="groups-list" id="groupsList">
+                    <p class="empty-state">No groups added yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Broadcast -->
+        <div class="tab-content" id="tab-broadcast">
+            <!-- Broadcast Text Section -->
+            <div class="card">
+                <h2>📢 Broadcast Message</h2>
+                
+                <div class="broadcast-controls">
+                    <div class="select-all-container">
+                        <label>
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            Select All Groups
+                        </label>
+                    </div>
+                    
+                    <div id="groupCheckboxes" class="group-checkboxes">
+                        <p class="empty-state">Add groups to start broadcasting</p>
+                    </div>
+                    
+                    <button class="broadcast-btn" onclick="broadcast()">
+                        🚀 Send Now
+                    </button>
+                </div>
+
+                <div id="broadcastResults" class="broadcast-results"></div>
+            </div>
+
+            <!-- Image Upload & Broadcast Section -->
+            <div class="card" style="margin-top: 20px;">
+                <h2>✉️ Message Template</h2>
+                
+                <textarea id="messageTemplate" rows="15" placeholder="Enter your message template..."></textarea>
+                
+                <button onclick="saveMessage()">💾 Save Template</button>
+                
+                <div class="message-preview">
+                    <h3>Preview:</h3>
+                    <div id="messagePreview"></div>
+                </div>
+            </div>
+
+            <!-- Broadcast Section -->
+            <div class="card broadcast-section">
+                <h2>📢 Broadcast Message</h2>
+                
+                <div class="broadcast-controls">
+                    <div class="select-all-container">
+                        <label>
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            Select All Groups
+                        </label>
+                    </div>
+                    
+                    <div id="groupCheckboxes" class="group-checkboxes">
+                        <p class="empty-state">Add groups to start broadcasting</p>
+                    </div>
+                    
+                    <button class="broadcast-btn" onclick="broadcast()">
+                        🚀 Send Now
+                    </button>
+                </div>
+
+                <div id="broadcastResults" class="broadcast-results"></div>
+            </div>
+
+            <!-- Image Upload & Broadcast Section -->
+            <div class="card">
+                <h2>🖼️ Broadcast with Image</h2>
+                
+                <div class="image-upload-section">
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+                        <div class="upload-placeholder" onclick="document.getElementById('imageInput').click()">
+                            <div class="upload-icon">📷</div>
+                            <p>Click to upload image</p>
+                            <span class="upload-hint">JPG, PNG, GIF, WebP (Max 5MB)</span>
+                        </div>
+                        <div id="imagePreview" class="image-preview" style="display: none;"></div>
+                    </div>
+                    
+                    <textarea id="imageCaption" rows="4" placeholder="Enter image caption (optional)..."></textarea>
+                    
+                    <div class="select-all-container">
+                        <label>
+                            <input type="checkbox" id="selectAllImage" onchange="toggleSelectAllImage()">
+                            Select All Groups
+                        </label>
+                    </div>
+                    
+                    <div id="groupCheckboxesImage" class="group-checkboxes">
+                        <p class="empty-state">Add groups to start broadcasting</p>
+                    </div>
+                    
+                    <button class="broadcast-btn" onclick="broadcastImage()">
+                        🚀 Send Image Now
+                    </button>
+                </div>
+
+                <div id="imageBroadcastResults" class="broadcast-results"></div>
+            </div>
+
+            <!-- Schedule Broadcast Section -->
+            <div class="card broadcast-section">
+                <h2>📅 Schedule Broadcast</h2>
+                
+                <div class="schedule-form">
+                    <div class="form-group">
+                        <label>Broadcast Type:</label>
+                        <select id="scheduleType" onchange="toggleScheduleType()">
+                            <option value="text">Text Message</option>
+                            <option value="image">Image with Caption</option>
+                        </select>
+                    </div>
+
+                    <div id="scheduleTextSection">
+                        <div class="form-group">
+                            <label>Message:</label>
+                            <textarea id="scheduleMessage" rows="5" placeholder="Enter message..."></textarea>
+                        </div>
+                    </div>
+
+                    <div id="scheduleImageSection" style="display: none;">
+                        <div class="upload-area-small" id="scheduleUploadArea">
+                            <input type="file" id="scheduleImageInput" accept="image/*" style="display: none;" onchange="handleScheduleImageSelect(event)">
+                            <button type="button" class="upload-btn-small" onclick="document.getElementById('scheduleImageInput').click()">
+                                📷 Upload Image
+                            </button>
+                            <div id="scheduleImagePreview" class="image-preview-small" style="display: none;"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Caption:</label>
+                            <textarea id="scheduleCaption" rows="3" placeholder="Enter caption (optional)..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Schedule Time:</label>
+                        <input type="datetime-local" id="scheduleTime">
+                    </div>
+                    
+                    <div class="select-all-container">
+                        <label>
+                            <input type="checkbox" id="selectAllSchedule" onchange="toggleSelectAllSchedule()">
+                            Select All Groups
+                        </label>
+                    </div>
+                    
+                    <div id="groupCheckboxesSchedule" class="group-checkboxes">
+                        <p class="empty-state">Add groups to start scheduling</p>
+                    </div>
+                    
+                    <button class="schedule-btn" onclick="createSchedule()">
+                        ⏰ Schedule Broadcast
+                    </button>
+                </div>
+
+                <h3 class="section-title" style="margin-top: 30px;">Scheduled Messages:</h3>
+                <div class="schedules-list" id="schedulesList">
+                    <p class="empty-state">No scheduled messages yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+

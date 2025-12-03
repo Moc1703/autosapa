@@ -1,0 +1,34 @@
+[
+  {
+    "id": "1764737522699",
+    "type": "text",
+    "message": "❗VISIT NPURE❗\n\n📍 Bandeja Padel, Ancol\n📅 Fri–Sun, 5–7 December 2025\n\n✨ Criteria\nBerdomisili di Jaka",
+    "groupCount": 2,
+    "successCount": 2,
+    "failCount": 0,
+    "status": "success",
+    "scheduled": true,
+    "recurring": "none",
+    "timestamp": "2025-12-03T04:52:02.699Z"
+  },
+  {
+    "id": "1764736879954",
+    "type": "text",
+    "message": "🎯 *JOB VACANCY - KOL WANTED*\n\n📌 *Position:* Key Opinion Leader (KOL)\n🏢 *Company:* Your Company Na...",
+    "groupCount": 2,
+    "successCount": 2,
+    "failCount": 0,
+    "status": "success",
+    "timestamp": "2025-12-03T04:41:19.954Z"
+  },
+  {
+    "id": "1764735884957",
+    "type": "text",
+    "message": "*Pengumuman*\nACV management telah memutus hubungan dengan mitra *Bintang Agency*\n\nSegala macam tinda...",
+    "groupCount": 2,
+    "successCount": 2,
+    "failCount": 0,
+    "status": "success",
+    "timestamp": "2025-12-03T04:24:44.957Z"
+  }
+]
