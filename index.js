@@ -1116,10 +1116,31 @@ app.get('/api/:userId/debug/chats', requireSession, async (req, res) => {
     }
 });
 
+// Cache for group sync (5 minutes)
+const groupSyncCache = new Map();
+const GROUP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // Sync groups from WhatsApp (MUST be before /:groupId route)
 app.post('/api/:userId/groups/sync', requireSession, async (req, res) => {
     try {
         const { userId } = req.params;
+        const forceRefresh = req.query.force === 'true';
+        
+        // Check cache first (unless force refresh)
+        const cached = groupSyncCache.get(userId);
+        if (!forceRefresh && cached && Date.now() - cached.timestamp < GROUP_CACHE_TTL) {
+            console.log(`[${userId}] Using cached groups (${cached.groups.length} groups)`);
+            return res.json({ 
+                success: true, 
+                added: 0, 
+                removed: 0, 
+                total: cached.groups.length,
+                cached: true,
+                message: 'Using cached data. Add ?force=true to refresh.'
+            });
+        }
+        
+        console.log(`[${userId}] Fetching groups from WhatsApp...`);
         const chats = await req.client.getChats();
         
         console.log(`[${userId}] Total chats: ${chats.length}`);
@@ -1150,11 +1171,18 @@ app.post('/api/:userId/groups/sync', requireSession, async (req, res) => {
         
         writeGroups(userId, updatedGroups);
         
+        // Save to cache
+        groupSyncCache.set(userId, {
+            groups: updatedGroups,
+            timestamp: Date.now()
+        });
+        
         res.json({ 
             success: true, 
             added: newGroups.length, 
             removed: removedCount,
-            total: updatedGroups.length
+            total: updatedGroups.length,
+            cached: false
         });
     } catch (error) {
         console.error(`[${userId}] Sync error:`, error);
