@@ -2,9 +2,8 @@
 require('dotenv').config();
 
 const express = require('express');
-const mongoose = require('mongoose');
-const { Client, RemoteAuth, MessageMedia } = require('whatsapp-web.js');
-const { MongoStore } = require('wwebjs-mongo');
+const Database = require('better-sqlite3');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -44,24 +43,118 @@ app.set('trust proxy', 1);
 // ===== JWT SECRET =====
 const JWT_SECRET = process.env.JWT_SECRET || 'wabot-secret-key-change-in-production';
 
-// ===== USER SCHEMA =====
-const userSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
-    name: { type: String, required: true },
-    plan: { type: String, enum: ['trial', 'pro'], default: 'trial' },
-    trialEndsAt: { type: Date },
-    subscriptionEndsAt: { type: Date },
-    limits: {
-        maxGroups: { type: Number, default: 3 },
-        maxBroadcastPerDay: { type: Number, default: 50 }
-    },
-    broadcastToday: { type: Number, default: 0 },
-    lastBroadcastDate: { type: String },
-    createdAt: { type: Date, default: Date.now }
-});
+// ===== SQLITE DATABASE SETUP =====
+const DB_PATH = path.join(__dirname, 'data', 'database.sqlite');
+const db = new Database(DB_PATH);
 
-const User = mongoose.model('User', userSchema);
+// Create users table
+db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        name TEXT NOT NULL,
+        plan TEXT DEFAULT 'trial',
+        trialEndsAt TEXT,
+        subscriptionEndsAt TEXT,
+        maxGroups INTEGER DEFAULT 3,
+        maxBroadcastPerDay INTEGER DEFAULT 50,
+        broadcastToday INTEGER DEFAULT 0,
+        lastBroadcastDate TEXT,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+`);
+
+// ===== USER HELPER FUNCTIONS (SQLite) =====
+const UserDB = {
+    findOne: (query) => {
+        if (query.email) {
+            const row = db.prepare('SELECT * FROM users WHERE email = ?').get(query.email.toLowerCase());
+            return row ? UserDB._formatUser(row) : null;
+        }
+        return null;
+    },
+    
+    findById: (id) => {
+        const row = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+        return row ? UserDB._formatUser(row) : null;
+    },
+    
+    find: () => {
+        const rows = db.prepare('SELECT * FROM users ORDER BY createdAt DESC').all();
+        return rows.map(row => UserDB._formatUser(row));
+    },
+    
+    create: (userData) => {
+        const id = crypto.randomUUID();
+        const stmt = db.prepare(`
+            INSERT INTO users (id, email, password, name, plan, trialEndsAt, maxGroups, maxBroadcastPerDay, createdAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        stmt.run(
+            id,
+            userData.email.toLowerCase(),
+            userData.password,
+            userData.name,
+            userData.plan || 'trial',
+            userData.trialEndsAt?.toISOString() || null,
+            userData.limits?.maxGroups || 3,
+            userData.limits?.maxBroadcastPerDay || 50,
+            new Date().toISOString()
+        );
+        return UserDB.findById(id);
+    },
+    
+    update: (id, updates) => {
+        const fields = [];
+        const values = [];
+        
+        if (updates.password !== undefined) { fields.push('password = ?'); values.push(updates.password); }
+        if (updates.plan !== undefined) { fields.push('plan = ?'); values.push(updates.plan); }
+        if (updates.trialEndsAt !== undefined) { fields.push('trialEndsAt = ?'); values.push(updates.trialEndsAt?.toISOString?.() || updates.trialEndsAt); }
+        if (updates.subscriptionEndsAt !== undefined) { fields.push('subscriptionEndsAt = ?'); values.push(updates.subscriptionEndsAt?.toISOString?.() || updates.subscriptionEndsAt); }
+        if (updates.maxGroups !== undefined) { fields.push('maxGroups = ?'); values.push(updates.maxGroups); }
+        if (updates.maxBroadcastPerDay !== undefined) { fields.push('maxBroadcastPerDay = ?'); values.push(updates.maxBroadcastPerDay); }
+        if (updates.broadcastToday !== undefined) { fields.push('broadcastToday = ?'); values.push(updates.broadcastToday); }
+        if (updates.lastBroadcastDate !== undefined) { fields.push('lastBroadcastDate = ?'); values.push(updates.lastBroadcastDate); }
+        
+        if (fields.length > 0) {
+            values.push(id);
+            db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+        }
+        return UserDB.findById(id);
+    },
+    
+    _formatUser: (row) => ({
+        _id: row.id,
+        id: row.id,
+        email: row.email,
+        password: row.password,
+        name: row.name,
+        plan: row.plan,
+        trialEndsAt: row.trialEndsAt ? new Date(row.trialEndsAt) : null,
+        subscriptionEndsAt: row.subscriptionEndsAt ? new Date(row.subscriptionEndsAt) : null,
+        limits: {
+            maxGroups: row.maxGroups,
+            maxBroadcastPerDay: row.maxBroadcastPerDay
+        },
+        broadcastToday: row.broadcastToday,
+        lastBroadcastDate: row.lastBroadcastDate,
+        createdAt: row.createdAt ? new Date(row.createdAt) : null,
+        save: async function() {
+            UserDB.update(this.id, {
+                password: this.password,
+                plan: this.plan,
+                trialEndsAt: this.trialEndsAt,
+                subscriptionEndsAt: this.subscriptionEndsAt,
+                maxGroups: this.limits?.maxGroups,
+                maxBroadcastPerDay: this.limits?.maxBroadcastPerDay,
+                broadcastToday: this.broadcastToday,
+                lastBroadcastDate: this.lastBroadcastDate
+            });
+        }
+    })
+};
 
 // ===== PLAN LIMITS =====
 const PLAN_LIMITS = {
@@ -71,7 +164,6 @@ const PLAN_LIMITS = {
 
 // ===== CONFIGURATION =====
 const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI;
 
 // ===== GLOBAL SESSION MANAGER =====
 const sessions = new Map();
@@ -191,24 +283,6 @@ function isLikelyBot(messageBody) {
     return botPatterns.some(p => p.test(messageBody));
 }
 
-// ===== MONGODB CONNECTION =====
-let mongoStore;
-
-async function connectMongoDB() {
-    try {
-        await mongoose.connect(MONGO_URI);
-        console.log('✅ Connected to MongoDB');
-        
-        // Initialize MongoStore for session storage
-        mongoStore = new MongoStore({ mongoose: mongoose });
-        
-        return true;
-    } catch (error) {
-        console.error('❌ MongoDB connection failed:', error.message);
-        return false;
-    }
-}
-
 // ===== SESSION INITIALIZATION =====
 async function initSession(userId) {
     // Check if session already exists
@@ -231,10 +305,9 @@ async function initSession(userId) {
     
     try {
         const client = new Client({
-            authStrategy: new RemoteAuth({
+            authStrategy: new LocalAuth({
                 clientId: userId,
-                store: mongoStore,
-                backupSyncIntervalMs: 60000  // Sync setiap 1 menit
+                dataPath: path.join(__dirname, '.wwebjs_auth')
             }),
             puppeteer: {
                 headless: true,
@@ -282,9 +355,9 @@ async function initSession(userId) {
             } catch (e) {}
         });
         
-        // Authenticated Event - RESTORED FROM MONGODB
+        // Authenticated Event - RESTORED FROM LOCAL STORAGE
         client.on('authenticated', () => {
-            console.log(`🔐 Client authenticated for user: ${userId} (session restored from MongoDB)`);
+            console.log(`🔐 Client authenticated for user: ${userId} (session restored from local storage)`);
             sessionStatuses.set(userId, 'authenticated');
         });
         
@@ -593,7 +666,7 @@ app.post('/api/auth/register', async (req, res) => {
         }
         
         // Check if user exists
-        const existingUser = await User.findOne({ email });
+        const existingUser = UserDB.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ error: 'Email already registered' });
         }
@@ -605,7 +678,7 @@ app.post('/api/auth/register', async (req, res) => {
         const trialEndsAt = new Date();
         trialEndsAt.setDate(trialEndsAt.getDate() + 10);
         
-        const user = new User({
+        const user = UserDB.create({
             email,
             password: hashedPassword,
             name,
@@ -613,8 +686,6 @@ app.post('/api/auth/register', async (req, res) => {
             trialEndsAt,
             limits: PLAN_LIMITS.trial
         });
-        
-        await user.save();
         
         // Generate token
         const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
@@ -658,7 +729,7 @@ app.post('/api/auth/login', async (req, res) => {
         email = email.toLowerCase().trim();
         
         // Find user
-        const user = await User.findOne({ email });
+        const user = UserDB.findOne({ email });
         if (!user) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
@@ -673,7 +744,7 @@ app.post('/api/auth/login', async (req, res) => {
         resetAuthAttempts(ip);
         
         // Generate token
-        const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
         
         res.json({
             success: true,
@@ -716,7 +787,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         
         email = email.toLowerCase().trim();
         
-        const user = await User.findOne({ email });
+        const user = UserDB.findOne({ email });
         
         // Don't reveal if email exists (security best practice)
         if (!user) {
@@ -731,7 +802,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         const resetExpiry = Date.now() + 3600000; // 1 hour
         
         resetTokens.set(resetToken, {
-            userId: user._id.toString(),
+            userId: user.id,
             email: user.email,
             expiry: resetExpiry
         });
@@ -783,7 +854,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
         
         // Update password
         const hashedPassword = await bcrypt.hash(newPassword, 12);
-        await User.findByIdAndUpdate(resetData.userId, { password: hashedPassword });
+        UserDB.update(resetData.userId, { password: hashedPassword });
         
         // Delete used token
         resetTokens.delete(token);
@@ -808,14 +879,13 @@ app.post('/api/admin/reset-user-password', async (req, res) => {
     const { email, newPassword } = req.body;
     
     try {
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = UserDB.findOne({ email: email.toLowerCase() });
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
         
         const hashedPassword = await bcrypt.hash(newPassword, 12);
-        user.password = hashedPassword;
-        await user.save();
+        UserDB.update(user.id, { password: hashedPassword });
         
         res.json({ success: true, message: `Password reset for ${email}` });
     } catch (error) {
@@ -832,7 +902,7 @@ app.get('/api/auth/me', async (req, res) => {
         }
         
         const decoded = jwt.verify(token, JWT_SECRET);
-        const user = await User.findById(decoded.userId);
+        const user = UserDB.findById(decoded.userId);
         
         if (!user) {
             return res.status(401).json({ error: 'User not found' });
@@ -858,15 +928,15 @@ app.get('/api/auth/me', async (req, res) => {
         // Reset daily broadcast count if new day
         const today = new Date().toDateString();
         if (user.lastBroadcastDate !== today) {
+            UserDB.update(user.id, { broadcastToday: 0, lastBroadcastDate: today });
             user.broadcastToday = 0;
             user.lastBroadcastDate = today;
-            await user.save();
         }
         
         res.json({
             success: true,
             user: {
-                id: user._id,
+                id: user.id,
                 email: user.email,
                 name: user.name,
                 plan: user.plan,
@@ -893,7 +963,7 @@ async function requireAuth(req, res, next) {
         }
         
         const decoded = jwt.verify(token, JWT_SECRET);
-        const user = await User.findById(decoded.userId);
+        const user = UserDB.findById(decoded.userId);
         
         if (!user) {
             return res.status(401).json({ error: 'User not found' });
@@ -933,9 +1003,11 @@ app.get('/api/admin/users', (req, res) => {
         return res.status(403).json({ error: 'Forbidden' });
     }
     
-    User.find().select('-password').sort({ createdAt: -1 }).then(users => {
-        res.json({ success: true, users });
+    const users = UserDB.find().map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
     });
+    res.json({ success: true, users });
 });
 
 // Admin: Activate Pro subscription
@@ -948,7 +1020,7 @@ app.post('/api/admin/activate', async (req, res) => {
     const { email, months } = req.body;
     
     try {
-        const user = await User.findOne({ email });
+        const user = UserDB.findOne({ email });
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -957,10 +1029,12 @@ app.post('/api/admin/activate', async (req, res) => {
         const subscriptionEndsAt = new Date();
         subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + (months || 1));
         
-        user.plan = 'pro';
-        user.subscriptionEndsAt = subscriptionEndsAt;
-        user.limits = PLAN_LIMITS.pro;
-        await user.save();
+        UserDB.update(user.id, {
+            plan: 'pro',
+            subscriptionEndsAt,
+            maxGroups: PLAN_LIMITS.pro.maxGroups,
+            maxBroadcastPerDay: PLAN_LIMITS.pro.maxBroadcastPerDay
+        });
         
         res.json({
             success: true,
@@ -986,10 +1060,6 @@ app.post('/api/session/start', async (req, res) => {
     
     if (!userId) {
         return res.status(400).json({ error: 'userId is required' });
-    }
-    
-    if (!mongoStore) {
-        return res.status(500).json({ error: 'MongoDB not connected' });
     }
     
     const result = await initSession(userId);
@@ -1944,14 +2014,7 @@ setInterval(checkSchedules, 60000);
 // ===== START SERVER =====
 async function startServer() {
     console.log('🚀 Starting WhatsApp Bot SaaS Server...');
-    
-    // Connect to MongoDB first
-    const mongoConnected = await connectMongoDB();
-    
-    if (!mongoConnected) {
-        console.error('❌ Cannot start server without MongoDB connection');
-        process.exit(1);
-    }
+    console.log('✅ Using SQLite database at:', DB_PATH);
     
     // Start Express server
     app.listen(PORT, () => {
@@ -1989,25 +2052,24 @@ async function gracefulShutdown(signal) {
             try {
                 if (client && sessionStatuses.get(userId) === 'connected') {
                     console.log(`   Saving session for: ${userId}`);
-                    // Trigger backup by destroying gracefully
-                    // RemoteAuth will save to MongoDB before disconnect
+                    // LocalAuth saves sessions automatically to filesystem
                 }
             } catch (error) {
                 console.error(`   Failed to save session for ${userId}:`, error.message);
             }
         }
         
-        // Wait a bit for RemoteAuth to sync
-        console.log('⏳ Waiting for session sync (10 seconds)...');
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        // Wait a bit for LocalAuth to save
+        console.log('⏳ Waiting for session save (3 seconds)...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
     }
     
-    // Close MongoDB connection
+    // Close SQLite connection
     try {
-        await mongoose.connection.close();
-        console.log('✅ MongoDB connection closed');
+        db.close();
+        console.log('✅ SQLite database closed');
     } catch (error) {
-        console.error('❌ Error closing MongoDB:', error.message);
+        console.error('❌ Error closing SQLite:', error.message);
     }
     
     console.log('👋 Shutdown complete');
