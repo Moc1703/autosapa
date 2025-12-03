@@ -165,16 +165,22 @@
     </div>
 
     <script>
-        // Get userId from URL params or generate one
-        const urlParams = new URLSearchParams(window.location.search);
-        let userId = urlParams.get('userId') || localStorage.getItem('wa_userId');
+        // Get user from localStorage (set during login)
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
         
-        if (!userId) {
-            userId = 'user_' + Date.now().toString(36);
-            localStorage.setItem('wa_userId', userId);
+        if (!token || !userStr) {
+            window.location.href = '/login.html';
         }
         
-        document.getElementById('user-id-display').textContent = userId;
+        // Use user.id from login as userId (consistent across sessions)
+        const user = JSON.parse(userStr);
+        const userId = user.id;
+        
+        // Save for other pages
+        localStorage.setItem('wa_userId', userId);
+        
+        document.getElementById('user-id-display').textContent = user.email || userId;
         
         const qrContainer = document.getElementById('qr-container');
         const statusEl = document.getElementById('status');

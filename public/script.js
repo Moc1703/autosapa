@@ -2,15 +2,20 @@
 
 // Check if user is logged in
 const authToken = localStorage.getItem('token');
-if (!authToken) {
+const userStr = localStorage.getItem('user');
+
+if (!authToken || !userStr) {
     window.location.href = '/login.html';
 }
 
-// Get userId from URL or localStorage
-const urlParams = new URLSearchParams(window.location.search);
-let userId = urlParams.get('userId') || localStorage.getItem('wa_userId');
+// Use user.id from login as userId (consistent across sessions)
+const loggedInUser = JSON.parse(userStr);
+let userId = loggedInUser.id;
 
-// Redirect to scan if no userId
+// Save for consistency
+localStorage.setItem('wa_userId', userId);
+
+// Redirect to scan if userId somehow missing
 if (!userId) {
     window.location.href = '/scan.html';
 }
