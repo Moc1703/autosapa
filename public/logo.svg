@@ -1,0 +1,22 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with gradient -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#25D366;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#128C7E;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Circle background -->
+  <circle cx="100" cy="100" r="95" fill="url(#grad1)" filter="url(#shadow)"/>
+  
+  <!-- Letter A -->
+  <text x="65" y="135" font-family="Arial, sans-serif" font-size="90" font-weight="bold" fill="white" letter-spacing="-5">AS</text>
+  
+  <!-- Small WhatsApp indicator dot -->
+  <circle cx="160" cy="45" r="15" fill="#FFF" opacity="0.9"/>
+  <circle cx="160" cy="45" r="12" fill="#25D366"/>
+</svg>

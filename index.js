@@ -670,6 +670,135 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// ===== PASSWORD RESET =====
+const resetTokens = new Map();
+
+// Forgot password - Generate reset token
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const ip = req.ip || req.connection.remoteAddress;
+        
+        // Rate limit check
+        const rateCheck = checkAuthRateLimit(ip);
+        if (!rateCheck.allowed) {
+            return res.status(429).json({ error: rateCheck.message });
+        }
+        
+        let { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+        
+        email = email.toLowerCase().trim();
+        
+        const user = await User.findOne({ email });
+        
+        // Don't reveal if email exists (security best practice)
+        if (!user) {
+            return res.json({ 
+                success: true, 
+                message: 'If the email exists, a reset link has been sent' 
+            });
+        }
+        
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetExpiry = Date.now() + 3600000; // 1 hour
+        
+        resetTokens.set(resetToken, {
+            userId: user._id.toString(),
+            email: user.email,
+            expiry: resetExpiry
+        });
+        
+        // Reset link
+        const resetLink = `${req.protocol}://${req.get('host')}/reset-password.html?token=${resetToken}`;
+        
+        console.log(`🔑 Reset link for ${email}: ${resetLink}`);
+        
+        // TODO: Send email via nodemailer
+        // For now, just log it (in production, send via email)
+        
+        res.json({ 
+            success: true, 
+            message: 'If the email exists, a reset link has been sent',
+            // REMOVE THIS IN PRODUCTION - only for testing
+            resetLink: resetLink
+        });
+        
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ error: 'Failed to process request' });
+    }
+});
+
+// Reset password with token
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        
+        if (!token || !newPassword) {
+            return res.status(400).json({ error: 'Token and new password are required' });
+        }
+        
+        if (!isStrongPassword(newPassword)) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+        
+        const resetData = resetTokens.get(token);
+        
+        if (!resetData) {
+            return res.status(400).json({ error: 'Invalid or expired reset token' });
+        }
+        
+        if (Date.now() > resetData.expiry) {
+            resetTokens.delete(token);
+            return res.status(400).json({ error: 'Reset token has expired. Please request a new one.' });
+        }
+        
+        // Update password
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        await User.findByIdAndUpdate(resetData.userId, { password: hashedPassword });
+        
+        // Delete used token
+        resetTokens.delete(token);
+        
+        console.log(`✅ Password reset successfully for: ${resetData.email}`);
+        
+        res.json({ success: true, message: 'Password has been reset successfully. You can now login.' });
+        
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: 'Failed to reset password' });
+    }
+});
+
+// Admin: Manual reset password
+app.post('/api/admin/reset-user-password', async (req, res) => {
+    const adminKey = req.headers['x-admin-key'];
+    if (adminKey !== ADMIN_KEY) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+    
+    const { email, newPassword } = req.body;
+    
+    try {
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        user.password = hashedPassword;
+        await user.save();
+        
+        res.json({ success: true, message: `Password reset for ${email}` });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to reset password' });
+    }
+});
+
 // Get current user
 app.get('/api/auth/me', async (req, res) => {
     try {

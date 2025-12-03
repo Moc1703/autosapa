@@ -440,5 +440,40 @@
             <p>© 2024 AutoSapa. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        // Check if user is logged in
+        const token = localStorage.getItem('token');
+        
+        if (token) {
+            // User is logged in - update buttons
+            const navButtons = document.querySelector('.nav-buttons');
+            navButtons.innerHTML = '<a href="/dashboard.html" class="btn btn-primary">Dashboard</a>';
+            
+            // Hide trial badge
+            const badge = document.querySelector('.badge');
+            if (badge) badge.style.display = 'none';
+            
+            // Update hero buttons
+            const heroButtons = document.querySelector('.hero-buttons');
+            heroButtons.innerHTML = '<a href="/dashboard.html" class="btn btn-primary btn-lg">Buka Dashboard →</a>';
+            
+            // Hide CTA section
+            const cta = document.querySelector('.cta');
+            if (cta) cta.style.display = 'none';
+            
+            // Hide "Daftar Gratis" buttons in pricing
+            const registerButtons = document.querySelectorAll('a[href="/register.html"]');
+            registerButtons.forEach(btn => {
+                if (btn.classList.contains('btn-primary')) {
+                    btn.textContent = 'Buka Dashboard';
+                    btn.href = '/dashboard.html';
+                } else if (btn.classList.contains('btn-outline')) {
+                    btn.textContent = 'Lihat Dashboard';
+                    btn.href = '/dashboard.html';
+                }
+            });
+        }
+    </script>
 </body>
 </html>
