@@ -577,9 +577,9 @@ app.post('/api/auth/register', async (req, res) => {
         // Hash password with higher cost factor
         const hashedPassword = await bcrypt.hash(password, 12);
         
-        // Create user with 30-day trial
+        // Create user with 10-day trial
         const trialEndsAt = new Date();
-        trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+        trialEndsAt.setDate(trialEndsAt.getDate() + 10);
         
         const user = new User({
             email,
@@ -597,7 +597,7 @@ app.post('/api/auth/register', async (req, res) => {
         
         res.json({
             success: true,
-            message: 'Registration successful! 30-day free trial started.',
+            message: 'Registration successful! 10-day free trial started.',
             token,
             user: {
                 id: user._id,
