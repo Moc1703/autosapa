@@ -222,7 +222,7 @@ async function initSession(userId) {
             authStrategy: new RemoteAuth({
                 clientId: userId,
                 store: mongoStore,
-                backupSyncIntervalMs: 300000
+                backupSyncIntervalMs: 60000  // Sync setiap 1 menit
             }),
             puppeteer: {
                 headless: true,
