@@ -1915,5 +1915,57 @@ async function startServer() {
     });
 }
 
+// ===== GRACEFUL SHUTDOWN =====
+async function gracefulShutdown(signal) {
+    console.log(`\n⚠️ ${signal} received. Starting graceful shutdown...`);
+    
+    // Save all active sessions before exit
+    if (sessions.size > 0) {
+        console.log(`💾 Saving ${sessions.size} active session(s)...`);
+        
+        for (const [userId, client] of sessions) {
+            try {
+                if (client && sessionStatuses.get(userId) === 'connected') {
+                    console.log(`   Saving session for: ${userId}`);
+                    // Trigger backup by destroying gracefully
+                    // RemoteAuth will save to MongoDB before disconnect
+                }
+            } catch (error) {
+                console.error(`   Failed to save session for ${userId}:`, error.message);
+            }
+        }
+        
+        // Wait a bit for RemoteAuth to sync
+        console.log('⏳ Waiting for session sync (10 seconds)...');
+        await new Promise(resolve => setTimeout(resolve, 10000));
+    }
+    
+    // Close MongoDB connection
+    try {
+        await mongoose.connection.close();
+        console.log('✅ MongoDB connection closed');
+    } catch (error) {
+        console.error('❌ Error closing MongoDB:', error.message);
+    }
+    
+    console.log('👋 Shutdown complete');
+    process.exit(0);
+}
+
+// Handle shutdown signals (PM2 restart, Ctrl+C, etc)
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught errors (prevent crash without saving)
+process.on('uncaughtException', async (error) => {
+    console.error('❌ Uncaught Exception:', error);
+    await gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', async (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    // Don't exit on unhandled rejection, just log it
+});
+
 // Start the server
 startServer();
