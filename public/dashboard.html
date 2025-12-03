@@ -266,7 +266,7 @@
         
         // Redirect if not logged in
         if (!token) {
-            window.location.href = '/login.html';
+            window.location.href = '/login';
         }
         
         async function loadDashboard() {
@@ -280,7 +280,7 @@
                 if (!data.success) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
-                    window.location.href = '/login.html';
+                    window.location.href = '/login';
                     return;
                 }
                 
@@ -367,7 +367,7 @@
                             <h3>🚀 Akses WA Bot</h3>
                             <p>Mulai broadcast, atur auto-reply, dan kelola grup Anda.</p>
                         </div>
-                        <a href="/app.html" class="btn">Buka Dashboard Bot →</a>
+                        <a href="/app" class="btn">Buka Dashboard Bot →</a>
                     </div>
                 `;
             }
@@ -406,7 +406,7 @@
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/landing.html';
+            window.location.href = '/';
         }
         
         // Load dashboard

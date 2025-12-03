@@ -5,7 +5,7 @@ const authToken = localStorage.getItem('token');
 const userStr = localStorage.getItem('user');
 
 if (!authToken || !userStr) {
-    window.location.href = '/login.html';
+    window.location.href = '/login';
 }
 
 // Use user.id from login as userId (consistent across sessions)
@@ -17,7 +17,7 @@ localStorage.setItem('wa_userId', userId);
 
 // Redirect to scan if userId somehow missing
 if (!userId) {
-    window.location.href = '/scan.html';
+    window.location.href = '/scan';
 }
 
 const API = '';
@@ -42,14 +42,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const authValid = await checkAuthToken();
     if (!authValid) {
         localStorage.removeItem('token');
-        window.location.href = '/login.html';
+        window.location.href = '/login';
         return;
     }
     
     // Check if session is connected, if not redirect to scan
     const isConnected = await checkSessionConnected();
     if (!isConnected) {
-        window.location.href = `/scan.html?userId=${userId}`;
+        window.location.href = '/scan';
         return;
     }
     
@@ -100,7 +100,7 @@ async function checkAuthToken() {
         // Check if subscription is active
         if (!data.user.isActive) {
             alert('Subscription Anda telah berakhir. Silakan upgrade ke Pro.');
-            window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard';
             return false;
         }
         

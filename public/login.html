@@ -134,24 +134,24 @@
             </div>
             
             <div style="text-align: right; margin-bottom: 16px;">
-                <a href="/forgot-password.html" style="color: #22c55e; text-decoration: none; font-size: 14px;">Lupa Password?</a>
+                <a href="/forgot-password" style="color: #22c55e; text-decoration: none; font-size: 14px;">Lupa Password?</a>
             </div>
             
             <button type="submit" class="btn btn-primary" id="loginBtn">Login</button>
         </form>
         
         <div class="links">
-            Belum punya akun? <a href="/register.html">Daftar Gratis</a>
+            Belum punya akun? <a href="/register">Daftar Gratis</a>
         </div>
         
-        <a href="/landing.html" class="back-link">← Kembali ke Homepage</a>
+        <a href="/" class="back-link">← Kembali ke Homepage</a>
     </div>
 
     <script>
         // Check if already logged in
         const token = localStorage.getItem('token');
         if (token) {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard';
         }
         
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -178,7 +178,7 @@
                 if (data.success) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    window.location.href = '/dashboard.html';
+                    window.location.href = '/dashboard';
                 } else {
                     errorMsg.textContent = data.error || 'Login failed';
                     errorMsg.style.display = 'block';

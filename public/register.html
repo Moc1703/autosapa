@@ -300,10 +300,10 @@
         </form>
         
         <div class="links">
-            Sudah punya akun? <a href="/login.html">Login</a>
+            Sudah punya akun? <a href="/login">Login</a>
         </div>
         
-        <a href="/landing.html" class="back-link">← Kembali ke Homepage</a>
+        <a href="/" class="back-link">← Kembali ke Homepage</a>
     </div>
     
     <!-- Terms Modal -->
@@ -371,7 +371,7 @@
         // Check if already logged in
         const token = localStorage.getItem('token');
         if (token) {
-            window.location.href = '/dashboard.html';
+            window.location.href = '/dashboard';
         }
         
         function showTerms() {
@@ -443,7 +443,7 @@
                     successMsg.style.display = 'block';
                     
                     setTimeout(() => {
-                        window.location.href = '/dashboard.html';
+                        window.location.href = '/dashboard';
                     }, 1500);
                 } else {
                     errorMsg.textContent = data.error || 'Registration failed';

@@ -306,8 +306,8 @@
         <div class="container">
             <div class="logo">Auto<span>Sapa</span></div>
             <div class="nav-buttons">
-                <a href="/login.html" class="btn btn-ghost">Masuk</a>
-                <a href="/register.html" class="btn btn-primary">Daftar Gratis</a>
+                <a href="/login" class="btn btn-ghost">Masuk</a>
+                <a href="/register" class="btn btn-primary">Daftar Gratis</a>
             </div>
         </div>
     </nav>
@@ -319,7 +319,7 @@
             <h1>Kelola Semua Grup WhatsApp<br>dari <span>Satu Dashboard</span></h1>
             <p>Platform broadcast dan automation WhatsApp untuk bisnis, komunitas, dan UMKM. Hemat waktu, tingkatkan produktivitas.</p>
             <div class="hero-buttons">
-                <a href="/register.html" class="btn btn-primary btn-lg">Mulai Gratis</a>
+                <a href="/register" class="btn btn-primary btn-lg">Mulai Gratis</a>
                 <a href="#pricing" class="btn btn-outline btn-lg">Lihat Harga</a>
             </div>
             
@@ -402,7 +402,7 @@
                         <li><span class="check">✓</span> Scheduling</li>
                         <li><span class="check">✓</span> Basic analytics</li>
                     </ul>
-                    <a href="/register.html" class="btn btn-outline">Mulai Trial</a>
+                    <a href="/register" class="btn btn-outline">Mulai Trial</a>
                 </div>
                 <div class="pricing-card featured">
                     <div class="pricing-badge">RECOMMENDED</div>
@@ -417,7 +417,7 @@
                         <li><span class="check">✓</span> Priority support</li>
                         <li><span class="check">✓</span> Advanced analytics</li>
                     </ul>
-                    <a href="/register.html" class="btn btn-primary">Daftar Sekarang</a>
+                    <a href="/register" class="btn btn-primary">Daftar Sekarang</a>
                 </div>
             </div>
         </div>
@@ -429,7 +429,7 @@
             <div class="cta-box">
                 <h2>Siap Meningkatkan Produktivitas?</h2>
                 <p>Daftar sekarang dan mulai kelola grup WhatsApp dengan lebih efisien.</p>
-                <a href="/register.html" class="btn btn-lg">Daftar Gratis →</a>
+                <a href="/register" class="btn btn-lg">Daftar Gratis →</a>
             </div>
         </div>
     </section>
@@ -448,7 +448,7 @@
         if (token) {
             // User is logged in - update buttons
             const navButtons = document.querySelector('.nav-buttons');
-            navButtons.innerHTML = '<a href="/dashboard.html" class="btn btn-primary">Dashboard</a>';
+            navButtons.innerHTML = '<a href="/dashboard" class="btn btn-primary">Dashboard</a>';
             
             // Hide trial badge
             const badge = document.querySelector('.badge');
@@ -456,21 +456,21 @@
             
             // Update hero buttons
             const heroButtons = document.querySelector('.hero-buttons');
-            heroButtons.innerHTML = '<a href="/dashboard.html" class="btn btn-primary btn-lg">Buka Dashboard →</a>';
+            heroButtons.innerHTML = '<a href="/dashboard" class="btn btn-primary btn-lg">Buka Dashboard →</a>';
             
             // Hide CTA section
             const cta = document.querySelector('.cta');
             if (cta) cta.style.display = 'none';
             
             // Hide "Daftar Gratis" buttons in pricing
-            const registerButtons = document.querySelectorAll('a[href="/register.html"]');
+            const registerButtons = document.querySelectorAll('a[href="/register"]');
             registerButtons.forEach(btn => {
                 if (btn.classList.contains('btn-primary')) {
                     btn.textContent = 'Buka Dashboard';
-                    btn.href = '/dashboard.html';
+                    btn.href = '/dashboard';
                 } else if (btn.classList.contains('btn-outline')) {
                     btn.textContent = 'Lihat Dashboard';
-                    btn.href = '/dashboard.html';
+                    btn.href = '/dashboard';
                 }
             });
         }

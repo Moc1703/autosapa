@@ -170,7 +170,7 @@
         const userStr = localStorage.getItem('user');
         
         if (!token || !userStr) {
-            window.location.href = '/login.html';
+            window.location.href = '/login';
         }
         
         // Use user.id from login as userId (consistent across sessions)
@@ -296,7 +296,7 @@
             
             // Redirect to app after 2 seconds
             setTimeout(() => {
-                window.location.href = `/app.html?userId=${userId}`;
+                window.location.href = '/app';
             }, 2000);
         }
         
