@@ -1075,12 +1075,50 @@ app.post('/api/session/logout/:userId', async (req, res) => {
 // ===== API ENDPOINTS - PER-USER FEATURES =====
 // =============================================
 
-// Middleware to check session
+// Middleware to verify user owns the resource (SECURITY FIX)
+async function requireUserAuth(req, res, next) {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const requestedUserId = req.params.userId;
+        
+        // Verify the user is accessing their own data
+        if (requestedUserId && decoded.userId !== requestedUserId) {
+            return res.status(403).json({ error: 'Access denied. You can only access your own data.' });
+        }
+        
+        req.authUserId = decoded.userId;
+        next();
+    } catch (error) {
+        return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+}
+
+// Middleware to check session (also verifies auth)
 function requireSession(req, res, next) {
     const userId = req.params.userId || req.body.userId || req.query.userId;
     
     if (!userId) {
         return res.status(400).json({ error: 'userId is required' });
+    }
+    
+    // Verify auth first
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.userId !== userId) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+    } catch (e) {
+        return res.status(401).json({ error: 'Invalid token' });
     }
     
     if (!sessions.has(userId)) {
@@ -1098,12 +1136,12 @@ function requireSession(req, res, next) {
 }
 
 // ===== GROUPS =====
-app.get('/api/:userId/groups', (req, res) => {
+app.get('/api/:userId/groups', requireUserAuth, (req, res) => {
     const groups = readGroups(req.params.userId);
     res.json(groups);
 });
 
-app.post('/api/:userId/groups', (req, res) => {
+app.post('/api/:userId/groups', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const { name, id } = req.body;
     
@@ -1214,7 +1252,7 @@ app.post('/api/:userId/groups/sync', requireSession, async (req, res) => {
     }
 });
 
-app.delete('/api/:userId/groups/:groupId', (req, res) => {
+app.delete('/api/:userId/groups/:groupId', requireUserAuth, (req, res) => {
     const { userId, groupId } = req.params;
     let groups = readGroups(userId);
     groups = groups.filter(g => g.id !== groupId && g.groupId !== groupId);
@@ -1318,11 +1356,11 @@ app.post('/api/:userId/broadcast', requireSession, async (req, res) => {
 });
 
 // ===== AUTO REPLIES =====
-app.get('/api/:userId/autoreplies', (req, res) => {
+app.get('/api/:userId/autoreplies', requireUserAuth, (req, res) => {
     res.json(readAutoReplies(req.params.userId));
 });
 
-app.post('/api/:userId/autoreplies', (req, res) => {
+app.post('/api/:userId/autoreplies', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const { keyword, response, matchType, enabled, image } = req.body;
     
@@ -1345,7 +1383,7 @@ app.post('/api/:userId/autoreplies', (req, res) => {
     res.json({ success: true });
 });
 
-app.put('/api/:userId/autoreplies/:id', (req, res) => {
+app.put('/api/:userId/autoreplies/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     const updates = req.body;
     
@@ -1362,7 +1400,7 @@ app.put('/api/:userId/autoreplies/:id', (req, res) => {
     res.json({ success: true });
 });
 
-app.delete('/api/:userId/autoreplies/:id', (req, res) => {
+app.delete('/api/:userId/autoreplies/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     let replies = readAutoReplies(userId);
     replies = replies.filter(r => r.id !== id);
@@ -1371,11 +1409,11 @@ app.delete('/api/:userId/autoreplies/:id', (req, res) => {
 });
 
 // ===== TEMPLATES =====
-app.get('/api/:userId/templates', (req, res) => {
+app.get('/api/:userId/templates', requireUserAuth, (req, res) => {
     res.json(readTemplates(req.params.userId));
 });
 
-app.post('/api/:userId/templates', (req, res) => {
+app.post('/api/:userId/templates', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const { name, message } = req.body;
     
@@ -1395,7 +1433,7 @@ app.post('/api/:userId/templates', (req, res) => {
     res.json({ success: true });
 });
 
-app.put('/api/:userId/templates/:id', (req, res) => {
+app.put('/api/:userId/templates/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     const { name, message } = req.body;
     
@@ -1412,7 +1450,7 @@ app.put('/api/:userId/templates/:id', (req, res) => {
     res.json({ success: true });
 });
 
-app.delete('/api/:userId/templates/:id', (req, res) => {
+app.delete('/api/:userId/templates/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     let templates = readTemplates(userId);
     templates = templates.filter(t => t.id !== id);
@@ -1421,11 +1459,11 @@ app.delete('/api/:userId/templates/:id', (req, res) => {
 });
 
 // ===== SCHEDULES =====
-app.get('/api/:userId/schedules', (req, res) => {
+app.get('/api/:userId/schedules', requireUserAuth, (req, res) => {
     res.json(readSchedules(req.params.userId));
 });
 
-app.post('/api/:userId/schedules', (req, res) => {
+app.post('/api/:userId/schedules', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const { message, groupIds, scheduledTime, recurring } = req.body;
     
@@ -1449,7 +1487,7 @@ app.post('/api/:userId/schedules', (req, res) => {
     res.json({ success: true });
 });
 
-app.delete('/api/:userId/schedules/:id', (req, res) => {
+app.delete('/api/:userId/schedules/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     let schedules = readSchedules(userId);
     schedules = schedules.filter(s => s.id !== id);
@@ -1458,11 +1496,11 @@ app.delete('/api/:userId/schedules/:id', (req, res) => {
 });
 
 // ===== COMMANDS =====
-app.get('/api/:userId/commands', (req, res) => {
+app.get('/api/:userId/commands', requireUserAuth, (req, res) => {
     res.json(readCommands(req.params.userId));
 });
 
-app.post('/api/:userId/commands', (req, res) => {
+app.post('/api/:userId/commands', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     let { command, response } = req.body;
     
@@ -1485,7 +1523,7 @@ app.post('/api/:userId/commands', (req, res) => {
     res.json({ success: true });
 });
 
-app.put('/api/:userId/commands/:id', (req, res) => {
+app.put('/api/:userId/commands/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     let commands = readCommands(userId);
     const index = commands.findIndex(c => c.id === id);
@@ -1500,7 +1538,7 @@ app.put('/api/:userId/commands/:id', (req, res) => {
     res.json({ success: true });
 });
 
-app.delete('/api/:userId/commands/:id', (req, res) => {
+app.delete('/api/:userId/commands/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     let commands = readCommands(userId);
     commands = commands.filter(c => c.id !== id);
@@ -1509,11 +1547,11 @@ app.delete('/api/:userId/commands/:id', (req, res) => {
 });
 
 // ===== CONTACTS =====
-app.get('/api/:userId/contacts', (req, res) => {
+app.get('/api/:userId/contacts', requireUserAuth, (req, res) => {
     res.json(readContacts(req.params.userId));
 });
 
-app.post('/api/:userId/contacts', (req, res) => {
+app.post('/api/:userId/contacts', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const { name, number, notes } = req.body;
     
@@ -1534,7 +1572,7 @@ app.post('/api/:userId/contacts', (req, res) => {
     res.json({ success: true });
 });
 
-app.delete('/api/:userId/contacts/:id', (req, res) => {
+app.delete('/api/:userId/contacts/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     let contacts = readContacts(userId);
     contacts = contacts.filter(c => c.id !== id);
@@ -1543,11 +1581,11 @@ app.delete('/api/:userId/contacts/:id', (req, res) => {
 });
 
 // ===== BLACKLIST =====
-app.get('/api/:userId/blacklist', (req, res) => {
+app.get('/api/:userId/blacklist', requireUserAuth, (req, res) => {
     res.json(readBlacklist(req.params.userId));
 });
 
-app.post('/api/:userId/blacklist', (req, res) => {
+app.post('/api/:userId/blacklist', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const { number, reason } = req.body;
     
@@ -1567,7 +1605,7 @@ app.post('/api/:userId/blacklist', (req, res) => {
     res.json({ success: true });
 });
 
-app.delete('/api/:userId/blacklist/:id', (req, res) => {
+app.delete('/api/:userId/blacklist/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     let blacklist = readBlacklist(userId);
     blacklist = blacklist.filter(b => b.id !== id);
@@ -1576,24 +1614,24 @@ app.delete('/api/:userId/blacklist/:id', (req, res) => {
 });
 
 // ===== HISTORY =====
-app.get('/api/:userId/history', (req, res) => {
+app.get('/api/:userId/history', requireUserAuth, (req, res) => {
     res.json(readHistory(req.params.userId));
 });
 
-app.delete('/api/:userId/history', (req, res) => {
+app.delete('/api/:userId/history', requireUserAuth, (req, res) => {
     writeHistory(req.params.userId, []);
     res.json({ success: true });
 });
 
 // ===== SETTINGS =====
-app.get('/api/:userId/settings', (req, res) => {
+app.get('/api/:userId/settings', requireUserAuth, (req, res) => {
     const settings = readSettings(req.params.userId);
     // Mask password
     settings.auth = { ...settings.auth, password: '********' };
     res.json(settings);
 });
 
-app.put('/api/:userId/settings', (req, res) => {
+app.put('/api/:userId/settings', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const current = readSettings(userId);
     const updates = req.body;
@@ -1615,11 +1653,11 @@ app.put('/api/:userId/settings', (req, res) => {
 });
 
 // ===== QUICK ACTIONS =====
-app.get('/api/:userId/quickactions', (req, res) => {
+app.get('/api/:userId/quickactions', requireUserAuth, (req, res) => {
     res.json(readQuickActions(req.params.userId));
 });
 
-app.post('/api/:userId/quickactions', (req, res) => {
+app.post('/api/:userId/quickactions', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const { name, message, icon, groups } = req.body;
     
@@ -1681,7 +1719,7 @@ app.post('/api/:userId/quickactions/:id/execute', requireSession, async (req, re
     });
 });
 
-app.delete('/api/:userId/quickactions/:id', (req, res) => {
+app.delete('/api/:userId/quickactions/:id', requireUserAuth, (req, res) => {
     const { userId, id } = req.params;
     let actions = readQuickActions(userId);
     actions = actions.filter(a => a.id !== id);
@@ -1690,7 +1728,7 @@ app.delete('/api/:userId/quickactions/:id', (req, res) => {
 });
 
 // ===== BACKUP =====
-app.get('/api/:userId/backup', (req, res) => {
+app.get('/api/:userId/backup', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     
     const backup = {
@@ -1710,7 +1748,7 @@ app.get('/api/:userId/backup', (req, res) => {
     res.json(backup);
 });
 
-app.post('/api/:userId/backup/restore', (req, res) => {
+app.post('/api/:userId/backup/restore', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const backup = req.body;
     
@@ -1732,7 +1770,7 @@ app.post('/api/:userId/backup/restore', (req, res) => {
 });
 
 // ===== STATISTICS =====
-app.get('/api/:userId/stats', (req, res) => {
+app.get('/api/:userId/stats', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     
     const history = readHistory(userId);
@@ -1755,7 +1793,7 @@ app.get('/api/:userId/stats', (req, res) => {
 });
 
 // ===== MEDIA LIBRARY =====
-app.get('/api/:userId/media', (req, res) => {
+app.get('/api/:userId/media', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const userUploadsDir = path.join(UPLOADS_DIR, userId);
     
@@ -1780,7 +1818,7 @@ app.get('/api/:userId/media', (req, res) => {
     }
 });
 
-app.post('/api/:userId/media', upload.single('file'), (req, res) => {
+app.post('/api/:userId/media', requireUserAuth, upload.single('file'), (req, res) => {
     const { userId } = req.params;
     const userUploadsDir = path.join(UPLOADS_DIR, userId);
     
@@ -1804,7 +1842,7 @@ app.post('/api/:userId/media', upload.single('file'), (req, res) => {
     });
 });
 
-app.delete('/api/:userId/media/:filename', (req, res) => {
+app.delete('/api/:userId/media/:filename', requireUserAuth, (req, res) => {
     const { userId, filename } = req.params;
     const filePath = path.join(UPLOADS_DIR, userId, filename);
     
