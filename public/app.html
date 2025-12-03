@@ -647,6 +647,19 @@
                 <button class="modal-close" onclick="closeModal('addScheduleModal')">×</button>
             </div>
             <div class="form-group">
+                <label class="form-label">Select Groups</label>
+                <div class="schedule-groups-container" style="max-height: 150px; overflow-y: auto; border: 1px solid #334155; border-radius: 8px; padding: 8px; background: #0f172a;">
+                    <label class="checkbox-row" style="padding: 8px; border-bottom: 1px solid #334155; margin-bottom: 4px;">
+                        <input type="checkbox" id="scheduleSelectAll" onchange="toggleScheduleSelectAll()">
+                        <span style="font-weight: 600;">Select All</span>
+                    </label>
+                    <div id="scheduleGroupList">
+                        <p class="text-muted" style="padding: 8px; text-align: center;">No groups available</p>
+                    </div>
+                </div>
+                <small class="text-muted" id="scheduleSelectedCount">0 groups selected</small>
+            </div>
+            <div class="form-group">
                 <label class="form-label">Message</label>
                 <textarea class="form-input" id="scheduleMessage" placeholder="Your scheduled message..."></textarea>
             </div>
@@ -671,7 +684,6 @@
                     <option value="monthly">Every month</option>
                 </select>
             </div>
-            <p class="form-hint mb-4">Uses groups selected in Broadcast tab</p>
             <button class="btn btn-primary btn-block" onclick="saveSchedule()">Schedule</button>
         </div>
     </div>

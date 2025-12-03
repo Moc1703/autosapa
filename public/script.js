@@ -921,8 +921,34 @@ function showAddSchedule() {
     document.getElementById('scheduleImageInput').value = '';
     document.getElementById('scheduleImagePreview').classList.add('hidden');
     document.getElementById('scheduleUploadText').textContent = '📷 Tap to add image';
+    document.getElementById('scheduleSelectAll').checked = false;
     scheduleImage = null;
+    
+    // Populate group list in schedule modal
+    const listEl = document.getElementById('scheduleGroupList');
+    if (!groups.length) {
+        listEl.innerHTML = '<p class="text-muted" style="padding: 8px; text-align: center;">No groups available. Add groups first.</p>';
+    } else {
+        listEl.innerHTML = groups.map(g => `
+            <label class="checkbox-row" style="padding: 6px 8px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" class="schedule-group-checkbox" value="${escapeAttr(g.groupId)}" onchange="updateScheduleSelectedCount()">
+                <span style="font-size: 13px;">${escapeHtml(g.name)}</span>
+            </label>
+        `).join('');
+    }
+    updateScheduleSelectedCount();
     showModal('addScheduleModal');
+}
+
+function toggleScheduleSelectAll() {
+    const isChecked = document.getElementById('scheduleSelectAll').checked;
+    document.querySelectorAll('.schedule-group-checkbox').forEach(cb => cb.checked = isChecked);
+    updateScheduleSelectedCount();
+}
+
+function updateScheduleSelectedCount() {
+    const count = document.querySelectorAll('.schedule-group-checkbox:checked').length;
+    document.getElementById('scheduleSelectedCount').textContent = count + ' groups selected';
 }
 
 async function saveSchedule() {
@@ -930,11 +956,12 @@ async function saveSchedule() {
     const scheduledTime = document.getElementById('scheduleTime').value;
     const repeat = document.getElementById('scheduleRepeat').value;
     
+    // Get selected groups from schedule modal
+    const selectedGroups = [...document.querySelectorAll('.schedule-group-checkbox:checked')].map(cb => cb.value);
+    if (!selectedGroups.length) return toast('Please select at least one group', 'error');
+    
     if (!message && !scheduleImage) return toast('Please enter a message or add an image', 'error');
     if (!scheduledTime) return toast('Please select date and time', 'error');
-    
-    const selectedGroups = [...document.querySelectorAll('#groupSelectList input:checked')].map(cb => cb.value);
-    if (!selectedGroups.length) return toast('Please select groups first in Broadcast tab', 'error');
     
     try {
         let imageData = null;
