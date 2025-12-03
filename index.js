@@ -393,13 +393,26 @@ async function handleIncomingMessage(userId, client, msg) {
             }
             
             if (match) {
+                // Random delay for more human-like behavior (1-3 seconds variation)
+                const randomDelay = Math.floor(Math.random() * 2000) + 1000;
+                
                 // Show typing indicator
                 if (settings.typing?.enabled) {
                     await chat.sendStateTyping();
-                    await delay(settings.typing.durationMs || 1500);
+                    const typingDuration = (settings.typing.durationMs || 1500) + randomDelay;
+                    await delay(typingDuration);
+                } else {
+                    await delay(randomDelay);
                 }
                 
-                const response = processMessageVariables(reply.response);
+                // Support multiple responses separated by ||| (pick random one)
+                let responseText = reply.response;
+                if (responseText.includes('|||')) {
+                    const responses = responseText.split('|||').map(r => r.trim()).filter(r => r);
+                    responseText = responses[Math.floor(Math.random() * responses.length)];
+                }
+                
+                const response = processMessageVariables(responseText);
                 
                 // Reply with image if set
                 if (reply.imagePath) {
