@@ -207,7 +207,10 @@
                 
                 const response = await fetch('/api/session/start', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({ userId })
                 });
                 
@@ -240,7 +243,9 @@
         
         async function pollForQR() {
             try {
-                const response = await fetch(`/api/session/qr/${userId}`);
+                const response = await fetch(`/api/session/qr/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const data = await response.json();
                 
                 console.log('QR poll response:', data);
@@ -303,7 +308,9 @@
         // Check if already connected
         async function checkExistingSession() {
             try {
-                const response = await fetch(`/api/session/status/${userId}`);
+                const response = await fetch(`/api/session/status/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const data = await response.json();
                 
                 if (data.status === 'connected') {

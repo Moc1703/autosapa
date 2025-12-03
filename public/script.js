@@ -76,7 +76,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Check if session is connected
 async function checkSessionConnected() {
     try {
-        const res = await fetch(`/api/session/status/${userId}`);
+        const res = await fetch(`/api/session/status/${userId}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
         const data = await res.json();
         return data.status === 'connected';
     } catch (e) {
@@ -217,7 +219,9 @@ async function logout() {
 // ===== STATUS =====
 async function checkStatus() {
     try {
-        const res = await fetch(`/api/session/status/${userId}`);
+        const res = await fetch(`/api/session/status/${userId}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
         const data = await res.json();
         
         let className, statusText;
