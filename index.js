@@ -1054,20 +1054,25 @@ app.post('/api/admin/activate', async (req, res) => {
 // ===== API ENDPOINTS - SESSION MANAGEMENT =====
 // =============================================
 
-// Start a new session
-app.post('/api/session/start', async (req, res) => {
+// Start a new session (requires auth, user can only start their own session)
+app.post('/api/session/start', requireUserAuth, async (req, res) => {
     const { userId } = req.body;
     
     if (!userId) {
         return res.status(400).json({ error: 'userId is required' });
     }
     
+    // Verify user is starting their own session
+    if (userId !== req.authUserId) {
+        return res.status(403).json({ error: 'You can only start your own session' });
+    }
+    
     const result = await initSession(userId);
     res.json(result);
 });
 
-// Get QR Code for a session
-app.get('/api/session/qr/:userId', (req, res) => {
+// Get QR Code for a session (requires auth, user can only see their own QR)
+app.get('/api/session/qr/:userId', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const qr = qrCodes.get(userId);
     const status = sessionStatuses.get(userId);
@@ -1083,8 +1088,8 @@ app.get('/api/session/qr/:userId', (req, res) => {
     res.json({ success: true, status: 'qr', qr });
 });
 
-// Get session status
-app.get('/api/session/status/:userId', (req, res) => {
+// Get session status (requires auth, user can only check their own status)
+app.get('/api/session/status/:userId', requireUserAuth, (req, res) => {
     const { userId } = req.params;
     const status = sessionStatuses.get(userId) || 'not_found';
     const hasSession = sessions.has(userId);
@@ -1098,8 +1103,13 @@ app.get('/api/session/status/:userId', (req, res) => {
     });
 });
 
-// List all active sessions
+// List all active sessions (ADMIN ONLY)
 app.get('/api/sessions', (req, res) => {
+    const adminKey = req.headers['x-admin-key'];
+    if (adminKey !== ADMIN_KEY) {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    
     const sessionList = [];
     
     sessions.forEach((client, oderId) => {
@@ -1113,15 +1123,15 @@ app.get('/api/sessions', (req, res) => {
     res.json({ success: true, sessions: sessionList, count: sessionList.length });
 });
 
-// Destroy a session
-app.delete('/api/session/:userId', async (req, res) => {
+// Destroy a session (requires auth, user can only destroy their own session)
+app.delete('/api/session/:userId', requireUserAuth, async (req, res) => {
     const { userId } = req.params;
     const result = await destroySession(userId);
     res.json(result);
 });
 
-// Logout a session (destroy and remove from DB)
-app.post('/api/session/logout/:userId', async (req, res) => {
+// Logout a session (requires auth, user can only logout their own session)
+app.post('/api/session/logout/:userId', requireUserAuth, async (req, res) => {
     const { userId } = req.params;
     
     if (!sessions.has(userId)) {
