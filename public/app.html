@@ -46,6 +46,10 @@
                     <span class="sidebar-icon">⚙️</span>
                     <span class="sidebar-text">Settings</span>
                 </button>
+                <button class="sidebar-item" onclick="switchTab('changelog')" data-tab="changelog">
+                    <span class="sidebar-icon">🎉</span>
+                    <span class="sidebar-text">Changelog</span>
+                </button>
             </nav>
             
             <div class="sidebar-footer">
@@ -111,6 +115,10 @@
                     <button class="mobile-menu-item" onclick="switchTab('settings'); toggleMobileMenu()" data-tab="settings">
                         <span class="mobile-menu-icon">⚙️</span>
                         <span>Settings</span>
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTab('changelog'); toggleMobileMenu()" data-tab="changelog">
+                        <span class="mobile-menu-icon">🎉</span>
+                        <span>Changelog</span>
                     </button>
                 </div>
                 <div class="mobile-menu-footer">
@@ -385,10 +393,14 @@
 
                     <div class="desktop-grid">
                         <div class="desktop-col">
+                            <!-- Scheduled Broadcasts (Pending) -->
                             <div class="card">
                                 <div class="card-header">
-                                    <h3 class="card-title">Scheduled Broadcasts</h3>
+                                    <h3 class="card-title">📅 Scheduled Broadcasts</h3>
                                     <button class="btn btn-sm btn-primary" onclick="showAddSchedule()">+ New</button>
+                                </div>
+                                <div class="search-box mb-2">
+                                    <input type="text" class="form-input" id="searchSchedules" placeholder="🔍 Search schedules..." oninput="filterSchedules()">
                                 </div>
                                 <div id="scheduleList">
                                     <div class="empty-state">
@@ -396,6 +408,24 @@
                                         <div class="empty-title">No schedules</div>
                                         <p class="empty-text">Schedule broadcasts for later</p>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Archive (Sent) -->
+                            <div class="card mt-4">
+                                <div class="card-header">
+                                    <h3 class="card-title">📦 Archive</h3>
+                                    <button class="btn btn-sm btn-secondary" onclick="toggleArchive()">
+                                        <span id="archiveToggleText">Show</span>
+                                    </button>
+                                </div>
+                                <div id="archiveList" class="hidden">
+                                    <div class="empty-state">
+                                        <p class="text-muted">No archived schedules</p>
+                                    </div>
+                                </div>
+                                <div id="archiveCount" class="text-muted text-center" style="padding: 12px; font-size: 13px;">
+                                    0 sent schedules
                                 </div>
                             </div>
                         </div>
@@ -552,6 +582,113 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Tab: Changelog -->
+                <div class="tab-panel" id="tab-changelog">
+                    <div class="page-header">
+                        <h1 class="page-title">🎉 Changelog</h1>
+                        <p class="text-muted">What's new in AutoSapa</p>
+                    </div>
+
+                    <div class="changelog-container">
+                        <!-- Version 1.3.0 -->
+                        <div class="changelog-version">
+                            <div class="changelog-header">
+                                <div class="changelog-version-badge">v1.3.0</div>
+                                <div class="changelog-date">December 4, 2024</div>
+                            </div>
+                            <div class="changelog-content">
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">✨ New Features</div>
+                                    <ul class="changelog-list">
+                                        <li><strong>Schedule Names:</strong> Beri nama pada setiap schedule untuk identifikasi lebih mudah</li>
+                                        <li><strong>Search Schedules:</strong> Cari schedule berdasarkan nama atau isi pesan</li>
+                                        <li><strong>Archive System:</strong> Schedule yang sudah terkirim otomatis pindah ke Archive</li>
+                                    </ul>
+                                </div>
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">🔧 Improvements</div>
+                                    <ul class="changelog-list">
+                                        <li>UI Schedule page lebih clean dan organized</li>
+                                        <li>Better schedule management dengan filtering</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Version 1.2.0 -->
+                        <div class="changelog-version">
+                            <div class="changelog-header">
+                                <div class="changelog-version-badge">v1.2.0</div>
+                                <div class="changelog-date">November 15, 2024</div>
+                            </div>
+                            <div class="changelog-content">
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">✨ New Features</div>
+                                    <ul class="changelog-list">
+                                        <li><strong>Multi-User Support:</strong> Setiap user memiliki data terpisah</li>
+                                        <li><strong>Authentication:</strong> Login dengan JWT token untuk keamanan</li>
+                                        <li><strong>User Dashboard:</strong> Panel dashboard untuk kelola subscription</li>
+                                    </ul>
+                                </div>
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">🔧 Improvements</div>
+                                    <ul class="changelog-list">
+                                        <li>Database migration dari file JSON ke SQLite</li>
+                                        <li>Session management lebih stabil</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Version 1.1.0 -->
+                        <div class="changelog-version">
+                            <div class="changelog-header">
+                                <div class="changelog-version-badge">v1.1.0</div>
+                                <div class="changelog-date">October 20, 2024</div>
+                            </div>
+                            <div class="changelog-content">
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">✨ New Features</div>
+                                    <ul class="changelog-list">
+                                        <li><strong>Quick Actions:</strong> Shortcut untuk broadcast cepat</li>
+                                        <li><strong>Media Library:</strong> Upload dan manage gambar untuk broadcast</li>
+                                        <li><strong>Templates:</strong> Simpan message template untuk penggunaan berulang</li>
+                                        <li><strong>Commands:</strong> Custom command dengan prefix ! (e.g., !help)</li>
+                                    </ul>
+                                </div>
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">🐛 Bug Fixes</div>
+                                    <ul class="changelog-list">
+                                        <li>Fixed QR code expiration handling</li>
+                                        <li>Improved auto-reply matching algorithm</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Version 1.0.0 -->
+                        <div class="changelog-version">
+                            <div class="changelog-header">
+                                <div class="changelog-version-badge">v1.0.0</div>
+                                <div class="changelog-date">September 1, 2024</div>
+                            </div>
+                            <div class="changelog-content">
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">🎊 Initial Release</div>
+                                    <ul class="changelog-list">
+                                        <li>Group broadcast dengan anti-ban queue</li>
+                                        <li>Auto Reply dengan multiple match types</li>
+                                        <li>Schedule broadcast dengan recurring option</li>
+                                        <li>Statistics dan history tracking</li>
+                                        <li>Blacklist management</li>
+                                        <li>Dark mode support</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </main>
 
 
@@ -651,6 +788,10 @@
             <div class="modal-header">
                 <h3 class="modal-title">Schedule Broadcast</h3>
                 <button class="modal-close" onclick="closeModal('addScheduleModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Schedule Name</label>
+                <input type="text" class="form-input" id="scheduleName" placeholder="e.g., Morning Greeting, Weekly Promo">
             </div>
             <div class="form-group">
                 <label class="form-label">Select Groups</label>
@@ -830,5 +971,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
-

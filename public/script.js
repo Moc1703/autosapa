@@ -947,38 +947,125 @@ async function loadSchedules() {
 }
 
 function renderSchedules() {
+    const searchQuery = (document.getElementById('searchSchedules')?.value || '').toLowerCase();
+    
+    // Split schedules into pending and sent
+    const pendingSchedules = schedules.filter(s => s.status !== 'sent');
+    const sentSchedules = schedules.filter(s => s.status === 'sent');
+    
+    // Filter pending by search query
+    const filteredPending = searchQuery 
+        ? pendingSchedules.filter(s => 
+            (s.name || '').toLowerCase().includes(searchQuery) ||
+            (s.message || '').toLowerCase().includes(searchQuery)
+        )
+        : pendingSchedules;
+    
+    // Render pending schedules
     const list = document.getElementById('scheduleList');
-    if (!schedules.length) {
+    if (!filteredPending.length) {
         list.innerHTML = `
             <div class="empty-state">
                 <div class="empty-icon">📅</div>
-                <div class="empty-title">No schedules</div>
-                <p class="empty-text">Schedule broadcasts for later</p>
+                <div class="empty-title">${searchQuery ? 'No matching schedules' : 'No pending schedules'}</div>
+                <p class="empty-text">${searchQuery ? 'Try a different search' : 'Schedule broadcasts for later'}</p>
             </div>`;
-        return;
+    } else {
+        list.innerHTML = filteredPending.map(s => `
+            <div class="schedule-item">
+                <div class="flex-between mb-2">
+                    <div class="schedule-name" style="font-weight: 600; color: var(--text);">${escapeHtml(s.name || 'Untitled Schedule')}</div>
+                    ${s.image ? '<span class="list-item-badge info">📷</span>' : ''}
+                </div>
+                <div class="schedule-time" style="font-size: 13px; color: var(--primary); margin-bottom: 8px;">🕐 ${formatDate(s.scheduledTime)}</div>
+                <div class="schedule-message">${escapeHtml(s.message || 'Image only')}</div>
+                <div class="schedule-meta">
+                    <span>📤 ${s.groups?.length || s.groupIds?.length || 0} groups</span>
+                    ${s.repeat || s.recurring ? `<span>🔄 ${s.repeat || s.recurring}</span>` : ''}
+                    <span class="list-item-badge warning">pending</span>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')">📋 Duplicate</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">🗑️ Delete</button>
+                </div>
+            </div>
+        `).join('');
     }
     
-    list.innerHTML = schedules.map(s => `
-        <div class="schedule-item">
-            <div class="flex-between mb-2">
-                <div class="schedule-time">🕐 ${formatDate(s.scheduledTime)}</div>
-                ${s.image ? '<span class="list-item-badge info">📷</span>' : ''}
+    // Render archive
+    renderArchive(sentSchedules, searchQuery);
+}
+
+function renderArchive(sentSchedules, searchQuery) {
+    // Filter archive by search query too
+    const filteredSent = searchQuery 
+        ? sentSchedules.filter(s => 
+            (s.name || '').toLowerCase().includes(searchQuery) ||
+            (s.message || '').toLowerCase().includes(searchQuery)
+        )
+        : sentSchedules;
+    
+    // Update archive count
+    const countEl = document.getElementById('archiveCount');
+    if (countEl) {
+        countEl.textContent = `${filteredSent.length} sent schedule${filteredSent.length !== 1 ? 's' : ''}`;
+    }
+    
+    // Render archive list
+    const archiveList = document.getElementById('archiveList');
+    if (!archiveList) return;
+    
+    if (!filteredSent.length) {
+        archiveList.innerHTML = `
+            <div class="empty-state">
+                <p class="text-muted">${searchQuery ? 'No matching archived schedules' : 'No archived schedules yet'}</p>
+            </div>`;
+    } else {
+        archiveList.innerHTML = filteredSent.map(s => `
+            <div class="schedule-item" style="opacity: 0.8; background: var(--bg-secondary);">
+                <div class="flex-between mb-2">
+                    <div class="schedule-name" style="font-weight: 600; color: var(--text);">${escapeHtml(s.name || 'Untitled Schedule')}</div>
+                    <span class="list-item-badge success">✓ sent</span>
+                </div>
+                <div class="schedule-time" style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                    📅 Scheduled: ${formatDate(s.scheduledTime)}
+                    ${s.sentAt ? `<br>✅ Sent: ${formatDate(s.sentAt)}` : ''}
+                </div>
+                <div class="schedule-message" style="font-size: 13px;">${escapeHtml((s.message || 'Image only').substring(0, 100))}${(s.message || '').length > 100 ? '...' : ''}</div>
+                <div class="schedule-meta">
+                    <span>📤 ${s.groups?.length || s.groupIds?.length || 0} groups</span>
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')">📋 Reuse</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">🗑️ Delete</button>
+                </div>
             </div>
-            <div class="schedule-message">${escapeHtml(s.message || 'Image only')}</div>
-            <div class="schedule-meta">
-                <span>📤 ${s.groups?.length || s.groupIds?.length || 0} groups</span>
-                ${s.repeat || s.recurring ? `<span>🔄 ${s.repeat || s.recurring}</span>` : ''}
-                <span class="list-item-badge ${s.status === 'sent' ? 'success' : 'warning'}">${s.status || 'pending'}</span>
-            </div>
-            <div class="flex gap-2 mt-4">
-                <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')">📋 Duplicate</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">🗑️ Delete</button>
-            </div>
-        </div>
-    `).join('');
+        `).join('');
+    }
+}
+
+function toggleArchive() {
+    const archiveList = document.getElementById('archiveList');
+    const toggleText = document.getElementById('archiveToggleText');
+    const countEl = document.getElementById('archiveCount');
+    
+    if (archiveList.classList.contains('hidden')) {
+        archiveList.classList.remove('hidden');
+        toggleText.textContent = 'Hide';
+        if (countEl) countEl.classList.add('hidden');
+    } else {
+        archiveList.classList.add('hidden');
+        toggleText.textContent = 'Show';
+        if (countEl) countEl.classList.remove('hidden');
+    }
+}
+
+function filterSchedules() {
+    renderSchedules();
 }
 
 function showAddSchedule() {
+    document.getElementById('scheduleName').value = '';
     document.getElementById('scheduleMessage').value = '';
     document.getElementById('scheduleTime').value = '';
     document.getElementById('scheduleRepeat').value = '';
@@ -1016,6 +1103,7 @@ function updateScheduleSelectedCount() {
 }
 
 async function saveSchedule() {
+    const name = document.getElementById('scheduleName').value.trim();
     const message = document.getElementById('scheduleMessage').value.trim();
     const scheduledTime = document.getElementById('scheduleTime').value;
     const repeat = document.getElementById('scheduleRepeat').value;
@@ -1036,7 +1124,7 @@ async function saveSchedule() {
         await apiFetch(getUserApi() + '/schedules', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, scheduledTime, groups: selectedGroups, repeat: repeat || null, image: imageData })
+            body: JSON.stringify({ name: name || null, message, scheduledTime, groups: selectedGroups, repeat: repeat || null, image: imageData })
         });
         
         closeModal('addScheduleModal');
