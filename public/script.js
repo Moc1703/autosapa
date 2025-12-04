@@ -996,7 +996,7 @@ function showAddSchedule() {
         listEl.innerHTML = groups.map(g => `
             <label class="checkbox-row" style="padding: 6px 8px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" class="schedule-group-checkbox" value="${escapeAttr(g.groupId)}" onchange="updateScheduleSelectedCount()">
-                <span style="font-size: 13px;">${escapeHtml(g.name)}</span>
+                <span style="font-size: 13px; color: var(--text);">${escapeHtml(g.name)}</span>
             </label>
         `).join('');
     }
