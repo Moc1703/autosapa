@@ -1620,7 +1620,7 @@ app.get('/api/:userId/schedules', requireUserAuth, (req, res) => {
 
 app.post('/api/:userId/schedules', requireUserAuth, (req, res) => {
     const { userId } = req.params;
-    const { message, groupIds, groups, scheduledTime, recurring, repeat } = req.body;
+    const { message, groupIds, groups, scheduledTime, recurring, repeat, image } = req.body;
     
     // Support both 'groupIds' and 'groups' from frontend
     const targetGroups = groupIds || groups;
@@ -1632,8 +1632,9 @@ app.post('/api/:userId/schedules', requireUserAuth, (req, res) => {
     const schedules = readSchedules(userId);
     schedules.push({
         id: Date.now().toString(),
-        type: 'text',
+        type: image ? 'image' : 'text',
         message,
+        image: image || null,
         groupIds: targetGroups,
         scheduledTime,
         recurring: recurring || repeat || 'none',
@@ -2072,8 +2073,20 @@ async function checkSchedules() {
                             await delay(settings.typing.durationMs || 1500);
                         }
                         
-                        const message = processMessageVariables(schedule.message);
-                        await client.sendMessage(groupId, message);
+                        const message = processMessageVariables(schedule.message || '');
+                        
+                        // Send with image if available
+                        if (schedule.image && schedule.image.startsWith('data:')) {
+                            const matches = schedule.image.match(/^data:(.+);base64,(.+)$/);
+                            if (matches) {
+                                const media = new MessageMedia(matches[1], matches[2]);
+                                await client.sendMessage(groupId, media, { caption: message });
+                            } else {
+                                await client.sendMessage(groupId, message);
+                            }
+                        } else {
+                            await client.sendMessage(groupId, message);
+                        }
                         successCount++;
                         
                         if (settings.queue?.enabled) {
