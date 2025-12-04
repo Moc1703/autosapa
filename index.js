@@ -344,6 +344,7 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
             }),
             puppeteer: {
                 headless: true,
+                executablePath: process.env.CHROMIUM_PATH || '/snap/bin/chromium',
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
