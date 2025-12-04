@@ -377,10 +377,15 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
         
         // QR Code Event
         client.on('qr', (qr) => {
-            console.log(`📱 QR Code generated for user: ${userId} (no saved session found)`);
+            console.log(`📱 [${userId}] QR Code generated`);
             qrCodes.set(userId, qr);
-            qrTimestamps.set(userId, Date.now()); // Track QR generation time
+            qrTimestamps.set(userId, Date.now());
             sessionStatuses.set(userId, 'qr');
+        });
+        
+        // Debug: Track browser launch
+        client.on('loading_screen', (percent, message) => {
+            console.log(`⏳ [${userId}] Loading: ${percent}% - ${message}`);
         });
         
         // Ready Event
@@ -407,11 +412,6 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
             console.log(`💾 Remote session saved for user: ${userId}`);
         });
         
-        // Loading screen (restoring session)
-        client.on('loading_screen', (percent, message) => {
-            console.log(`⏳ [${userId}] Loading: ${percent}% - ${message}`);
-        });
-        
         // Disconnected Event
         client.on('disconnected', (reason) => {
             console.log(`❌ Client disconnected for user: ${userId}. Reason: ${reason}`);
@@ -434,8 +434,19 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
         // Store client in sessions map
         sessions.set(userId, client);
         
-        // Initialize client
-        await client.initialize();
+        // Initialize client with timeout (90 seconds max)
+        const initTimeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Session initialization timeout (90s)')), 90000)
+        );
+        
+        try {
+            await Promise.race([client.initialize(), initTimeout]);
+        } catch (initError) {
+            console.error(`❌ Initialize failed for user: ${userId}`, initError.message);
+            await destroySession(userId);
+            sessionStatuses.set(userId, 'error');
+            return { success: false, message: initError.message, status: 'error' };
+        }
         
         return { success: true, message: 'Session initialization started', status: 'initializing' };
         
