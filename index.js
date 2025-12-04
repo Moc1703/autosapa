@@ -1279,6 +1279,11 @@ function requireSession(req, res, next) {
     next();
 }
 
+// ===== CATEGORIES (placeholder) =====
+app.get('/api/:userId/categories', requireUserAuth, (req, res) => {
+    res.json([]);
+});
+
 // ===== GROUPS =====
 app.get('/api/:userId/groups', requireUserAuth, (req, res) => {
     const groups = readGroups(req.params.userId);
