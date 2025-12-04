@@ -591,10 +591,16 @@ async function destroySession(userId, clearAuthData = false) {
     
     if (client) {
         try {
-            await client.destroy();
-            console.log(`🗑️ Client destroyed for user: ${userId}`);
+            // Check if browser exists before destroying
+            if (client.pupBrowser) {
+                await client.destroy();
+                console.log(`🗑️ Client destroyed for user: ${userId}`);
+            } else {
+                console.log(`🗑️ Client cleanup for user: ${userId} (no browser)`);
+            }
         } catch (error) {
-            console.error(`❌ Failed to destroy client for user: ${userId}`, error);
+            // Ignore destroy errors, just log
+            console.log(`⚠️ Cleanup warning for user: ${userId}`, error.message);
         }
     }
     sessions.delete(userId);
