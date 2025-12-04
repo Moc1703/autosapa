@@ -434,20 +434,14 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
         // Store client in sessions map
         sessions.set(userId, client);
         
-        // Initialize client with timeout (90 seconds max)
-        const initTimeout = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Session initialization timeout (90s)')), 90000)
-        );
-        
-        try {
-            await Promise.race([client.initialize(), initTimeout]);
-        } catch (initError) {
-            console.error(`❌ Initialize failed for user: ${userId}`, initError.message);
-            await destroySession(userId);
+        // Initialize client in background (non-blocking)
+        client.initialize().catch(err => {
+            console.error(`❌ Initialize failed for user: ${userId}`, err.message);
+            destroySession(userId);
             sessionStatuses.set(userId, 'error');
-            return { success: false, message: initError.message, status: 'error' };
-        }
+        });
         
+        // Return immediately - frontend will poll for QR/status
         return { success: true, message: 'Session initialization started', status: 'initializing' };
         
     } catch (error) {
