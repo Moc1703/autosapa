@@ -334,7 +334,6 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
     }
     
     console.log(`🔄 Initializing session for user: ${userId}`);
-    console.time(`[${userId}] Session init`);
     sessionStatuses.set(userId, 'initializing');
     
     try {
