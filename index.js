@@ -41,7 +41,10 @@ app.use((req, res, next) => {
 app.set('trust proxy', 1);
 
 // ===== JWT SECRET =====
-const JWT_SECRET = process.env.JWT_SECRET || 'wabot-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+if (!process.env.JWT_SECRET) {
+    console.warn('⚠️  WARNING: JWT_SECRET not set in .env! Using random secret (tokens will invalidate on restart)');
+}
 
 // ===== SQLITE DATABASE SETUP =====
 const DB_PATH = path.join(__dirname, 'data', 'database.sqlite');
@@ -864,9 +867,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         
         res.json({ 
             success: true, 
-            message: 'If the email exists, a reset link has been sent',
-            // REMOVE THIS IN PRODUCTION - only for testing
-            resetLink: resetLink
+            message: 'If the email exists, a reset link has been sent'
         });
         
     } catch (error) {
@@ -1042,6 +1043,9 @@ async function requireAuth(req, res, next) {
 // =============================================
 
 const ADMIN_KEY = process.env.ADMIN_KEY || 'admin-secret-key';
+if (!process.env.ADMIN_KEY || process.env.ADMIN_KEY === 'admin-secret-key') {
+    console.warn('⚠️  WARNING: ADMIN_KEY not set or using default! Set a strong key in .env');
+}
 
 // Admin: List all users
 app.get('/api/admin/users', (req, res) => {
@@ -1972,7 +1976,21 @@ app.post('/api/:userId/media', requireUserAuth, upload.single('file'), (req, res
 
 app.delete('/api/:userId/media/:filename', requireUserAuth, (req, res) => {
     const { userId, filename } = req.params;
-    const filePath = path.join(UPLOADS_DIR, userId, filename);
+    
+    // Security: Sanitize filename to prevent path traversal
+    const sanitizedFilename = path.basename(filename);
+    if (sanitizedFilename !== filename || filename.includes('..')) {
+        return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    const filePath = path.join(UPLOADS_DIR, userId, sanitizedFilename);
+    
+    // Security: Verify the resolved path is still within UPLOADS_DIR
+    const resolvedPath = path.resolve(filePath);
+    const uploadsBase = path.resolve(UPLOADS_DIR);
+    if (!resolvedPath.startsWith(uploadsBase)) {
+        return res.status(400).json({ error: 'Invalid path' });
+    }
     
     if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
