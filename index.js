@@ -168,7 +168,9 @@ const PORT = process.env.PORT || 3000;
 // ===== GLOBAL SESSION MANAGER =====
 const sessions = new Map();
 const qrCodes = new Map();
+const qrTimestamps = new Map(); // Track when QR was generated
 const sessionStatuses = new Map();
+const QR_EXPIRY_MS = 45000; // QR expires after 45 seconds
 
 // ===== DATA DIRECTORIES =====
 const DATA_DIR = path.join(__dirname, 'data');
@@ -284,18 +286,47 @@ function isLikelyBot(messageBody) {
 }
 
 // ===== SESSION INITIALIZATION =====
-async function initSession(userId) {
+async function initSession(userId, forceRestart = false, clearAuth = false) {
+    // If clearAuth requested, always clear auth data first (for switching WA accounts)
+    if (clearAuth) {
+        console.log(`🔄 Clear auth requested for user: ${userId}`);
+        await destroySession(userId, true);
+    }
     // Check if session already exists
-    if (sessions.has(userId)) {
-        const existingSession = sessions.get(userId);
+    else if (sessions.has(userId)) {
         const status = sessionStatuses.get(userId);
         
-        if (status === 'connected') {
-            return { success: true, message: 'Session already connected', status: 'connected' };
-        }
-        
-        if (status === 'qr') {
-            return { success: true, message: 'Waiting for QR scan', status: 'qr', qr: qrCodes.get(userId) };
+        // Force restart requested - destroy existing session first
+        if (forceRestart) {
+            console.log(`🔄 Force restart requested for user: ${userId}`);
+            await destroySession(userId, false);
+        } else {
+            if (status === 'connected') {
+                return { success: true, message: 'Session already connected', status: 'connected' };
+            }
+            
+            if (status === 'qr') {
+                const qr = qrCodes.get(userId);
+                const qrTime = qrTimestamps.get(userId) || 0;
+                const isExpired = Date.now() - qrTime > QR_EXPIRY_MS;
+                
+                // If QR is expired, we should wait for new one or restart
+                if (isExpired && qr) {
+                    console.log(`⚠️ QR expired for user: ${userId}, waiting for new QR...`);
+                    return { success: true, message: 'QR expired, waiting for new QR code...', status: 'qr_expired' };
+                }
+                
+                return { success: true, message: 'Waiting for QR scan', status: 'qr', qr };
+            }
+            
+            // If status is error, auth_failure or disconnected, allow reinit
+            if (['error', 'auth_failure', 'disconnected'].includes(status)) {
+                console.log(`🔄 Reinitializing failed session for user: ${userId} (was: ${status})`);
+                await destroySession(userId);
+            } else if (status === 'initializing' || status === 'authenticated') {
+                // Still initializing, wait
+                return { success: true, message: `Session is ${status}...`, status };
+            }
         }
     }
     
@@ -339,6 +370,7 @@ async function initSession(userId) {
         client.on('qr', (qr) => {
             console.log(`📱 QR Code generated for user: ${userId} (no saved session found)`);
             qrCodes.set(userId, qr);
+            qrTimestamps.set(userId, Date.now()); // Track QR generation time
             sessionStatuses.set(userId, 'qr');
         });
         
@@ -534,24 +566,39 @@ async function handleIncomingMessage(userId, client, msg) {
 }
 
 // ===== DESTROY SESSION =====
-async function destroySession(userId) {
-    if (!sessions.has(userId)) {
-        return { success: false, message: 'Session not found' };
+async function destroySession(userId, clearAuthData = false) {
+    const client = sessions.get(userId);
+    
+    // Always clean up maps
+    sessionStatuses.delete(userId);
+    qrCodes.delete(userId);
+    qrTimestamps.delete(userId);
+    
+    if (client) {
+        try {
+            await client.destroy();
+            console.log(`🗑️ Client destroyed for user: ${userId}`);
+        } catch (error) {
+            console.error(`❌ Failed to destroy client for user: ${userId}`, error);
+        }
+    }
+    sessions.delete(userId);
+    
+    // Clear auth data if requested (for switching WhatsApp accounts)
+    if (clearAuthData) {
+        const authPath = path.join(__dirname, '.wwebjs_auth', `session-${userId}`);
+        try {
+            if (fs.existsSync(authPath)) {
+                fs.rmSync(authPath, { recursive: true, force: true });
+                console.log(`🗑️ Auth data cleared for user: ${userId}`);
+            }
+        } catch (error) {
+            console.error(`❌ Failed to clear auth data for user: ${userId}`, error);
+        }
     }
     
-    try {
-        const client = sessions.get(userId);
-        await client.destroy();
-        sessions.delete(userId);
-        sessionStatuses.delete(userId);
-        qrCodes.delete(userId);
-        
-        console.log(`🗑️ Session destroyed for user: ${userId}`);
-        return { success: true, message: 'Session destroyed' };
-    } catch (error) {
-        console.error(`❌ Failed to destroy session for user: ${userId}`, error);
-        return { success: false, message: error.message };
-    }
+    console.log(`🗑️ Session cleanup complete for user: ${userId}`);
+    return { success: true, message: clearAuthData ? 'Session and auth data cleared' : 'Session cleaned up' };
 }
 
 // ===== MULTER UPLOAD CONFIG =====
@@ -1056,7 +1103,7 @@ app.post('/api/admin/activate', async (req, res) => {
 
 // Start a new session (requires auth, user can only start their own session)
 app.post('/api/session/start', requireUserAuth, async (req, res) => {
-    const { userId } = req.body;
+    const { userId, forceRestart, clearAuth } = req.body;
     
     if (!userId) {
         return res.status(400).json({ error: 'userId is required' });
@@ -1067,7 +1114,8 @@ app.post('/api/session/start', requireUserAuth, async (req, res) => {
         return res.status(403).json({ error: 'You can only start your own session' });
     }
     
-    const result = await initSession(userId);
+    // clearAuth = true means user wants to link a different WhatsApp account
+    const result = await initSession(userId, forceRestart === true, clearAuth === true);
     res.json(result);
 });
 

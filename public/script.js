@@ -239,6 +239,38 @@ async function logout() {
     checkAuth();
 }
 
+async function switchWhatsApp() {
+    if (!confirm('Yakin ingin ganti akun WhatsApp?\n\nSession lama akan dihapus dan Anda perlu scan QR code baru.')) {
+        return;
+    }
+    
+    try {
+        toast('Menghapus session WhatsApp...', 'info');
+        
+        const res = await fetch('/api/session/start', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ userId, clearAuth: true })
+        });
+        
+        const data = await res.json();
+        console.log('Switch WA result:', data);
+        
+        toast('Session dihapus. Redirecting ke scan QR...', 'success');
+        
+        setTimeout(() => {
+            window.location.href = '/scan';
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Switch WhatsApp failed:', error);
+        toast('Gagal menghapus session', 'error');
+    }
+}
+
 // ===== STATUS =====
 async function checkStatus() {
     try {

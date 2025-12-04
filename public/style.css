@@ -257,6 +257,12 @@ body {
 
 .btn-danger:hover { background: var(--danger-light); }
 
+.btn-warning {
+    background: var(--warning);
+    color: white;
+}
+.btn-warning:hover { background: #d97706; }
+
 .btn-block { width: 100%; }
 .btn-lg { padding: 14px 24px; font-size: 1rem; }
 .btn-sm { padding: 8px 14px; font-size: 0.8rem; }

@@ -134,6 +134,26 @@
             color: #9ca3af;
             margin-top: 16px;
         }
+        
+        .restart-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 16px;
+            display: none;
+        }
+        
+        .restart-btn:hover {
+            background: #dc2626;
+        }
+        
+        .restart-btn.visible {
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -162,6 +182,7 @@
         </div>
         
         <p class="user-id">Session ID: <span id="user-id-display">-</span></p>
+        <button class="restart-btn" id="restart-btn" onclick="refreshQR()">🔄 Refresh QR</button>
     </div>
 
     <script>
@@ -188,10 +209,65 @@
         
         let qrCode = null;
         let currentQR = null;
+        let pollFailCount = 0;
+        let qrReceivedTime = 0;
+        const restartBtn = document.getElementById('restart-btn');
         
         function updateStatus(type, text) {
             statusEl.className = 'status ' + type;
             statusText.textContent = text;
+        }
+        
+        function showRefreshBtn() {
+            restartBtn.classList.add('visible');
+        }
+        
+        function hideRefreshBtn() {
+            restartBtn.classList.remove('visible');
+        }
+        
+        async function refreshQR() {
+            restartBtn.disabled = true;
+            restartBtn.textContent = 'Refreshing...';
+            hideRefreshBtn();
+            
+            try {
+                updateStatus('loading', 'Refreshing QR...');
+                qrContainer.innerHTML = `
+                    <div class="spinner"></div>
+                    <p style="color:#6b7280; margin-top:16px; font-size:14px;">
+                        Refreshing QR code...<br>
+                        <small>Mohon tunggu...</small>
+                    </p>
+                `;
+                
+                const response = await fetch('/api/session/start', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ userId, forceRestart: true })
+                });
+                
+                const data = await response.json();
+                console.log('Refresh result:', data);
+                
+                currentQR = null;
+                pollFailCount = 0;
+                qrReceivedTime = 0;
+                
+                // Start polling for new QR
+                pollForQR();
+                
+            } catch (error) {
+                console.error('Refresh failed:', error);
+                updateStatus('error', 'Gagal, coba lagi');
+                showRefreshBtn();
+            } finally {
+                restartBtn.disabled = false;
+                restartBtn.textContent = '🔄 Refresh QR';
+            }
         }
         
         async function startSession() {
@@ -238,6 +314,7 @@
                 console.error('Failed to start session:', error);
                 updateStatus('error', 'Failed to start session');
                 qrContainer.innerHTML = '<p style="color:#991b1b">❌ Connection error</p>';
+                showRefreshBtn();
             }
         }
         
@@ -249,18 +326,33 @@
                 const data = await response.json();
                 
                 console.log('QR poll response:', data);
+                pollFailCount = 0; // Reset on success
                 
                 if (data.status === 'connected') {
                     onConnected();
                     return;
                 }
                 
+                // Handle QR expired status
+                if (data.status === 'qr_expired') {
+                    updateStatus('loading', 'QR expired, waiting for new one...');
+                    currentQR = null;
+                }
+                
                 if (data.qr && data.qr !== currentQR) {
                     currentQR = data.qr;
+                    qrReceivedTime = Date.now();
                     renderQR(data.qr);
                     updateStatus('qr', 'Scan QR code now!');
-                } else if (!data.qr) {
+                    hideRefreshBtn();
+                } else if (!data.qr && data.status !== 'qr_expired') {
                     updateStatus('loading', 'Generating QR code...');
+                }
+                
+                // Check if QR has been shown for too long without scanning (60 sec)
+                if (currentQR && Date.now() - qrReceivedTime > 60000) {
+                    updateStatus('loading', 'QR mungkin expired, menunggu refresh...');
+                    showRefreshBtn();
                 }
                 
                 // Continue polling
@@ -268,6 +360,14 @@
                 
             } catch (error) {
                 console.error('Poll error:', error);
+                pollFailCount++;
+                
+                // Show refresh button after multiple failures
+                if (pollFailCount > 5) {
+                    updateStatus('error', 'Koneksi bermasalah');
+                    showRefreshBtn();
+                }
+                
                 setTimeout(pollForQR, 3000);
             }
         }
