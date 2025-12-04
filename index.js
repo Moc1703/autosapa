@@ -351,6 +351,7 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
                     '--disable-accelerated-2d-canvas',
                     '--no-first-run',
                     '--no-zygote',
+                    '--single-process',
                     '--disable-gpu',
                     '--disable-extensions',
                     '--disable-plugins',
@@ -363,7 +364,13 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
                     '--autoplay-policy=no-user-gesture-required',
                     '--disable-background-timer-throttling',
                     '--disable-backgrounding-occluded-windows',
-                    '--disable-renderer-backgrounding'
+                    '--disable-renderer-backgrounding',
+                    '--disable-software-rasterizer',
+                    '--disable-features=TranslateUI',
+                    '--disable-ipc-flooding-protection',
+                    '--disable-hang-monitor',
+                    '--memory-pressure-off',
+                    '--max-old-space-size=256'
                 ]
             }
         });
