@@ -1609,9 +1609,12 @@ app.get('/api/:userId/schedules', requireUserAuth, (req, res) => {
 
 app.post('/api/:userId/schedules', requireUserAuth, (req, res) => {
     const { userId } = req.params;
-    const { message, groupIds, scheduledTime, recurring } = req.body;
+    const { message, groupIds, groups, scheduledTime, recurring, repeat } = req.body;
     
-    if (!scheduledTime || !groupIds || groupIds.length === 0) {
+    // Support both 'groupIds' and 'groups' from frontend
+    const targetGroups = groupIds || groups;
+    
+    if (!scheduledTime || !targetGroups || targetGroups.length === 0) {
         return res.status(400).json({ error: 'Scheduled time and groups are required' });
     }
     
@@ -1620,9 +1623,9 @@ app.post('/api/:userId/schedules', requireUserAuth, (req, res) => {
         id: Date.now().toString(),
         type: 'text',
         message,
-        groupIds,
+        groupIds: targetGroups,
         scheduledTime,
-        recurring: recurring || 'none',
+        recurring: recurring || repeat || 'none',
         status: 'pending',
         createdAt: new Date().toISOString()
     });
