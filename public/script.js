@@ -1,5 +1,173 @@
 // ===== WHATSAPP BOT - COMPLETE JAVASCRIPT =====
 
+// ===== GLOBAL STATE =====
+let isOnline = navigator.onLine;
+let currentPage = { history: 1, logs: 1 };
+const ITEMS_PER_PAGE = 20;
+
+// ===== UTILITY FUNCTIONS =====
+
+// Show loading spinner in element
+function showLoading(elementId, message = 'Loading...') {
+    const el = document.getElementById(elementId);
+    if (el) {
+        el.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>${message}</p></div>`;
+    }
+}
+
+// Show skeleton loading
+function showSkeleton(elementId, count = 3) {
+    const el = document.getElementById(elementId);
+    if (el) {
+        el.innerHTML = Array(count).fill('<div class="skeleton-item"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>').join('');
+    }
+}
+
+// Validate form fields
+function validateForm(fields) {
+    for (const [value, name, rules = {}] of fields) {
+        if (rules.required && !value?.trim()) {
+            toast(`${name} is required`, 'error');
+            return false;
+        }
+        if (rules.minLength && value.length < rules.minLength) {
+            toast(`${name} must be at least ${rules.minLength} characters`, 'error');
+            return false;
+        }
+        if (rules.pattern && !rules.pattern.test(value)) {
+            toast(`${name} format is invalid`, 'error');
+            return false;
+        }
+    }
+    return true;
+}
+
+// Custom confirm dialog (replaces native confirm)
+function showConfirm(message, onConfirm, onCancel = null) {
+    const modal = document.getElementById('confirmModal');
+    const msgEl = document.getElementById('confirmMessage');
+    const btnConfirm = document.getElementById('confirmYes');
+    const btnCancel = document.getElementById('confirmNo');
+    
+    if (!modal) {
+        // Fallback to native confirm if modal doesn't exist
+        if (confirm(message)) onConfirm();
+        else if (onCancel) onCancel();
+        return;
+    }
+    
+    msgEl.textContent = message;
+    modal.classList.remove('hidden');
+    
+    const cleanup = () => {
+        modal.classList.add('hidden');
+        btnConfirm.onclick = null;
+        btnCancel.onclick = null;
+    };
+    
+    btnConfirm.onclick = () => { cleanup(); onConfirm(); };
+    btnCancel.onclick = () => { cleanup(); if (onCancel) onCancel(); };
+}
+
+// Offline/Online detection
+function initOfflineDetection() {
+    const updateStatus = () => {
+        isOnline = navigator.onLine;
+        const indicator = document.getElementById('offlineIndicator');
+        if (indicator) {
+            indicator.classList.toggle('hidden', isOnline);
+        }
+        if (!isOnline) {
+            toast('You are offline. Some features may not work.', 'warning');
+        }
+    };
+    
+    window.addEventListener('online', () => {
+        isOnline = true;
+        updateStatus();
+        toast('Back online!', 'success');
+    });
+    
+    window.addEventListener('offline', updateStatus);
+    updateStatus();
+}
+
+// Keyboard shortcuts
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Escape to close modals
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
+        }
+        
+        // Ctrl+Enter to send broadcast
+        if (e.ctrlKey && e.key === 'Enter') {
+            const activeTab = document.querySelector('.tab-panel.active');
+            if (activeTab?.id === 'tab-broadcast') {
+                e.preventDefault();
+                sendBroadcast();
+            }
+        }
+        
+        // Ctrl+S to save draft
+        if (e.ctrlKey && e.key === 's') {
+            const activeTab = document.querySelector('.tab-panel.active');
+            if (activeTab?.id === 'tab-broadcast') {
+                e.preventDefault();
+                saveDraft();
+                toast('Draft saved!', 'success');
+            }
+        }
+    });
+}
+
+// Drag and drop for images
+function initDragDrop() {
+    const uploadAreas = document.querySelectorAll('.upload-area');
+    
+    uploadAreas.forEach(area => {
+        area.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            area.classList.add('drag-over');
+        });
+        
+        area.addEventListener('dragleave', () => {
+            area.classList.remove('drag-over');
+        });
+        
+        area.addEventListener('drop', (e) => {
+            e.preventDefault();
+            area.classList.remove('drag-over');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const input = area.querySelector('input[type="file"]');
+                if (input) {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    input.files = dt.files;
+                    input.dispatchEvent(new Event('change'));
+                }
+            } else {
+                toast('Please drop an image file', 'error');
+            }
+        });
+    });
+}
+
+// Debounce function for search
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // Check if user is logged in
 const authToken = localStorage.getItem('token');
 const userStr = localStorage.getItem('user');
@@ -78,10 +246,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     checkStatus();
     loadData();
+    loadDashboardStats(); // Initial load
     loadSettings();
     loadQuickActions();
     loadMedia();
     setInterval(checkStatus, 5000);
+    
+    // Initialize new features
+    initOfflineDetection();
+    initKeyboardShortcuts();
+    setTimeout(initDragDrop, 500); // Wait for DOM
     
     // Background sync groups (after 5 seconds to let WhatsApp load chats)
     setTimeout(backgroundSyncGroups, 5000);
@@ -113,6 +287,7 @@ async function checkAuthToken() {
         const res = await fetch('/api/auth/me', {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
+        
         const data = await res.json();
         
         if (!data.success) return false;
@@ -342,7 +517,8 @@ function switchTab(tab) {
     document.getElementById('tab-' + tab).classList.add('active');
     
     // Load data for tab
-    if (tab === 'home') { loadQuickActions(); loadMedia(); }
+    if (tab === 'dashboard') { loadDashboardStats(); }
+    if (tab === 'broadcast') { loadQuickActions(); loadMedia(); }
     if (tab === 'groups') { loadGroups(); loadContacts(); loadCategories(); }
     if (tab === 'auto') { loadAutoReplies(); loadCommands(); loadAutoReplyStats(); }
     if (tab === 'schedule') { loadSchedules(); loadTemplates(); }
@@ -385,13 +561,16 @@ function renderGroupsList() {
     }
     
     list.innerHTML = groups.map(g => `
-        <div class="list-item">
-            <div class="list-item-icon">👥</div>
-            <div class="list-item-content">
-                <div class="list-item-title">${escapeHtml(g.name)}</div>
-                <div class="list-item-subtitle">${escapeHtml(g.id)}</div>
+        <div class="group-card-item">
+            <div class="group-icon-large">👥</div>
+            <div class="group-info">
+                <div class="group-name">${escapeHtml(g.name)}</div>
+                <div class="group-meta">
+                    <span>ID: ${escapeHtml(g.id)}</span>
+                    ${g.participants ? `<span>• ${g.participants} members</span>` : ''}
+                </div>
             </div>
-            <button class="btn btn-danger btn-icon" onclick="deleteGroup('${escapeAttr(g.id)}')">🗑️</button>
+            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteGroup('${escapeAttr(g.id)}')">🗑️</button>
         </div>
     `).join('');
 }
@@ -404,9 +583,12 @@ function renderGroupSelect() {
     }
     
     list.innerHTML = groups.map(g => `
-        <div class="group-select-item" onclick="toggleGroupSelect(this, '${escapeAttr(g.groupId)}')">
-            <input type="checkbox" value="${escapeAttr(g.groupId)}" onclick="event.stopPropagation(); updateSelectedCount()">
-            <span>${escapeHtml(g.name)}</span>
+        <div class="group-select-item" onclick="toggleGroupSelect(this, '${escapeAttr(g.groupId || g.id)}')">
+            <input type="checkbox" value="${escapeAttr(g.groupId || g.id)}" onclick="event.stopPropagation(); updateSelectedCount()">
+            <div style="flex:1">
+                <div style="font-weight:500">${escapeHtml(g.name)}</div>
+                <div style="font-size:12px; color:var(--text-muted)">${escapeHtml(g.id)}</div>
+            </div>
         </div>
     `).join('');
 }
@@ -611,15 +793,15 @@ async function saveGroup() {
 }
 
 async function deleteGroup(id) {
-    if (!confirm('Delete this group?')) return;
-    
-    try {
-        await apiFetch(getUserApi() + '/groups/' + encodeURIComponent(id), { method: 'DELETE' });
-        toast('Group deleted', 'success');
-        loadGroups();
-    } catch (e) {
-        toast('Failed to delete', 'error');
-    }
+    showConfirm('Delete this group?', async () => {
+        try {
+            await apiFetch(getUserApi() + '/groups/' + encodeURIComponent(id), { method: 'DELETE' });
+            toast('Group deleted', 'success');
+            loadGroups();
+        } catch (e) {
+            toast('Failed to delete group', 'error');
+        }
+    });
 }
 
 async function discoverGroups() {
@@ -636,13 +818,13 @@ async function discoverGroups() {
         }
         
         document.getElementById('discoveredList').innerHTML = data.map(g => `
-            <div class="list-item" onclick="addDiscoveredGroup('${escapeAttr(g.id)}', '${escapeAttr(g.name)}')">
-                <div class="list-item-icon">👥</div>
-                <div class="list-item-content">
-                    <div class="list-item-title">${escapeHtml(g.name)}</div>
-                    <div class="list-item-subtitle">${g.participants || 0} members</div>
+            <div class="card-list-item" onclick="addDiscoveredGroup('${escapeAttr(g.id)}', '${escapeAttr(g.name)}')">
+                <div class="card-icon-large" style="background:var(--bg-subtle); color:var(--primary)">👥</div>
+                <div class="card-info">
+                    <div class="card-title">${escapeHtml(g.name)}</div>
+                    <div class="card-subtitle">${g.participants || 0} members</div>
                 </div>
-                <span class="text-success">+ Add</span>
+                <span class="text-success" style="font-weight:600; font-size:13px">+ Add</span>
             </div>
         `).join('');
     } catch (e) {
@@ -683,15 +865,24 @@ function renderContacts() {
     }
     
     list.innerHTML = contacts.map(c => `
-        <div class="list-item">
-            <div class="list-item-icon">👤</div>
-            <div class="list-item-content">
-                <div class="list-item-title">${escapeHtml(c.name)}</div>
-                <div class="list-item-subtitle">${escapeHtml(c.number)}</div>
+        <div class="group-card-item" data-name="${escapeAttr(c.name)}" data-number="${escapeAttr(c.number)}">
+            <div class="group-icon-large" style="background: var(--success-light); color: var(--success);">👤</div>
+            <div class="group-info">
+                <div class="group-name">${escapeHtml(c.name)}</div>
+                <div class="group-meta">${escapeHtml(c.number)}</div>
             </div>
-            <button class="btn btn-danger btn-icon" onclick="deleteContact('${c.id}')">🗑️</button>
+            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteContact('${c.id}')">🗑️</button>
         </div>
     `).join('');
+}
+
+function filterContacts() {
+    const q = document.getElementById('searchContacts').value.toLowerCase();
+    document.querySelectorAll('#contactsList .group-card-item').forEach(item => {
+        const name = (item.dataset.name || '').toLowerCase();
+        const number = (item.dataset.number || '').toLowerCase();
+        item.style.display = (name.includes(q) || number.includes(q)) ? '' : 'none';
+    });
 }
 
 function showAddContact() {
@@ -722,15 +913,15 @@ async function saveContact() {
 }
 
 async function deleteContact(id) {
-    if (!confirm('Delete this contact?')) return;
-    
-    try {
-        await apiFetch(getUserApi() + '/contacts/' + id, { method: 'DELETE' });
-        toast('Deleted', 'success');
-        loadContacts();
-    } catch (e) {
-        toast('Failed to delete', 'error');
-    }
+    showConfirm('Delete this contact?', async () => {
+        try {
+            await apiFetch(getUserApi() + '/contacts/' + id, { method: 'DELETE' });
+            toast('Contact deleted', 'success');
+            loadContacts();
+        } catch (e) {
+            toast('Failed to delete contact', 'error');
+        }
+    });
 }
 
 // ===== AUTO REPLY =====
@@ -757,17 +948,20 @@ function renderAutoReplies() {
     }
     
     list.innerHTML = autoReplies.map((r, i) => `
-        <div class="list-item">
-            <div class="list-item-content" style="flex:1">
-                <div class="list-item-title">
+        <div class="card-list-item">
+            <div class="card-info">
+                <div class="card-title">
                     ${escapeHtml(r.keyword)}
-                    <span class="list-item-badge ${r.enabled ? 'success' : 'disabled'}">${r.matchType || 'contains'}</span>
-                    ${r.image ? '<span class="list-item-badge info">📷</span>' : ''}
+                    <span class="card-badge ${r.enabled ? 'success' : 'danger'}">${r.enabled ? 'ON' : 'OFF'}</span>
                 </div>
-                <div class="list-item-subtitle">${escapeHtml((r.response || '').substring(0, 50))}${r.response?.length > 50 ? '...' : ''}</div>
+                <div class="card-subtitle">
+                    <span class="card-badge info" style="font-size:10px">${r.matchType || 'contains'}</span>
+                    ${r.image ? '<span class="card-badge warning" style="font-size:10px">📷 Image</span>' : ''}
+                    <span style="margin-left:8px; opacity:0.8">${escapeHtml((r.response || '').substring(0, 50))}${r.response?.length > 50 ? '...' : ''}</span>
+                </div>
             </div>
             <div class="toggle toggle-sm list-item-toggle ${r.enabled ? 'active' : ''}" onclick="toggleAutoReply('${r.id}')"></div>
-            <button class="btn btn-danger btn-icon" onclick="deleteAutoReply('${r.id}')">🗑️</button>
+            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteAutoReply('${r.id}')">🗑️</button>
         </div>
     `).join('');
 }
@@ -828,15 +1022,15 @@ async function toggleAutoReply(id) {
 }
 
 async function deleteAutoReply(id) {
-    if (!confirm('Delete this auto reply?')) return;
-    
-    try {
-        await apiFetch(getUserApi() + '/autoreplies/' + id, { method: 'DELETE' });
-        toast('Deleted', 'success');
-        loadAutoReplies();
-    } catch (e) {
-        toast('Failed to delete', 'error');
-    }
+    showConfirm('Delete this auto reply?', async () => {
+        try {
+            await apiFetch(getUserApi() + '/autoreplies/' + id, { method: 'DELETE' });
+            toast('Auto reply deleted', 'success');
+            loadAutoReplies();
+        } catch (e) {
+            toast('Failed to delete auto reply', 'error');
+        }
+    });
 }
 
 // ===== COMMANDS =====
@@ -858,16 +1052,27 @@ function renderCommands() {
     }
     
     list.innerHTML = commands.map(c => `
-        <div class="list-item">
-            <div class="list-item-icon">⚡</div>
-            <div class="list-item-content">
-                <div class="list-item-title">${escapeHtml(c.command)}</div>
-                <div class="list-item-subtitle">${escapeHtml((c.response || '').substring(0, 40))}...</div>
+        <div class="card-list-item" data-command="${escapeAttr(c.command)}" data-response="${escapeAttr(c.response || '')}">
+            <div class="card-icon-large" style="background:var(--bg-secondary); color:var(--primary)">⚡</div>
+            <div class="card-info">
+                <div class="card-title">${escapeHtml(c.command)}</div>
+                <div class="card-subtitle">${escapeHtml((c.response || '').substring(0, 60))}...</div>
             </div>
-            <button class="btn btn-secondary btn-icon" onclick="editCommand('${c.id}')">✏️</button>
-            <button class="btn btn-danger btn-icon" onclick="deleteCommand('${c.id}')">🗑️</button>
+            <div class="flex gap-2">
+                <button class="btn btn-sm btn-secondary btn-icon" onclick="editCommand('${c.id}')">✏️</button>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteCommand('${c.id}')">🗑️</button>
+            </div>
         </div>
     `).join('');
+}
+
+function filterCommands() {
+    const q = document.getElementById('searchCommands').value.toLowerCase();
+    document.querySelectorAll('#commandsList .card-list-item').forEach(item => {
+        const cmd = (item.dataset.command || '').toLowerCase();
+        const response = (item.dataset.response || '').toLowerCase();
+        item.style.display = (cmd.includes(q) || response.includes(q)) ? '' : 'none';
+    });
 }
 
 let editingCommandId = null;
@@ -924,15 +1129,15 @@ function showAddCommand() {
 }
 
 async function deleteCommand(id) {
-    if (!confirm('Delete this command?')) return;
-    
-    try {
-        await apiFetch(getUserApi() + '/commands/' + id, { method: 'DELETE' });
-        toast('Deleted', 'success');
-        loadCommands();
-    } catch (e) {
-        toast('Failed to delete', 'error');
-    }
+    showConfirm('Delete this command?', async () => {
+        try {
+            await apiFetch(getUserApi() + '/commands/' + id, { method: 'DELETE' });
+            toast('Command deleted', 'success');
+            loadCommands();
+        } catch (e) {
+            toast('Failed to delete command', 'error');
+        }
+    });
 }
 
 // ===== SCHEDULES =====
@@ -972,21 +1177,27 @@ function renderSchedules() {
             </div>`;
     } else {
         list.innerHTML = filteredPending.map(s => `
-            <div class="schedule-item">
-                <div class="flex-between mb-2">
-                    <div class="schedule-name" style="font-weight: 600; color: var(--text);">${escapeHtml(s.name || 'Untitled Schedule')}</div>
-                    ${s.image ? '<span class="list-item-badge info">📷</span>' : ''}
+            <div class="card-list-item">
+                <div class="card-info">
+                    <div class="card-title">
+                        ${escapeHtml(s.name || 'Untitled Schedule')}
+                        ${s.image ? '<span class="card-badge info">📷</span>' : ''}
+                    </div>
+                    <div class="card-subtitle">
+                        <span style="color:var(--primary)">🕐 ${formatDate(s.scheduledTime)}</span>
+                        ${s.repeat || s.recurring ? `<span class="card-badge warning">🔄 ${s.repeat || s.recurring}</span>` : ''}
+                        <span class="card-badge warning">pending</span>
+                    </div>
+                    <div class="card-subtitle" style="margin-top:4px">
+                        ${escapeHtml((s.message || 'Image only').substring(0, 60))}${s.message?.length > 60 ? '...' : ''}
+                    </div>
+                    <div class="card-subtitle" style="margin-top:4px; font-size:12px">
+                        📤 ${s.groups?.length || s.groupIds?.length || 0} groups
+                    </div>
                 </div>
-                <div class="schedule-time" style="font-size: 13px; color: var(--primary); margin-bottom: 8px;">🕐 ${formatDate(s.scheduledTime)}</div>
-                <div class="schedule-message">${escapeHtml(s.message || 'Image only')}</div>
-                <div class="schedule-meta">
-                    <span>📤 ${s.groups?.length || s.groupIds?.length || 0} groups</span>
-                    ${s.repeat || s.recurring ? `<span>🔄 ${s.repeat || s.recurring}</span>` : ''}
-                    <span class="list-item-badge warning">pending</span>
-                </div>
-                <div class="flex gap-2 mt-4">
-                    <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')">📋 Duplicate</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">🗑️ Delete</button>
+                <div class="flex gap-2">
+                    <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')">📋</button>
+                    <button class="btn btn-sm btn-danger btn-icon" onclick="deleteSchedule('${s.id}')">🗑️</button>
                 </div>
             </div>
         `).join('');
@@ -1022,22 +1233,23 @@ function renderArchive(sentSchedules, searchQuery) {
             </div>`;
     } else {
         archiveList.innerHTML = filteredSent.map(s => `
-            <div class="schedule-item" style="opacity: 0.8; background: var(--bg-secondary);">
-                <div class="flex-between mb-2">
-                    <div class="schedule-name" style="font-weight: 600; color: var(--text);">${escapeHtml(s.name || 'Untitled Schedule')}</div>
-                    <span class="list-item-badge success">✓ sent</span>
+            <div class="card-list-item" style="opacity: 0.8; background: var(--bg-subtle);">
+                <div class="card-info">
+                    <div class="card-title">
+                        ${escapeHtml(s.name || 'Untitled Schedule')}
+                        <span class="card-badge success">✓ sent</span>
+                    </div>
+                    <div class="card-subtitle">
+                        <span>📅 Scheduled: ${formatDate(s.scheduledTime)}</span>
+                        ${s.sentAt ? `<span> • ✅ Sent: ${formatDate(s.sentAt)}</span>` : ''}
+                    </div>
+                    <div class="card-subtitle" style="margin-top:4px">
+                        ${escapeHtml((s.message || 'Image only').substring(0, 60))}${s.message?.length > 60 ? '...' : ''}
+                    </div>
                 </div>
-                <div class="schedule-time" style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-                    📅 Scheduled: ${formatDate(s.scheduledTime)}
-                    ${s.sentAt ? `<br>✅ Sent: ${formatDate(s.sentAt)}` : ''}
-                </div>
-                <div class="schedule-message" style="font-size: 13px;">${escapeHtml((s.message || 'Image only').substring(0, 100))}${(s.message || '').length > 100 ? '...' : ''}</div>
-                <div class="schedule-meta">
-                    <span>📤 ${s.groups?.length || s.groupIds?.length || 0} groups</span>
-                </div>
-                <div class="flex gap-2 mt-4">
-                    <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')">📋 Reuse</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${s.id}')">🗑️ Delete</button>
+                <div class="flex gap-2">
+                    <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')">📋</button>
+                    <button class="btn btn-sm btn-danger btn-icon" onclick="deleteSchedule('${s.id}')">🗑️</button>
                 </div>
             </div>
         `).join('');
@@ -1136,15 +1348,15 @@ async function saveSchedule() {
 }
 
 async function deleteSchedule(id) {
-    if (!confirm('Delete this schedule?')) return;
-    
-    try {
-        await apiFetch(getUserApi() + '/schedules/' + id, { method: 'DELETE' });
-        toast('Deleted', 'success');
-        loadSchedules();
-    } catch (e) {
-        toast('Failed to delete', 'error');
-    }
+    showConfirm('Delete this schedule?', async () => {
+        try {
+            await apiFetch(getUserApi() + '/schedules/' + id, { method: 'DELETE' });
+            toast('Schedule deleted', 'success');
+            loadSchedules();
+        } catch (e) {
+            toast('Failed to delete schedule', 'error');
+        }
+    });
 }
 
 // ===== TEMPLATES =====
@@ -1166,16 +1378,27 @@ function renderTemplates() {
     }
     
     list.innerHTML = templates.map((t, i) => `
-        <div class="list-item" onclick="useTemplate(${i})">
-            <div class="list-item-icon">📝</div>
-            <div class="list-item-content">
-                <div class="list-item-title">${escapeHtml(t.name)}</div>
-                <div class="list-item-subtitle">${escapeHtml((t.message || '').substring(0, 40))}...</div>
+        <div class="card-list-item" data-name="${escapeAttr(t.name)}" data-message="${escapeAttr(t.message || '')}" onclick="useTemplate(${i})">
+            <div class="card-icon-large" style="background:var(--bg-secondary); color:var(--primary)">📝</div>
+            <div class="card-info">
+                <div class="card-title">${escapeHtml(t.name)}</div>
+                <div class="card-subtitle">${escapeHtml((t.message || '').substring(0, 60))}...</div>
             </div>
-            <button class="btn btn-secondary btn-icon" onclick="event.stopPropagation(); editTemplate('${t.id}')">✏️</button>
-            <button class="btn btn-danger btn-icon" onclick="event.stopPropagation(); deleteTemplate('${t.id}')">🗑️</button>
+            <div class="flex gap-2">
+                <button class="btn btn-sm btn-secondary btn-icon" onclick="event.stopPropagation(); editTemplate('${t.id}')">✏️</button>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="event.stopPropagation(); deleteTemplate('${t.id}')">🗑️</button>
+            </div>
         </div>
     `).join('');
+}
+
+function filterTemplates() {
+    const q = document.getElementById('searchTemplates').value.toLowerCase();
+    document.querySelectorAll('#templatesList .card-list-item').forEach(item => {
+        const name = (item.dataset.name || '').toLowerCase();
+        const message = (item.dataset.message || '').toLowerCase();
+        item.style.display = (name.includes(q) || message.includes(q)) ? '' : 'none';
+    });
 }
 
 let editingTemplateId = null;
@@ -1192,7 +1415,7 @@ function editTemplate(id) {
 
 function useTemplate(index) {
     document.getElementById('quickMessage').value = templates[index].message;
-    switchTab('home');
+    switchTab('broadcast');
     toast('Template loaded!', 'success');
 }
 
@@ -1203,11 +1426,11 @@ function showTemplateSelect() {
             list.innerHTML = '<div class="empty-state"><p class="text-muted">No templates saved yet</p></div>';
         } else {
             list.innerHTML = templates.map((t, i) => `
-                <div class="list-item" onclick="useTemplate(${i}); closeModal('templateSelectModal')">
-                    <div class="list-item-icon">📝</div>
-                    <div class="list-item-content">
-                        <div class="list-item-title">${escapeHtml(t.name)}</div>
-                        <div class="list-item-subtitle">${escapeHtml((t.message || '').substring(0, 40))}...</div>
+                <div class="card-list-item" onclick="useTemplate(${i}); closeModal('templateSelectModal')">
+                    <div class="card-icon-large" style="background:var(--bg-subtle); color:var(--primary)">📝</div>
+                    <div class="card-info">
+                        <div class="card-title">${escapeHtml(t.name)}</div>
+                        <div class="card-subtitle">${escapeHtml((t.message || '').substring(0, 60))}...</div>
                     </div>
                 </div>
             `).join('');
@@ -1257,15 +1480,15 @@ async function saveTemplate() {
 }
 
 async function deleteTemplate(id) {
-    if (!confirm('Delete this template?')) return;
-    
-    try {
-        await apiFetch(getUserApi() + '/templates/' + id, { method: 'DELETE' });
-        toast('Deleted', 'success');
-        loadTemplates();
-    } catch (e) {
-        toast('Failed to delete', 'error');
-    }
+    showConfirm('Delete this template?', async () => {
+        try {
+            await apiFetch(getUserApi() + '/templates/' + id, { method: 'DELETE' });
+            toast('Template deleted', 'success');
+            loadTemplates();
+        } catch (e) {
+            toast('Failed to delete template', 'error');
+        }
+    });
 }
 
 // ===== HISTORY =====
@@ -1287,33 +1510,65 @@ function renderHistory() {
         return;
     }
     
-    const recent = history.slice(-20).reverse();
-    list.innerHTML = recent.map(h => {
+    // Pagination
+    const totalItems = history.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const page = Math.min(currentPage.history, totalPages);
+    currentPage.history = page;
+    
+    const startIdx = totalItems - (page * ITEMS_PER_PAGE);
+    const endIdx = startIdx + ITEMS_PER_PAGE;
+    const pageItems = history.slice(Math.max(0, startIdx), endIdx).reverse();
+    
+    let html = pageItems.map(h => {
         const success = h.successCount || h.success || 0;
         const failed = h.failCount || h.failed || 0;
         return `
-            <div class="list-item">
-                <div class="list-item-icon">${failed === 0 ? '✅' : '⚠️'}</div>
-                <div class="list-item-content">
-                    <div class="list-item-title">${escapeHtml((h.message || 'Broadcast').substring(0, 30))}${h.message?.length > 30 ? '...' : ''}</div>
-                    <div class="list-item-subtitle">${formatDate(h.timestamp)} • ✅ ${success} ❌ ${failed}</div>
+            <div class="card-list-item">
+                <div class="card-icon-large" style="background:var(--bg-secondary); color:var(--text-secondary)">${failed === 0 ? '✅' : '⚠️'}</div>
+                <div class="card-info">
+                    <div class="card-title">${escapeHtml((h.message || 'Broadcast').substring(0, 40))}${h.message?.length > 40 ? '...' : ''}</div>
+                    <div class="card-subtitle">
+                        <span>${formatDate(h.timestamp)}</span>
+                        <span class="card-badge success" style="margin-left:8px">✅ ${success}</span>
+                        <span class="card-badge danger">❌ ${failed}</span>
+                    </div>
                 </div>
                 ${failed > 0 ? `<button class="btn btn-sm btn-secondary" onclick="retryBroadcast('${h.id}')">🔄</button>` : ''}
             </div>
         `;
     }).join('');
+    
+    // Pagination controls
+    if (totalPages > 1) {
+        html += `
+            <div class="pagination">
+                <button class="btn btn-sm btn-secondary" onclick="goToHistoryPage(${page - 1})" ${page <= 1 ? 'disabled' : ''}>← Prev</button>
+                <span class="pagination-info">Page ${page} of ${totalPages}</span>
+                <button class="btn btn-sm btn-secondary" onclick="goToHistoryPage(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>Next →</button>
+            </div>
+        `;
+    }
+    
+    list.innerHTML = html;
+}
+
+function goToHistoryPage(page) {
+    if (page < 1) return;
+    currentPage.history = page;
+    renderHistory();
 }
 
 async function clearHistory() {
-    if (!confirm('Clear all history?')) return;
-    
-    try {
-        await apiFetch(getUserApi() + '/history', { method: 'DELETE' });
-        toast('History cleared', 'success');
-        loadHistory();
-    } catch (e) {
-        toast('Failed to clear', 'error');
-    }
+    showConfirm('Clear all broadcast history? This cannot be undone.', async () => {
+        try {
+            await apiFetch(getUserApi() + '/history', { method: 'DELETE' });
+            toast('History cleared', 'success');
+            loadHistory();
+        } catch (e) {
+            toast('Failed to clear history', 'error');
+        }
+    });
 }
 
 function exportCSV() {
@@ -1420,12 +1675,12 @@ async function showBlacklist() {
         }
         
         document.getElementById('blacklistContent').innerHTML = blacklist.map(b => `
-            <div class="list-item">
-                <div class="list-item-icon">🚫</div>
-                <div class="list-item-content">
-                    <div class="list-item-title">${escapeHtml(b.number || b)}</div>
+            <div class="card-list-item">
+                <div class="card-icon-large" style="background:var(--bg-subtle); color:var(--danger)">🚫</div>
+                <div class="card-info">
+                    <div class="card-title">${escapeHtml(b.number || b)}</div>
                 </div>
-                <button class="btn btn-danger btn-icon" onclick="removeBlacklist('${b.id}')">🗑️</button>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="removeBlacklist('${b.id}')">🗑️</button>
             </div>
         `).join('');
     } catch (e) {
@@ -1505,10 +1760,11 @@ async function viewLogs() {
         }
         
         document.getElementById('logsContent').innerHTML = logs.slice(-50).reverse().map(l => `
-            <div class="list-item">
-                <div class="list-item-content">
-                    <div class="list-item-title">${escapeHtml(l.from || 'Unknown')}</div>
-                    <div class="list-item-subtitle">${escapeHtml((l.body || '').substring(0, 50))}...</div>
+            <div class="card-list-item">
+                <div class="card-info">
+                    <div class="card-title">${escapeHtml(l.from || 'Unknown')}</div>
+                    <div class="card-subtitle">${escapeHtml((l.body || '').substring(0, 60))}...</div>
+                    <div class="card-subtitle" style="font-size:11px; margin-top:2px">${formatDate(l.timestamp)}</div>
                 </div>
             </div>
         `).join('');
@@ -2033,11 +2289,11 @@ async function showGroupMembers(groupId) {
         }
         
         document.getElementById('membersList').innerHTML = data.map(m => `
-            <div class="list-item">
-                <div class="list-item-icon">👤</div>
-                <div class="list-item-content">
-                    <div class="list-item-title">${escapeHtml(m.name || m.id)}</div>
-                    <div class="list-item-subtitle">${m.isAdmin ? '👑 Admin' : 'Member'}</div>
+            <div class="card-list-item">
+                <div class="card-icon-large" style="background:var(--bg-subtle); color:var(--text-secondary)">👤</div>
+                <div class="card-info">
+                    <div class="card-title">${escapeHtml(m.name || m.id)}</div>
+                    <div class="card-subtitle">${m.isAdmin ? '👑 Admin' : 'Member'}</div>
                 </div>
             </div>
         `).join('');
@@ -2238,5 +2494,62 @@ async function bulkDeleteSchedules(ids) {
         loadSchedules();
     } catch (e) {
         toast('Failed to delete', 'error');
+    }
+}
+
+// ===== DASHBOARD STATS =====
+async function loadDashboardStats() {
+    // Update Date
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const today = new Date().toLocaleDateString('id-ID', dateOptions);
+    const dateEl = document.getElementById('currentDate');
+    if (dateEl) dateEl.textContent = today;
+
+    // Ensure data is loaded if arrays are empty (might happen on direct navigation)
+    if (groups.length === 0 && history.length === 0) {
+        await Promise.all([loadGroups(), loadStats(), loadSchedules()]);
+    }
+
+    // Update Stats Cards
+    const elGroups = document.getElementById('dashTotalGroups');
+    if (elGroups) elGroups.textContent = groups.length;
+    
+    // Calculate sent today
+    const todayStr = new Date().toDateString();
+    const sentToday = history.filter(h => new Date(h.timestamp).toDateString() === todayStr)
+                             .reduce((sum, h) => sum + (h.successCount || h.success || 0), 0);
+    
+    const elSent = document.getElementById('dashTotalSent');
+    if (elSent) elSent.textContent = sentToday;
+
+    // Scheduled (pending)
+    const pending = schedules.filter(s => s.status !== 'sent').length;
+    const elSched = document.getElementById('dashScheduled');
+    if (elSched) elSched.textContent = pending;
+
+    const elReplies = document.getElementById('dashAutoReplies');
+    if (elReplies) elReplies.textContent = autoReplies.length;
+
+    // Recent Activity (History)
+    const list = document.getElementById('dashboardHistoryList');
+    if (list) {
+        if (!history.length) {
+            list.innerHTML = '<div class="empty-state"><p class="text-muted">Belum ada aktivitas</p></div>';
+        } else {
+            const recent = history.slice(-5).reverse();
+            list.innerHTML = recent.map(h => {
+                 const success = h.successCount || h.success || 0;
+                 const failed = h.failCount || h.failed || 0;
+                 return `
+                <div class="card-list-item">
+                    <div class="card-icon-large" style="background:var(--bg-subtle); color:var(--text-secondary)">${failed > 0 ? '⚠️' : '✅'}</div>
+                    <div class="card-info">
+                        <div class="card-title">${escapeHtml((h.message || 'Broadcast').substring(0, 30))}${h.message?.length > 30 ? '...' : ''}</div>
+                        <div class="card-subtitle">${formatDate(h.timestamp)} • ✅ ${success} ❌ ${failed}</div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
     }
 }

@@ -8,6 +8,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,7 +25,11 @@
             </div>
             
             <nav class="sidebar-nav">
-                <button class="sidebar-item active" onclick="switchTab('home')" data-tab="home">
+                <button class="sidebar-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
+                    <span class="sidebar-icon">🏠</span>
+                    <span class="sidebar-text">Dashboard</span>
+                </button>
+                <button class="sidebar-item" onclick="switchTab('broadcast')" data-tab="broadcast">
                     <span class="sidebar-icon">📢</span>
                     <span class="sidebar-text">Broadcast</span>
                 </button>
@@ -92,7 +99,11 @@
                     <button class="mobile-menu-close" onclick="toggleMobileMenu()">×</button>
                 </div>
                 <div class="mobile-menu-items">
-                    <button class="mobile-menu-item active" onclick="switchTab('home'); toggleMobileMenu()" data-tab="home">
+                    <button class="mobile-menu-item active" onclick="switchTab('dashboard'); toggleMobileMenu()" data-tab="dashboard">
+                        <span class="mobile-menu-icon">🏠</span>
+                        <span>Dashboard</span>
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTab('broadcast'); toggleMobileMenu()" data-tab="broadcast">
                         <span class="mobile-menu-icon">📢</span>
                         <span>Broadcast</span>
                     </button>
@@ -131,16 +142,95 @@
 
             <!-- Main Content -->
             <main class="app-main">
-                <!-- Tab: Home (Broadcast) -->
-                <div class="tab-panel active" id="tab-home">
-                    <div class="page-header">
-                        <h1 class="page-title">📢 Broadcast</h1>
+                <!-- Tab: Dashboard (NEW) -->
+                <div class="tab-panel active" id="tab-dashboard">
+                    <!-- Welcome Header -->
+                    <div class="dashboard-header">
+                        <div class="dashboard-greeting">
+                            <h1 class="dashboard-title">Dashboard</h1>
+                            <p class="dashboard-subtitle" id="currentDate"></p>
+                        </div>
                     </div>
 
-                    <!-- Quick Actions Grid -->
+                    <!-- Stats Grid -->
+                    <div class="dashboard-stats">
+                        <div class="dash-stat-card">
+                            <div class="dash-stat-icon">👥</div>
+                            <div class="dash-stat-info">
+                                <span class="dash-stat-value" id="dashTotalGroups">0</span>
+                                <span class="dash-stat-label">Groups</span>
+                            </div>
+                        </div>
+                        <div class="dash-stat-card">
+                            <div class="dash-stat-icon">📨</div>
+                            <div class="dash-stat-info">
+                                <span class="dash-stat-value" id="dashTotalSent">0</span>
+                                <span class="dash-stat-label">Sent Today</span>
+                            </div>
+                        </div>
+                        <div class="dash-stat-card">
+                            <div class="dash-stat-icon">📅</div>
+                            <div class="dash-stat-info">
+                                <span class="dash-stat-value" id="dashScheduled">0</span>
+                                <span class="dash-stat-label">Scheduled</span>
+                            </div>
+                        </div>
+                        <div class="dash-stat-card">
+                            <div class="dash-stat-icon">🤖</div>
+                            <div class="dash-stat-info">
+                                <span class="dash-stat-value" id="dashAutoReplies">0</span>
+                                <span class="dash-stat-label">Auto Replies</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="dashboard-section">
+                        <h2 class="dashboard-section-title">Quick Actions</h2>
+                        <div class="quick-actions">
+                            <button class="quick-action-btn" onclick="switchTab('broadcast')">
+                                <span class="quick-action-icon">📢</span>
+                                <span class="quick-action-text">Broadcast</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="switchTab('groups'); showAddGroup()">
+                                <span class="quick-action-icon">👥</span>
+                                <span class="quick-action-text">Add Group</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="switchTab('schedule'); showAddSchedule()">
+                                <span class="quick-action-icon">📅</span>
+                                <span class="quick-action-text">Schedule</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="switchTab('auto'); showAddReply()">
+                                <span class="quick-action-icon">🤖</span>
+                                <span class="quick-action-text">Auto Reply</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="dashboard-section">
+                        <div class="dashboard-section-header">
+                            <h2 class="dashboard-section-title">Recent Activity</h2>
+                            <button class="btn btn-sm btn-secondary" onclick="switchTab('history')">View All</button>
+                        </div>
+                        <div class="activity-list" id="dashboardHistoryList">
+                            <div class="empty-state">
+                                <p class="text-muted">No recent activity</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Broadcast (Renamed from Home) -->
+                <div class="tab-panel" id="tab-broadcast">
+                    <div class="page-header">
+                        <h1 class="page-title">📢 Broadcast Message</h1>
+                    </div>
+
+                    <!-- Quick Actions Grid (Existing) -->
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h3 class="card-title">⚡ Quick Actions</h3>
+                            <h3 class="card-title">⚡ Saved Quick Actions</h3>
                             <button class="btn btn-sm btn-primary" onclick="showAddQuickAction()">+ Add</button>
                         </div>
                         <div class="quick-actions-grid" id="quickActionsGrid">
@@ -155,11 +245,11 @@
                             <div class="card">
                                 <div class="card-header">
                                     <h3 class="card-title">Message</h3>
-                                    <div class="flex gap-2">
-                                        <button class="btn btn-sm btn-secondary" onclick="loadDraft()">📂 Load Draft</button>
-                                        <button class="btn btn-sm btn-secondary" onclick="saveDraft()">💾 Save Draft</button>
-                                        <button class="btn btn-sm btn-secondary" onclick="showTemplateSelect()">📝 Templates</button>
-                                    </div>
+                                </div>
+                                <div class="message-tools">
+                                    <button class="btn btn-sm btn-secondary" onclick="loadDraft()">📂 Load</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="saveDraft()">💾 Save</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="showTemplateSelect()">📝 Templates</button>
                                 </div>
                                 <div class="form-group mb-2">
                                     <textarea class="form-input" id="quickMessage" rows="5" placeholder="Type your message here..."></textarea>
@@ -222,6 +312,7 @@
                             <button class="btn btn-primary btn-block btn-lg" onclick="sendBroadcast()" id="sendBtn">
                                 📤 Send Broadcast
                             </button>
+                            <p class="keyboard-hint text-center">Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to send, <kbd>Ctrl</kbd>+<kbd>S</kbd> to save draft</p>
 
                             <!-- Result -->
                             <div class="hidden mt-4" id="resultSection">
@@ -284,14 +375,14 @@
                                     <button class="category-chip active" onclick="filterByCategory('all')">📋 All</button>
                                 </div>
                                 
-                                <div class="search-box">
+                                <div class="search-box mb-3">
                                     <input type="text" class="form-input" id="searchGroups" placeholder="Search groups..." oninput="filterGroups()">
                                 </div>
-                                <div class="flex gap-2 mb-4">
-                                    <button class="btn btn-secondary flex-1" onclick="discoverGroups()">🔍 Discover</button>
-                                    <button class="btn btn-secondary flex-1" id="syncBtn" onclick="syncGroups()">🔄 Sync</button>
-                                    <button class="btn btn-secondary" onclick="exportGroups()">📤</button>
-                                    <button class="btn btn-secondary" onclick="document.getElementById('importGroupsFile').click()">📥</button>
+                                <div class="action-buttons-row">
+                                    <button class="btn btn-secondary" onclick="discoverGroups()">🔍 Discover</button>
+                                    <button class="btn btn-secondary" id="syncBtn" onclick="syncGroups()">🔄 Sync</button>
+                                    <button class="btn btn-secondary" onclick="exportGroups()" title="Export">📤</button>
+                                    <button class="btn btn-secondary" onclick="document.getElementById('importGroupsFile').click()" title="Import">📥</button>
                                     <input type="file" id="importGroupsFile" accept=".json" style="display:none" onchange="importGroups(event)">
                                 </div>
                                 <div class="list" id="groupsList">
@@ -323,6 +414,9 @@
                                 <div class="card-header">
                                     <h3 class="card-title">📇 Contacts</h3>
                                     <button class="btn btn-sm btn-primary" onclick="showAddContact()">+ Add</button>
+                                </div>
+                                <div class="search-box mb-3">
+                                    <input type="text" class="form-input" id="searchContacts" placeholder="Search contacts..." oninput="filterContacts()">
                                 </div>
                                 <div class="list" id="contactsList">
                                     <div class="empty-state">
@@ -374,6 +468,9 @@
                                 <div class="card-header">
                                     <h3 class="card-title">⚡ Commands</h3>
                                     <button class="btn btn-sm btn-primary" onclick="showAddCommand()">+ Add</button>
+                                </div>
+                                <div class="search-box mb-3">
+                                    <input type="text" class="form-input" id="searchCommands" placeholder="Search commands..." oninput="filterCommands()">
                                 </div>
                                 <div class="list" id="commandsList">
                                     <div class="empty-state">
@@ -435,6 +532,9 @@
                                 <div class="card-header">
                                     <h3 class="card-title">📝 Templates</h3>
                                     <button class="btn btn-sm btn-primary" onclick="showAddTemplate()">+ New</button>
+                                </div>
+                                <div class="search-box mb-3">
+                                    <input type="text" class="form-input" id="searchTemplates" placeholder="Search templates..." oninput="filterTemplates()">
                                 </div>
                                 <div class="list" id="templatesList">
                                     <div class="empty-state">
@@ -595,7 +695,7 @@
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.3.0</div>
-                                <div class="changelog-date">December 4, 2024</div>
+
                             </div>
                             <div class="changelog-content">
                                 <div class="changelog-section">
@@ -620,7 +720,7 @@
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.2.0</div>
-                                <div class="changelog-date">November 15, 2024</div>
+
                             </div>
                             <div class="changelog-content">
                                 <div class="changelog-section">
@@ -645,7 +745,7 @@
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.1.0</div>
-                                <div class="changelog-date">October 20, 2024</div>
+
                             </div>
                             <div class="changelog-content">
                                 <div class="changelog-section">
@@ -671,7 +771,7 @@
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.0.0</div>
-                                <div class="changelog-date">September 1, 2024</div>
+
                             </div>
                             <div class="changelog-content">
                                 <div class="changelog-section">
@@ -690,14 +790,7 @@
                     </div>
                 </div>
             </main>
-
-
         </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div id="toastContainer" class="toast-container"></div>
-
     <!-- All Modals -->
     <div class="modal hidden" id="addGroupModal">
         <div class="modal-content">
@@ -800,9 +893,7 @@
                         <input type="checkbox" id="scheduleSelectAll" onchange="toggleScheduleSelectAll()">
                         <span style="font-weight: 600; color: var(--text);">Select All</span>
                     </label>
-                    <div id="scheduleGroupList">
-                        <p class="text-muted" style="padding: 8px; text-align: center;">No groups available</p>
-                    </div>
+                    <div id="scheduleGroupList"></div>
                 </div>
                 <small class="text-muted" id="scheduleSelectedCount">0 groups selected</small>
             </div>
@@ -967,6 +1058,29 @@
             <button class="btn btn-primary btn-block" onclick="saveQuickAction()">Save Quick Action</button>
         </div>
     </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal hidden" id="confirmModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm</h3>
+            </div>
+            <p id="confirmMessage" style="margin-bottom: 20px; color: var(--text-secondary);"></p>
+            <div class="btn-row">
+                <button class="btn btn-secondary" id="confirmNo">Cancel</button>
+                <button class="btn btn-danger" id="confirmYes">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offline Indicator -->
+    <div id="offlineIndicator" class="offline-indicator hidden">
+        <span>📡 You are offline</span>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <script src="script.js"></script>
 </body>
