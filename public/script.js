@@ -561,16 +561,18 @@ function renderGroupsList() {
     }
     
     list.innerHTML = groups.map(g => `
-        <div class="group-card-item">
-            <div class="group-icon-large">👥</div>
+        <div class="group-item">
+            <div class="group-icon">👥</div>
             <div class="group-info">
                 <div class="group-name">${escapeHtml(g.name)}</div>
                 <div class="group-meta">
-                    <span>ID: ${escapeHtml(g.id)}</span>
-                    ${g.participants ? `<span>• ${g.participants} members</span>` : ''}
+                    ID: ${escapeHtml(g.id.substring(0, 20))}...
+                    ${g.participants ? ` • ${g.participants} members` : ''}
                 </div>
             </div>
-            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteGroup('${escapeAttr(g.id)}')">🗑️</button>
+            <div class="group-actions">
+                <button class="btn btn-sm btn-danger" onclick="deleteGroup('${escapeAttr(g.id)}')">🗑️</button>
+            </div>
         </div>
     `).join('');
 }
@@ -1513,14 +1515,14 @@ function renderHistory() {
         const success = h.successCount || h.success || 0;
         const failed = h.failCount || h.failed || 0;
         return `
-            <div class="card-list-item">
-                <div class="card-icon-large" style="background:var(--bg-secondary); color:var(--text-secondary)">${failed === 0 ? '✅' : '⚠️'}</div>
-                <div class="card-info">
-                    <div class="card-title">${escapeHtml((h.message || 'Broadcast').substring(0, 40))}${h.message?.length > 40 ? '...' : ''}</div>
-                    <div class="card-subtitle">
+            <div class="activity-item">
+                <div class="activity-icon">${failed === 0 ? '✅' : '⚠️'}</div>
+                <div class="activity-content">
+                    <div class="activity-title">${escapeHtml((h.message || 'Broadcast').substring(0, 50))}${h.message?.length > 50 ? '...' : ''}</div>
+                    <div class="activity-meta">
                         <span>${formatDate(h.timestamp)}</span>
-                        <span class="card-badge success" style="margin-left:8px">✅ ${success}</span>
-                        <span class="card-badge danger">❌ ${failed}</span>
+                        <span class="activity-stat success">✅ ${success}</span>
+                        <span class="activity-stat failed">❌ ${failed}</span>
                     </div>
                 </div>
                 ${failed > 0 ? `<button class="btn btn-sm btn-secondary" onclick="retryBroadcast('${h.id}')">🔄</button>` : ''}
@@ -2552,11 +2554,15 @@ async function loadDashboardStats() {
                  const success = h.successCount || h.success || 0;
                  const failed = h.failCount || h.failed || 0;
                  return `
-                <div class="card-list-item">
-                    <div class="card-icon-large" style="background:var(--bg-subtle); color:var(--text-secondary)">${failed > 0 ? '⚠️' : '✅'}</div>
-                    <div class="card-info">
-                        <div class="card-title">${escapeHtml((h.message || 'Broadcast').substring(0, 30))}${h.message?.length > 30 ? '...' : ''}</div>
-                        <div class="card-subtitle">${formatDate(h.timestamp)} • ✅ ${success} ❌ ${failed}</div>
+                <div class="activity-item">
+                    <div class="activity-icon">${failed > 0 ? '⚠️' : '✅'}</div>
+                    <div class="activity-content">
+                        <div class="activity-title">${escapeHtml((h.message || 'Broadcast').substring(0, 40))}${h.message?.length > 40 ? '...' : ''}</div>
+                        <div class="activity-meta">
+                            <span>${formatDate(h.timestamp)}</span>
+                            <span class="activity-stat success">✅ ${success}</span>
+                            <span class="activity-stat failed">❌ ${failed}</span>
+                        </div>
                     </div>
                 </div>
             `;
