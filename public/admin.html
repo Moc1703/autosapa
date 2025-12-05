@@ -768,12 +768,16 @@
                 
                 tbody.innerHTML = sessions.map(s => {
                     const user = allUsers.find(u => u.id == s.id) || {};
+                    const phone = s.phone ? '+' + s.phone : '-';
+                    const connected = s.connectedAt 
+                        ? new Date(s.connectedAt).toLocaleString('id-ID') 
+                        : '-';
                     return `
                         <tr>
-                            <td>${user.name || s.id}</td>
-                            <td>${s.phone || '-'}</td>
+                            <td>${s.userName || user.name || s.id}</td>
+                            <td><strong>${phone}</strong></td>
                             <td><span class="badge badge-active">${s.status}</span></td>
-                            <td>${s.connectedAt || '-'}</td>
+                            <td>${connected}</td>
                             <td>
                                 <button class="btn btn-danger btn-sm" onclick="disconnectSession('${s.id}')">🔌 Disconnect</button>
                             </td>

@@ -386,6 +386,8 @@ const sessions = new Map()
 const qrCodes = new Map()
 const qrTimestamps = new Map() // Track when QR was generated
 const sessionStatuses = new Map()
+const sessionPhones = new Map() // Store WhatsApp phone numbers
+const sessionConnectedAt = new Map() // Track when session connected
 const QR_EXPIRY_MS = 45000 // QR expires after 45 seconds
 
 // ===== DATA DIRECTORIES =====
@@ -650,13 +652,18 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
     client.on("ready", async () => {
       console.log(`✅ Client ready for user: ${userId}`)
       sessionStatuses.set(userId, "connected")
+      sessionConnectedAt.set(userId, new Date().toISOString())
       qrCodes.delete(userId)
 
-      // Get WhatsApp info
+      // Get WhatsApp info and store phone number
       try {
         const info = client.info
-        console.log(`   📞 Connected as: ${info.pushname} (${info.wid.user})`)
-      } catch (e) {}
+        const phoneNumber = info.wid.user
+        sessionPhones.set(userId, phoneNumber)
+        console.log(`   📞 Connected as: ${info.pushname} (${phoneNumber})`)
+      } catch (e) {
+        console.error(`Failed to get phone info for ${userId}:`, e)
+      }
     })
 
     // Authenticated Event - RESTORED FROM LOCAL STORAGE
@@ -1699,14 +1706,27 @@ app.get("/api/sessions", (req, res) => {
   const sessionList = []
 
   sessions.forEach((client, oderId) => {
+    const status = sessionStatuses.get(oderId) || "unknown"
+    const phone = sessionPhones.get(oderId) || null
+    const connectedAt = sessionConnectedAt.get(oderId) || null
+    
+    // Get user info
+    const user = UserDB.findById(oderId)
+    
     sessionList.push({
-      oderId,
-      status: sessionStatuses.get(oderId) || "unknown",
+      id: oderId,
+      oderId, // backward compatibility
+      userId: oderId,
+      userName: user?.name || "Unknown",
+      userEmail: user?.email || "-",
+      phone: phone,
+      status: status,
+      connectedAt: connectedAt,
       hasQR: qrCodes.has(oderId),
     })
   })
 
-  res.json({ success: true, sessions: sessionList, count: sessionList.length })
+  res.json(sessionList)
 })
 
 // Destroy a session (requires auth, user can only destroy their own session)
