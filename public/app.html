@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AutoSapa</title>
     <meta name="theme-color" content="#6366f1">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,6 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="app-wrapper">
         <!-- Desktop Sidebar -->
@@ -23,7 +26,7 @@
                     <span>AutoSapa</span>
                 </div>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <button class="sidebar-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
                     <span class="sidebar-icon">🏠</span>
@@ -58,7 +61,7 @@
                     <span class="sidebar-text">Changelog</span>
                 </button>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="status-badge disconnected" id="statusBadgeDesktop">
                     <span class="status-dot"></span>
@@ -99,15 +102,18 @@
                     <button class="mobile-menu-close" onclick="toggleMobileMenu()">×</button>
                 </div>
                 <div class="mobile-menu-items">
-                    <button class="mobile-menu-item active" onclick="switchTab('dashboard'); toggleMobileMenu()" data-tab="dashboard">
+                    <button class="mobile-menu-item active" onclick="switchTab('dashboard'); toggleMobileMenu()"
+                        data-tab="dashboard">
                         <span class="mobile-menu-icon">🏠</span>
                         <span>Dashboard</span>
                     </button>
-                    <button class="mobile-menu-item" onclick="switchTab('broadcast'); toggleMobileMenu()" data-tab="broadcast">
+                    <button class="mobile-menu-item" onclick="switchTab('broadcast'); toggleMobileMenu()"
+                        data-tab="broadcast">
                         <span class="mobile-menu-icon">📢</span>
                         <span>Broadcast</span>
                     </button>
-                    <button class="mobile-menu-item" onclick="switchTab('groups'); toggleMobileMenu()" data-tab="groups">
+                    <button class="mobile-menu-item" onclick="switchTab('groups'); toggleMobileMenu()"
+                        data-tab="groups">
                         <span class="mobile-menu-icon">👥</span>
                         <span>Groups</span>
                     </button>
@@ -115,19 +121,23 @@
                         <span class="mobile-menu-icon">🤖</span>
                         <span>Auto Reply</span>
                     </button>
-                    <button class="mobile-menu-item" onclick="switchTab('schedule'); toggleMobileMenu()" data-tab="schedule">
+                    <button class="mobile-menu-item" onclick="switchTab('schedule'); toggleMobileMenu()"
+                        data-tab="schedule">
                         <span class="mobile-menu-icon">📅</span>
                         <span>Schedule</span>
                     </button>
-                    <button class="mobile-menu-item" onclick="switchTab('history'); toggleMobileMenu()" data-tab="history">
+                    <button class="mobile-menu-item" onclick="switchTab('history'); toggleMobileMenu()"
+                        data-tab="history">
                         <span class="mobile-menu-icon">📊</span>
                         <span>Statistics</span>
                     </button>
-                    <button class="mobile-menu-item" onclick="switchTab('settings'); toggleMobileMenu()" data-tab="settings">
+                    <button class="mobile-menu-item" onclick="switchTab('settings'); toggleMobileMenu()"
+                        data-tab="settings">
                         <span class="mobile-menu-icon">⚙️</span>
                         <span>Settings</span>
                     </button>
-                    <button class="mobile-menu-item" onclick="switchTab('changelog'); toggleMobileMenu()" data-tab="changelog">
+                    <button class="mobile-menu-item" onclick="switchTab('changelog'); toggleMobileMenu()"
+                        data-tab="changelog">
                         <span class="mobile-menu-icon">🎉</span>
                         <span>Changelog</span>
                     </button>
@@ -237,7 +247,7 @@
                             <p class="text-muted text-center">No quick actions yet</p>
                         </div>
                     </div>
-                    
+
                     <!-- Desktop: Two Column Layout -->
                     <div class="desktop-grid">
                         <!-- Left Column: Message & Image -->
@@ -249,20 +259,26 @@
                                 <div class="message-tools">
                                     <button class="btn btn-sm btn-secondary" onclick="loadDraft()">📂 Load</button>
                                     <button class="btn btn-sm btn-secondary" onclick="saveDraft()">💾 Save</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="showTemplateSelect()">📝 Templates</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="showTemplateSelect()">📝
+                                        Templates</button>
                                 </div>
                                 <div class="form-group mb-2">
-                                    <textarea class="form-input" id="quickMessage" rows="5" placeholder="Type your message here..."></textarea>
+                                    <textarea class="form-input" id="quickMessage" rows="5"
+                                        placeholder="Type your message here..."></textarea>
                                 </div>
                                 <!-- Message Preview -->
                                 <div id="messagePreview" class="hidden mb-2"></div>
-                                <button class="btn btn-sm btn-secondary mb-2" onclick="previewMessage()">👁️ Preview</button>
-                                <div class="upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
-                                    <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="previewImage(event)">
+                                <button class="btn btn-sm btn-secondary mb-2" onclick="previewMessage()">👁️
+                                    Preview</button>
+                                <div class="upload-area" id="uploadArea"
+                                    onclick="document.getElementById('imageInput').click()">
+                                    <input type="file" id="imageInput" accept="image/*" style="display:none"
+                                        onchange="previewImage(event)">
                                     <span id="uploadText">📷 Click to add image (optional)</span>
                                 </div>
                                 <img id="imagePreview" class="image-preview hidden">
-                                <button id="removeImageBtn" class="btn btn-sm btn-danger mt-2 hidden" onclick="removeImage()">🗑️ Remove Image</button>
+                                <button id="removeImageBtn" class="btn btn-sm btn-danger mt-2 hidden"
+                                    onclick="removeImage()">🗑️ Remove Image</button>
                             </div>
 
                             <!-- Media Library -->
@@ -299,11 +315,13 @@
                                         <span class="selected-count" id="selectedCount">0 selected</span>
                                     </div>
                                     <div class="tabs">
-                                        <button class="tab-btn active" onclick="switchTargetTab('groups')" id="tabBtn-groups">👥 Groups</button>
-                                        <button class="tab-btn" onclick="switchTargetTab('manual')" id="tabBtn-manual">📝 Manual Input</button>
+                                        <button class="tab-btn active" onclick="switchTargetTab('groups')"
+                                            id="tabBtn-groups">👥 Groups</button>
+                                        <button class="tab-btn" onclick="switchTargetTab('manual')"
+                                            id="tabBtn-manual">📝 Manual Input</button>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Group Selection Panel -->
                                 <div id="targetPanel-groups" class="p-3">
                                     <div class="select-all-bar">
@@ -322,7 +340,9 @@
                                 <!-- Manual Input Panel -->
                                 <div id="targetPanel-manual" class="hidden p-3 pt-0">
                                     <div class="form-group mb-0">
-                                        <textarea class="form-input" id="manualNumbers" placeholder="Paste WhatsApp numbers here... e.g.:&#10;08123456789&#10;628123456789&#10;+62 812-3456-789" style="min-height:200px; font-family:monospace"></textarea>
+                                        <textarea class="form-input" id="manualNumbers"
+                                            placeholder="Paste WhatsApp numbers here... e.g.:&#10;08123456789&#10;628123456789&#10;+62 812-3456-789"
+                                            style="min-height:200px; font-family:monospace"></textarea>
                                         <p class="form-hint">
                                             Auto-formatted to Indonesia (+62). Separate with Enter or Comma.
                                             <span id="manualCount" class="badge badge-info float-right">0 numbers</span>
@@ -337,15 +357,18 @@
                                     <h3 class="card-title">🛡️ Anti-Ban Settings</h3>
                                     <span id="antiBanIndicator" class="badge badge-active">Safe Mode ON</span>
                                 </div>
-                                
-                                <div id="antiBanSettings" class="hidden" style="margin-top: 16px; border-top: 1px solid #2a3942; padding-top: 16px;">
+
+                                <div id="antiBanSettings" class="hidden"
+                                    style="margin-top: 16px; border-top: 1px solid #2a3942; padding-top: 16px;">
                                     <!-- Safe Mode Toggle -->
                                     <div class="toggle-row mb-4">
                                         <div>
                                             <span class="toggle-label">
                                                 🔒 Safe Mode
                                                 <div class="tooltip">❓
-                                                    <span class="tooltip-text">Recommended. Automatically uses random delay (5-15s) and typing simulation to mimic human behavior.</span>
+                                                    <span class="tooltip-text">Recommended. Automatically uses random
+                                                        delay (5-15s) and typing simulation to mimic human
+                                                        behavior.</span>
                                                 </div>
                                             </span>
                                             <p class="form-hint mb-0">Recommended to prevent number banning.</p>
@@ -359,13 +382,16 @@
                                             <label class="form-label">
                                                 Random Delay (seconds)
                                                 <div class="tooltip">❓
-                                                    <span class="tooltip-text">Random pause between each message sent.</span>
+                                                    <span class="tooltip-text">Random pause between each message
+                                                        sent.</span>
                                                 </div>
                                             </label>
                                             <div class="flex gap-2">
-                                                <input type="number" class="form-input" id="delayMin" placeholder="Min" value="5">
+                                                <input type="number" class="form-input" id="delayMin" placeholder="Min"
+                                                    value="5">
                                                 <span style="align-self:center">-</span>
-                                                <input type="number" class="form-input" id="delayMax" placeholder="Max" value="15">
+                                                <input type="number" class="form-input" id="delayMax" placeholder="Max"
+                                                    value="15">
                                             </div>
                                             <p class="form-hint">Randomizer will pick a delay between these values.</p>
                                         </div>
@@ -375,7 +401,8 @@
                                                 <span class="toggle-label">
                                                     😴 Sleep Mode
                                                     <div class="tooltip">❓
-                                                        <span class="tooltip-text">Takes a long break after sending a batch of messages to cool down account activity.</span>
+                                                        <span class="tooltip-text">Takes a long break after sending a
+                                                            batch of messages to cool down account activity.</span>
                                                     </div>
                                                 </span>
                                                 <p class="form-hint mb-0">Pause after sending X messages</p>
@@ -388,9 +415,11 @@
                                                 <label class="form-label">Sleep rules</label>
                                                 <div class="flex gap-2 align-center">
                                                     <span>After</span>
-                                                    <input type="number" class="form-input" id="sleepAfter" value="50" style="width: 80px">
+                                                    <input type="number" class="form-input" id="sleepAfter" value="50"
+                                                        style="width: 80px">
                                                     <span>msgs, sleep for</span>
-                                                    <input type="number" class="form-input" id="sleepDuration" value="5" style="width: 80px">
+                                                    <input type="number" class="form-input" id="sleepDuration" value="5"
+                                                        style="width: 80px">
                                                     <span>mins</span>
                                                 </div>
                                             </div>
@@ -402,7 +431,9 @@
                             <button class="btn btn-primary btn-block btn-lg" onclick="sendBroadcast()" id="sendBtn">
                                 📤 Send Broadcast
                             </button>
-                            <p class="keyboard-hint text-center">Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to send, <kbd>Ctrl</kbd>+<kbd>S</kbd> to save draft</p>
+                            <p class="keyboard-hint text-center">Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to send,
+                                <kbd>Ctrl</kbd>+<kbd>S</kbd> to save draft
+                            </p>
 
                             <!-- Result -->
                             <div class="hidden mt-4" id="resultSection">
@@ -452,49 +483,65 @@
                                 <div class="card-header">
                                     <h3 class="card-title">My Groups</h3>
                                     <div class="flex gap-2">
-                                        <button class="btn btn-sm btn-secondary" onclick="toggleBulkMode()">☑️ Bulk</button>
+                                        <button class="btn btn-sm btn-secondary" onclick="toggleBulkMode()">☑️
+                                            Bulk</button>
                                         <button class="btn btn-sm btn-primary" onclick="showAddGroup()">+ Add</button>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Bulk Actions Bar -->
                                 <div id="bulkActions" class="bulk-actions-bar hidden">
                                     <span id="bulkCount">0 selected</span>
-                                    <button class="btn btn-sm btn-danger" onclick="bulkDeleteGroups()">🗑️ Delete Selected</button>
+                                    <button class="btn btn-sm btn-danger" onclick="bulkDeleteGroups()">🗑️ Delete
+                                        Selected</button>
                                 </div>
-                                
+
                                 <!-- Category Filter Chips -->
                                 <div class="category-chips" id="categoryChips">
-                                    <button class="category-chip active" onclick="filterByCategory('all')">📋 All</button>
+                                    <button class="category-chip active" onclick="filterByCategory('all')">📋
+                                        All</button>
                                 </div>
-                                
+
                                 <div class="search-box mb-3">
-                                    <input type="text" class="form-input" id="searchGroups" placeholder="Search groups..." oninput="filterGroups()">
+                                    <input type="text" class="form-input" id="searchGroups"
+                                        placeholder="Search groups..." oninput="filterGroups()">
                                 </div>
                                 <div class="action-buttons-row">
                                     <button class="btn btn-secondary" onclick="discoverGroups()">🔍 Discover</button>
-                                    <button class="btn btn-secondary" id="syncBtn" onclick="syncGroups()">🔄 Sync</button>
-                                    <button class="btn btn-secondary" onclick="exportGroups()" title="Export">📤</button>
-                                    <button class="btn btn-secondary" onclick="document.getElementById('importGroupsFile').click()" title="Import">📥</button>
-                                    <input type="file" id="importGroupsFile" accept=".json" style="display:none" onchange="importGroups(event)">
+                                    <button class="btn btn-secondary" id="syncBtn" onclick="syncGroups()">🔄
+                                        Sync</button>
+                                    <button class="btn btn-secondary" onclick="exportGroups()"
+                                        title="Export">📤</button>
+                                    <button class="btn btn-secondary"
+                                        onclick="document.getElementById('importGroupsFile').click()"
+                                        title="Import">📥</button>
+                                    <input type="file" id="importGroupsFile" accept=".json" style="display:none"
+                                        onchange="importGroups(event)">
                                 </div>
                                 <div class="list" id="groupsList">
                                     <div class="empty-state" id="groupsEmptyState">
                                         <div class="empty-icon">👥</div>
                                         <div class="empty-title">No groups yet</div>
                                         <p class="empty-text">Choose how to add your WhatsApp groups:</p>
-                                        <div style="display:flex; flex-direction:column; gap:8px; margin-top:16px; width:100%; max-width:280px;">
+                                        <div
+                                            style="display:flex; flex-direction:column; gap:8px; margin-top:16px; width:100%; max-width:280px;">
                                             <button class="btn btn-primary" onclick="syncGroups()" id="emptySyncBtn">
                                                 🔄 Sync All Groups
-                                                <small style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Auto-import from WhatsApp (recommended)</small>
+                                                <small
+                                                    style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Auto-import
+                                                    from WhatsApp (recommended)</small>
                                             </button>
                                             <button class="btn btn-secondary" onclick="discoverGroups()">
                                                 🔍 Discover Groups
-                                                <small style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Browse & pick specific groups</small>
+                                                <small
+                                                    style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Browse
+                                                    & pick specific groups</small>
                                             </button>
                                             <button class="btn btn-secondary" onclick="showAddGroup()">
                                                 ✏️ Add Manually
-                                                <small style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Enter group ID yourself</small>
+                                                <small
+                                                    style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Enter
+                                                    group ID yourself</small>
                                             </button>
                                         </div>
                                     </div>
@@ -509,7 +556,8 @@
                                     <button class="btn btn-sm btn-primary" onclick="showAddContact()">+ Add</button>
                                 </div>
                                 <div class="search-box mb-3">
-                                    <input type="text" class="form-input" id="searchContacts" placeholder="Search contacts..." oninput="filterContacts()">
+                                    <input type="text" class="form-input" id="searchContacts"
+                                        placeholder="Search contacts..." oninput="filterContacts()">
                                 </div>
                                 <div class="list" id="contactsList">
                                     <div class="empty-state">
@@ -563,7 +611,8 @@
                                     <button class="btn btn-sm btn-primary" onclick="showAddCommand()">+ Add</button>
                                 </div>
                                 <div class="search-box mb-3">
-                                    <input type="text" class="form-input" id="searchCommands" placeholder="Search commands..." oninput="filterCommands()">
+                                    <input type="text" class="form-input" id="searchCommands"
+                                        placeholder="Search commands..." oninput="filterCommands()">
                                 </div>
                                 <div class="list" id="commandsList">
                                     <div class="empty-state">
@@ -616,7 +665,8 @@
                     <div class="schedule-panel active" id="panelSchedules">
                         <div class="schedule-toolbar">
                             <div class="search-box" style="flex:1; margin-bottom:0;">
-                                <input type="text" class="form-input" id="searchSchedules" placeholder="Search schedules..." oninput="filterSchedules()">
+                                <input type="text" class="form-input" id="searchSchedules"
+                                    placeholder="Search schedules..." oninput="filterSchedules()">
                             </div>
                             <div class="schedule-filter">
                                 <button class="filter-btn active" onclick="filterScheduleStatus('all')">All</button>
@@ -630,7 +680,8 @@
                                 <div class="empty-icon">📅</div>
                                 <div class="empty-title">No schedules yet</div>
                                 <p class="empty-text">Create your first scheduled broadcast</p>
-                                <button class="btn btn-primary mt-4" onclick="showAddSchedule()">+ Create Schedule</button>
+                                <button class="btn btn-primary mt-4" onclick="showAddSchedule()">+ Create
+                                    Schedule</button>
                             </div>
                         </div>
                     </div>
@@ -639,7 +690,8 @@
                     <div class="schedule-panel" id="panelTemplates">
                         <div class="schedule-toolbar">
                             <div class="search-box" style="flex:1; margin-bottom:0;">
-                                <input type="text" class="form-input" id="searchTemplates" placeholder="Search templates..." oninput="filterTemplates()">
+                                <input type="text" class="form-input" id="searchTemplates"
+                                    placeholder="Search templates..." oninput="filterTemplates()">
                             </div>
                             <button class="btn btn-primary" onclick="showAddTemplate()">+ New Template</button>
                         </div>
@@ -649,7 +701,8 @@
                                 <div class="empty-icon">📝</div>
                                 <div class="empty-title">No templates yet</div>
                                 <p class="empty-text">Save message templates for quick reuse</p>
-                                <button class="btn btn-primary mt-4" onclick="showAddTemplate()">+ Create Template</button>
+                                <button class="btn btn-primary mt-4" onclick="showAddTemplate()">+ Create
+                                    Template</button>
                             </div>
                         </div>
                     </div>
@@ -717,7 +770,7 @@
                         <div class="desktop-col">
                             <div class="card">
                                 <h3 class="card-title mb-4">General</h3>
-                                
+
                                 <div class="toggle-row">
                                     <div>
                                         <span class="toggle-label">Anti-Ban Queue</span>
@@ -750,9 +803,11 @@
                                     <button class="btn btn-sm btn-secondary" onclick="showBlacklist()">Manage</button>
                                 </div>
                                 <div class="form-group mb-2">
-                                    <input type="text" class="form-input" id="blacklistInput" placeholder="Enter number to block (62812xxx)">
+                                    <input type="text" class="form-input" id="blacklistInput"
+                                        placeholder="Enter number to block (62812xxx)">
                                 </div>
-                                <button class="btn btn-danger btn-block" onclick="addBlacklist()">🚫 Block Number</button>
+                                <button class="btn btn-danger btn-block" onclick="addBlacklist()">🚫 Block
+                                    Number</button>
                             </div>
                         </div>
 
@@ -762,20 +817,24 @@
                                 <p class="text-muted mb-4">Download or restore all your data</p>
                                 <div class="btn-row">
                                     <button class="btn btn-secondary" onclick="downloadBackup()">📥 Backup</button>
-                                    <button class="btn btn-secondary" onclick="document.getElementById('restoreFile').click()">📤 Restore</button>
-                                    <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreBackup(event)">
+                                    <button class="btn btn-secondary"
+                                        onclick="document.getElementById('restoreFile').click()">📤 Restore</button>
+                                    <input type="file" id="restoreFile" accept=".json" style="display:none"
+                                        onchange="restoreBackup(event)">
                                 </div>
                             </div>
 
                             <div class="card">
                                 <h3 class="card-title mb-4">📋 Message Logs</h3>
-                                <button class="btn btn-secondary btn-block" onclick="viewLogs()">View Incoming Messages</button>
+                                <button class="btn btn-secondary btn-block" onclick="viewLogs()">View Incoming
+                                    Messages</button>
                             </div>
 
                             <div class="card">
                                 <h3 class="card-title mb-4">📱 WhatsApp</h3>
                                 <p class="text-muted mb-4">Disconnect dan link ke akun WhatsApp lain</p>
-                                <button class="btn btn-warning btn-block mb-2" onclick="switchWhatsApp()">🔄 Ganti Akun WhatsApp</button>
+                                <button class="btn btn-warning btn-block mb-2" onclick="switchWhatsApp()">🔄 Ganti Akun
+                                    WhatsApp</button>
                             </div>
 
                             <div class="card">
@@ -794,50 +853,71 @@
                     </div>
 
                     <div class="changelog-container">
-                        <!-- Version 1.3.0 -->
+                        <!-- Version 1.5.0 - Latest -->
                         <div class="changelog-version">
                             <div class="changelog-header">
-                                <div class="changelog-version-badge">v1.3.0</div>
-
+                                <div class="changelog-version-badge">v1.5.0</div>
+                                <span class="changelog-date">5 Dec 2024</span>
+                                <span class="badge badge-active">Latest</span>
                             </div>
                             <div class="changelog-content">
                                 <div class="changelog-section">
-                                    <div class="changelog-section-title">✨ New Features</div>
+                                    <div class="changelog-section-title">🔒 Security Updates</div>
                                     <ul class="changelog-list">
-                                        <li><strong>Schedule Names:</strong> Beri nama pada setiap schedule untuk identifikasi lebih mudah</li>
-                                        <li><strong>Search Schedules:</strong> Cari schedule berdasarkan nama atau isi pesan</li>
-                                        <li><strong>Archive System:</strong> Schedule yang sudah terkirim otomatis pindah ke Archive</li>
+                                        <li><strong>Admin Rate Limiting:</strong> Proteksi brute-force dengan limit 5
+                                            attempt/15 menit</li>
+                                        <li><strong>Security Headers:</strong> X-Frame-Options, HSTS, XSS-Protection
+                                        </li>
+                                        <li><strong>MIME Validation:</strong> Upload hanya untuk file yang diizinkan
+                                        </li>
+                                        <li><strong>Path Traversal Protection:</strong> Validasi user ID di file uploads
+                                        </li>
                                     </ul>
                                 </div>
                                 <div class="changelog-section">
-                                    <div class="changelog-section-title">🔧 Improvements</div>
+                                    <div class="changelog-section-title">📱 Mobile UX</div>
                                     <ul class="changelog-list">
-                                        <li>UI Schedule page lebih clean dan organized</li>
-                                        <li>Better schedule management dengan filtering</li>
+                                        <li><strong>Bottom Navigation:</strong> Quick access Home, Broadcast, Groups,
+                                            Auto di mobile</li>
+                                        <li><strong>Compact Header:</strong> Lebih banyak ruang konten di mobile</li>
+                                        <li><strong>Smooth Animations:</strong> Transisi halus saat pindah tab</li>
+                                        <li><strong>Button Ripple Effects:</strong> Feedback visual premium</li>
+                                    </ul>
+                                </div>
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">👮 Admin Panel</div>
+                                    <ul class="changelog-list">
+                                        <li><strong>Activity Logs:</strong> Monitor semua aktivitas user</li>
+                                        <li><strong>Suspicious Detection:</strong> Deteksi otomatis spam & kata
+                                            terlarang</li>
+                                        <li><strong>User Moderation:</strong> Suspend/unsuspend user langsung</li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
+
                         <!-- Version 1.4.0 -->
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.4.0</div>
+                                <span class="changelog-date">Nov 2024</span>
                             </div>
                             <div class="changelog-content">
                                 <div class="changelog-section">
                                     <div class="changelog-section-title">✨ New Features</div>
                                     <ul class="changelog-list">
-                                        <li><strong>Safe Broadcast:</strong> Anti-Ban protection dengan Random Delay & Smart Typing</li>
-                                        <li><strong>Spintax Support:</strong> Variasi pesan otomatis `{Halo|Hai}` untuk menghindari deteksi spam</li>
-                                        <li><strong>Sleep Mode:</strong> Bot istirahat otomatis setelah mengirim sekian pesan</li>
-                                        <li><strong>Manual Input:</strong> Kirim broadcast langsung ke list nomor HP tanpa save kontak</li>
+                                        <li><strong>Safe Broadcast:</strong> Anti-Ban dengan Random Delay & Smart Typing
+                                        </li>
+                                        <li><strong>Spintax Support:</strong> Variasi pesan otomatis {Halo|Hai}</li>
+                                        <li><strong>Sleep Mode:</strong> Bot istirahat setelah X pesan terkirim</li>
+                                        <li><strong>Manual Input:</strong> Kirim ke list nomor tanpa save kontak</li>
                                     </ul>
                                 </div>
                                 <div class="changelog-section">
                                     <div class="changelog-section-title">🐛 Bug Fixes</div>
                                     <ul class="changelog-list">
-                                        <li>Fixed Puppeteer SingletonLock issue pada inisialisasi sesi baru</li>
-                                        <li>Improved error handling saat broadcast</li>
+                                        <li>Fixed Puppeteer SingletonLock issue</li>
+                                        <li>Improved broadcast error handling</li>
                                     </ul>
                                 </div>
                             </div>
@@ -846,22 +926,40 @@
                         <!-- Version 1.3.0 -->
                         <div class="changelog-version">
                             <div class="changelog-header">
-                                <div class="changelog-version-badge">v1.2.0</div>
-
+                                <div class="changelog-version-badge">v1.3.0</div>
+                                <span class="changelog-date">Oct 2024</span>
                             </div>
                             <div class="changelog-content">
                                 <div class="changelog-section">
                                     <div class="changelog-section-title">✨ New Features</div>
                                     <ul class="changelog-list">
-                                        <li><strong>Multi-User Support:</strong> Setiap user memiliki data terpisah</li>
-                                        <li><strong>Authentication:</strong> Login dengan JWT token untuk keamanan</li>
-                                        <li><strong>User Dashboard:</strong> Panel dashboard untuk kelola subscription</li>
+                                        <li><strong>Schedule Names:</strong> Beri nama schedule untuk identifikasi</li>
+                                        <li><strong>Search Schedules:</strong> Cari berdasarkan nama atau pesan</li>
+                                        <li><strong>Archive System:</strong> Schedule terkirim pindah ke Archive</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Version 1.2.0 -->
+                        <div class="changelog-version">
+                            <div class="changelog-header">
+                                <div class="changelog-version-badge">v1.2.0</div>
+                                <span class="changelog-date">Sep 2024</span>
+                            </div>
+                            <div class="changelog-content">
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">✨ New Features</div>
+                                    <ul class="changelog-list">
+                                        <li><strong>Multi-User Support:</strong> Setiap user data terpisah</li>
+                                        <li><strong>JWT Authentication:</strong> Login aman dengan token</li>
+                                        <li><strong>User Dashboard:</strong> Panel kelola subscription</li>
                                     </ul>
                                 </div>
                                 <div class="changelog-section">
                                     <div class="changelog-section-title">🔧 Improvements</div>
                                     <ul class="changelog-list">
-                                        <li>Database migration dari file JSON ke SQLite</li>
+                                        <li>Database migrasi ke SQLite</li>
                                         <li>Session management lebih stabil</li>
                                     </ul>
                                 </div>
@@ -872,23 +970,16 @@
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.1.0</div>
-
+                                <span class="changelog-date">Aug 2024</span>
                             </div>
                             <div class="changelog-content">
                                 <div class="changelog-section">
                                     <div class="changelog-section-title">✨ New Features</div>
                                     <ul class="changelog-list">
-                                        <li><strong>Quick Actions:</strong> Shortcut untuk broadcast cepat</li>
-                                        <li><strong>Media Library:</strong> Upload dan manage gambar untuk broadcast</li>
-                                        <li><strong>Templates:</strong> Simpan message template untuk penggunaan berulang</li>
-                                        <li><strong>Commands:</strong> Custom command dengan prefix ! (e.g., !help)</li>
-                                    </ul>
-                                </div>
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">🐛 Bug Fixes</div>
-                                    <ul class="changelog-list">
-                                        <li>Fixed QR code expiration handling</li>
-                                        <li>Improved auto-reply matching algorithm</li>
+                                        <li><strong>Quick Actions:</strong> Shortcut broadcast cepat</li>
+                                        <li><strong>Media Library:</strong> Upload & manage gambar</li>
+                                        <li><strong>Templates:</strong> Simpan message template</li>
+                                        <li><strong>Commands:</strong> Custom !commands</li>
                                     </ul>
                                 </div>
                             </div>
@@ -898,7 +989,7 @@
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.0.0</div>
-
+                                <span class="changelog-date">Jul 2024</span>
                             </div>
                             <div class="changelog-content">
                                 <div class="changelog-section">
@@ -906,8 +997,8 @@
                                     <ul class="changelog-list">
                                         <li>Group broadcast dengan anti-ban queue</li>
                                         <li>Auto Reply dengan multiple match types</li>
-                                        <li>Schedule broadcast dengan recurring option</li>
-                                        <li>Statistics dan history tracking</li>
+                                        <li>Schedule broadcast recurring</li>
+                                        <li>Statistics & history tracking</li>
                                         <li>Blacklist management</li>
                                         <li>Dark mode support</li>
                                     </ul>
@@ -918,273 +1009,300 @@
                 </div>
             </main>
         </div>
-    <!-- All Modals -->
-    <div class="modal hidden" id="addGroupModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Add Group Manually</h3>
-                <button class="modal-close" onclick="closeModal('addGroupModal')">×</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Group Name</label>
-                <input type="text" class="form-input" id="groupNameInput" placeholder="My Group">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Group ID</label>
-                <input type="text" class="form-input" id="groupIdInput" placeholder="6281234567890-1234567890@g.us">
-            </div>
-            <div class="info-box" style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px; margin-bottom:16px;">
-                <p style="font-weight:600; color:#0369a1; margin-bottom:8px;">📋 How to get Group ID:</p>
-                <ol style="font-size:13px; color:#0c4a6e; padding-left:20px; margin:0;">
-                    <li style="margin-bottom:4px;">Open WhatsApp Web on your browser</li>
-                    <li style="margin-bottom:4px;">Open the group chat you want to add</li>
-                    <li style="margin-bottom:4px;">Click the group name at top → Scroll down</li>
-                    <li style="margin-bottom:4px;">Look for the group link or use our <strong>Discover Groups</strong> button</li>
-                </ol>
-                <p style="font-size:12px; color:#64748b; margin-top:8px; margin-bottom:0;">
-                    💡 Tip: Use "Sync Groups" to auto-import all your groups
-                </p>
-            </div>
-            <button class="btn btn-primary btn-block" onclick="saveGroup()">Save Group</button>
-        </div>
-    </div>
-
-    <div class="modal hidden" id="addContactModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Add Contact</h3>
-                <button class="modal-close" onclick="closeModal('addContactModal')">×</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Name</label>
-                <input type="text" class="form-input" id="contactName" placeholder="John Doe">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Phone Number</label>
-                <input type="text" class="form-input" id="contactNumber" placeholder="628123456789">
-            </div>
-            <button class="btn btn-primary btn-block" onclick="saveContact()">Save Contact</button>
-        </div>
-    </div>
-
-    <div class="modal hidden" id="addReplyModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Add Auto Reply</h3>
-                <button class="modal-close" onclick="closeModal('addReplyModal')">×</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Keyword</label>
-                <input type="text" class="form-input" id="replyKeyword" placeholder="e.g., info, help">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Match Type</label>
-                <select class="form-input" id="replyMatchType">
-                    <option value="contains">Contains (phrase in order)</option>
-                    <option value="exact">Exact Match</option>
-                    <option value="startswith">Starts With</option>
-                    <option value="words">All Words (any order)</option>
-                    <option value="anyword">Any Word (at least one)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Response</label>
-                <textarea class="form-input" id="replyResponse" placeholder="Your automatic response..."></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Image (optional)</label>
-                <div class="upload-area" onclick="document.getElementById('replyImageInput').click()">
-                    <input type="file" id="replyImageInput" accept="image/*" style="display:none" onchange="previewReplyImage(event)">
-                    <span id="replyUploadText">📷 Click to add image</span>
+        <!-- All Modals -->
+        <div class="modal hidden" id="addGroupModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add Group Manually</h3>
+                    <button class="modal-close" onclick="closeModal('addGroupModal')">×</button>
                 </div>
-                <img id="replyImagePreview" class="image-preview hidden">
-            </div>
-            <button class="btn btn-primary btn-block" onclick="saveAutoReply()">Save Auto Reply</button>
-        </div>
-    </div>
-
-    <div class="modal hidden" id="addScheduleModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Schedule Broadcast</h3>
-                <button class="modal-close" onclick="closeModal('addScheduleModal')">×</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Schedule Name</label>
-                <input type="text" class="form-input" id="scheduleName" placeholder="e.g., Morning Greeting, Weekly Promo">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Select Groups</label>
-                <div class="schedule-groups-container" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--bg);">
-                    <label class="checkbox-row" style="padding: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
-                        <input type="checkbox" id="scheduleSelectAll" onchange="toggleScheduleSelectAll()">
-                        <span style="font-weight: 600; color: var(--text);">Select All</span>
-                    </label>
-                    <div id="scheduleGroupList"></div>
+                <div class="form-group">
+                    <label class="form-label">Group Name</label>
+                    <input type="text" class="form-input" id="groupNameInput" placeholder="My Group">
                 </div>
-                <small class="text-muted" id="scheduleSelectedCount">0 groups selected</small>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Message</label>
-                <textarea class="form-input" id="scheduleMessage" placeholder="Your scheduled message..."></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Image (optional)</label>
-                <div class="upload-area" onclick="document.getElementById('scheduleImageInput').click()">
-                    <input type="file" id="scheduleImageInput" accept="image/*" style="display:none" onchange="previewScheduleImage(event)">
-                    <span id="scheduleUploadText">📷 Click to add image</span>
+                <div class="form-group">
+                    <label class="form-label">Group ID</label>
+                    <input type="text" class="form-input" id="groupIdInput" placeholder="6281234567890-1234567890@g.us">
                 </div>
-                <img id="scheduleImagePreview" class="image-preview hidden">
+                <div class="info-box"
+                    style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px; margin-bottom:16px;">
+                    <p style="font-weight:600; color:#0369a1; margin-bottom:8px;">📋 How to get Group ID:</p>
+                    <ol style="font-size:13px; color:#0c4a6e; padding-left:20px; margin:0;">
+                        <li style="margin-bottom:4px;">Open WhatsApp Web on your browser</li>
+                        <li style="margin-bottom:4px;">Open the group chat you want to add</li>
+                        <li style="margin-bottom:4px;">Click the group name at top → Scroll down</li>
+                        <li style="margin-bottom:4px;">Look for the group link or use our <strong>Discover
+                                Groups</strong> button</li>
+                    </ol>
+                    <p style="font-size:12px; color:#64748b; margin-top:8px; margin-bottom:0;">
+                        💡 Tip: Use "Sync Groups" to auto-import all your groups
+                    </p>
+                </div>
+                <button class="btn btn-primary btn-block" onclick="saveGroup()">Save Group</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Date & Time</label>
-                <input type="datetime-local" class="form-input" id="scheduleTime">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Repeat</label>
-                <select class="form-input" id="scheduleRepeat">
-                    <option value="">One time only</option>
-                    <option value="daily">Every day</option>
-                    <option value="weekly">Every week</option>
-                    <option value="monthly">Every month</option>
-                </select>
-            </div>
-            <button class="btn btn-primary btn-block" onclick="saveSchedule()">Schedule</button>
         </div>
-    </div>
 
-    <div class="modal hidden" id="addTemplateModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Save Template</h3>
-                <button class="modal-close" onclick="closeModal('addTemplateModal')">×</button>
+        <div class="modal hidden" id="addContactModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add Contact</h3>
+                    <button class="modal-close" onclick="closeModal('addContactModal')">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="contactName" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="text" class="form-input" id="contactNumber" placeholder="628123456789">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="saveContact()">Save Contact</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Template Name</label>
-                <input type="text" class="form-input" id="templateName" placeholder="e.g., Job Vacancy">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Message</label>
-                <textarea class="form-input" id="templateMessage" rows="6" placeholder="Your template message..."></textarea>
-            </div>
-            <p class="form-hint mb-4">Variables: {date}, {time}, {day}, {month}, {year}</p>
-            <button class="btn btn-primary btn-block" onclick="saveTemplate()">Save Template</button>
         </div>
-    </div>
 
-    <div class="modal hidden" id="addCommandModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Add Command</h3>
-                <button class="modal-close" onclick="closeModal('addCommandModal')">×</button>
+        <div class="modal hidden" id="addReplyModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add Auto Reply</h3>
+                    <button class="modal-close" onclick="closeModal('addReplyModal')">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Keyword</label>
+                    <input type="text" class="form-input" id="replyKeyword" placeholder="e.g., info, help">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Match Type</label>
+                    <select class="form-input" id="replyMatchType">
+                        <option value="contains">Contains (phrase in order)</option>
+                        <option value="exact">Exact Match</option>
+                        <option value="startswith">Starts With</option>
+                        <option value="words">All Words (any order)</option>
+                        <option value="anyword">Any Word (at least one)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Response</label>
+                    <textarea class="form-input" id="replyResponse" placeholder="Your automatic response..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Image (optional)</label>
+                    <div class="upload-area" onclick="document.getElementById('replyImageInput').click()">
+                        <input type="file" id="replyImageInput" accept="image/*" style="display:none"
+                            onchange="previewReplyImage(event)">
+                        <span id="replyUploadText">📷 Click to add image</span>
+                    </div>
+                    <img id="replyImagePreview" class="image-preview hidden">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="saveAutoReply()">Save Auto Reply</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Command</label>
-                <input type="text" class="form-input" id="commandName" placeholder="!help">
-                <p class="form-hint">Must start with !</p>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Response</label>
-                <textarea class="form-input" id="commandResponse" placeholder="Response when command is called..."></textarea>
-            </div>
-            <button class="btn btn-primary btn-block" onclick="saveCommand()">Save Command</button>
         </div>
-    </div>
 
-    <div class="modal hidden" id="discoverModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Discovered Groups</h3>
-                <button class="modal-close" onclick="closeModal('discoverModal')">×</button>
+        <div class="modal hidden" id="addScheduleModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Schedule Broadcast</h3>
+                    <button class="modal-close" onclick="closeModal('addScheduleModal')">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Schedule Name</label>
+                    <input type="text" class="form-input" id="scheduleName"
+                        placeholder="e.g., Morning Greeting, Weekly Promo">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Select Groups</label>
+                    <div class="schedule-groups-container"
+                        style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--bg);">
+                        <label class="checkbox-row"
+                            style="padding: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+                            <input type="checkbox" id="scheduleSelectAll" onchange="toggleScheduleSelectAll()">
+                            <span style="font-weight: 600; color: var(--text);">Select All</span>
+                        </label>
+                        <div id="scheduleGroupList"></div>
+                    </div>
+                    <small class="text-muted" id="scheduleSelectedCount">0 groups selected</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message</label>
+                    <textarea class="form-input" id="scheduleMessage"
+                        placeholder="Your scheduled message..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Image (optional)</label>
+                    <div class="upload-area" onclick="document.getElementById('scheduleImageInput').click()">
+                        <input type="file" id="scheduleImageInput" accept="image/*" style="display:none"
+                            onchange="previewScheduleImage(event)">
+                        <span id="scheduleUploadText">📷 Click to add image</span>
+                    </div>
+                    <img id="scheduleImagePreview" class="image-preview hidden">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date & Time</label>
+                    <input type="datetime-local" class="form-input" id="scheduleTime">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Repeat</label>
+                    <select class="form-input" id="scheduleRepeat">
+                        <option value="">One time only</option>
+                        <option value="daily">Every day</option>
+                        <option value="weekly">Every week</option>
+                        <option value="monthly">Every month</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-block" onclick="saveSchedule()">Schedule</button>
             </div>
-            <div id="discoveredList"><div class="loading"><div class="spinner"></div></div></div>
         </div>
-    </div>
 
-    <div class="modal hidden" id="logsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Message Logs</h3>
-                <button class="modal-close" onclick="closeModal('logsModal')">×</button>
+        <div class="modal hidden" id="addTemplateModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Save Template</h3>
+                    <button class="modal-close" onclick="closeModal('addTemplateModal')">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Template Name</label>
+                    <input type="text" class="form-input" id="templateName" placeholder="e.g., Job Vacancy">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message</label>
+                    <textarea class="form-input" id="templateMessage" rows="6"
+                        placeholder="Your template message..."></textarea>
+                </div>
+                <p class="form-hint mb-4">Variables: {date}, {time}, {day}, {month}, {year}</p>
+                <button class="btn btn-primary btn-block" onclick="saveTemplate()">Save Template</button>
             </div>
-            <div id="logsContent" style="max-height: 400px; overflow-y: auto;"><div class="loading"><div class="spinner"></div></div></div>
-            <button class="btn btn-danger btn-block mt-4" onclick="clearMessageLogs()">🗑️ Clear All Logs</button>
         </div>
-    </div>
 
-    <div class="modal hidden" id="loginModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">🔐 Login Required</h3>
+        <div class="modal hidden" id="addCommandModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add Command</h3>
+                    <button class="modal-close" onclick="closeModal('addCommandModal')">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Command</label>
+                    <input type="text" class="form-input" id="commandName" placeholder="!help">
+                    <p class="form-hint">Must start with !</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Response</label>
+                    <textarea class="form-input" id="commandResponse"
+                        placeholder="Response when command is called..."></textarea>
+                </div>
+                <button class="btn btn-primary btn-block" onclick="saveCommand()">Save Command</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Username</label>
-                <input type="text" class="form-input" id="loginUsername" placeholder="admin">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
-            </div>
-            <button class="btn btn-primary btn-block" onclick="login()">Login</button>
         </div>
-    </div>
 
-    <div class="modal hidden" id="blacklistModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Blocked Numbers</h3>
-                <button class="modal-close" onclick="closeModal('blacklistModal')">×</button>
+        <div class="modal hidden" id="discoverModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Discovered Groups</h3>
+                    <button class="modal-close" onclick="closeModal('discoverModal')">×</button>
+                </div>
+                <div id="discoveredList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
             </div>
-            <div id="blacklistContent" style="max-height: 400px; overflow-y: auto;"><div class="loading"><div class="spinner"></div></div></div>
         </div>
-    </div>
 
-    <div class="modal hidden" id="templateSelectModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Select Template</h3>
-                <button class="modal-close" onclick="closeModal('templateSelectModal')">×</button>
-            </div>
-            <div id="templateSelectList" style="max-height: 400px; overflow-y: auto;">
-                <div class="empty-state"><p class="text-muted">No templates saved yet</p></div>
+        <div class="modal hidden" id="logsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Message Logs</h3>
+                    <button class="modal-close" onclick="closeModal('logsModal')">×</button>
+                </div>
+                <div id="logsContent" style="max-height: 400px; overflow-y: auto;">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                <button class="btn btn-danger btn-block mt-4" onclick="clearMessageLogs()">🗑️ Clear All Logs</button>
             </div>
         </div>
-    </div>
 
-    <div class="modal hidden" id="membersModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Group Members</h3>
-                <button class="modal-close" onclick="closeModal('membersModal')">×</button>
-            </div>
-            <div id="membersList" style="max-height: 400px; overflow-y: auto;">
-                <div class="loading"><div class="spinner"></div></div>
+        <div class="modal hidden" id="loginModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">🔐 Login Required</h3>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="loginUsername" placeholder="admin">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="login()">Login</button>
             </div>
         </div>
-    </div>
 
-    <div class="modal hidden" id="addQuickActionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Add Quick Action</h3>
-                <button class="modal-close" onclick="closeModal('addQuickActionModal')">×</button>
+        <div class="modal hidden" id="blacklistModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Blocked Numbers</h3>
+                    <button class="modal-close" onclick="closeModal('blacklistModal')">×</button>
+                </div>
+                <div id="blacklistContent" style="max-height: 400px; overflow-y: auto;">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Action Name</label>
-                <input type="text" class="form-input" id="quickActionName" placeholder="e.g., Morning Greeting">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Icon (emoji)</label>
-                <input type="text" class="form-input" id="quickActionIcon" placeholder="⚡" maxlength="2">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Message</label>
-                <textarea class="form-input" id="quickActionMessage" rows="4" placeholder="Message to send..."></textarea>
-            </div>
-            <p class="form-hint mb-4">Uses groups selected in Broadcast tab</p>
-            <button class="btn btn-primary btn-block" onclick="saveQuickAction()">Save Quick Action</button>
         </div>
-    </div>
+
+        <div class="modal hidden" id="templateSelectModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Select Template</h3>
+                    <button class="modal-close" onclick="closeModal('templateSelectModal')">×</button>
+                </div>
+                <div id="templateSelectList" style="max-height: 400px; overflow-y: auto;">
+                    <div class="empty-state">
+                        <p class="text-muted">No templates saved yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal hidden" id="membersModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Group Members</h3>
+                    <button class="modal-close" onclick="closeModal('membersModal')">×</button>
+                </div>
+                <div id="membersList" style="max-height: 400px; overflow-y: auto;">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal hidden" id="addQuickActionModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add Quick Action</h3>
+                    <button class="modal-close" onclick="closeModal('addQuickActionModal')">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Action Name</label>
+                    <input type="text" class="form-input" id="quickActionName" placeholder="e.g., Morning Greeting">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon (emoji)</label>
+                    <input type="text" class="form-input" id="quickActionIcon" placeholder="⚡" maxlength="2">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message</label>
+                    <textarea class="form-input" id="quickActionMessage" rows="4"
+                        placeholder="Message to send..."></textarea>
+                </div>
+                <p class="form-hint mb-4">Uses groups selected in Broadcast tab</p>
+                <button class="btn btn-primary btn-block" onclick="saveQuickAction()">Save Quick Action</button>
+            </div>
+        </div>
     </div>
 
     <!-- Confirm Modal -->
@@ -1201,6 +1319,32 @@
         </div>
     </div>
 
+    <!-- Mobile Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-items">
+            <button class="bottom-nav-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
+                <span class="bottom-nav-icon">🏠</span>
+                <span>Home</span>
+            </button>
+            <button class="bottom-nav-item" onclick="switchTab('broadcast')" data-tab="broadcast">
+                <span class="bottom-nav-icon">📢</span>
+                <span>Broadcast</span>
+            </button>
+            <button class="bottom-nav-item" onclick="switchTab('groups')" data-tab="groups">
+                <span class="bottom-nav-icon">👥</span>
+                <span>Groups</span>
+            </button>
+            <button class="bottom-nav-item" onclick="switchTab('auto')" data-tab="auto">
+                <span class="bottom-nav-icon">🤖</span>
+                <span>Auto</span>
+            </button>
+            <button class="bottom-nav-item" onclick="toggleMobileMenu()">
+                <span class="bottom-nav-icon">☰</span>
+                <span>More</span>
+            </button>
+        </div>
+    </nav>
+
     <!-- Offline Indicator -->
     <div id="offlineIndicator" class="offline-indicator hidden">
         <span>📡 You are offline</span>
@@ -1211,4 +1355,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>

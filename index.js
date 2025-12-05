@@ -13,7 +13,22 @@ const zlib = require("zlib")
 const multer = require("multer")
 
 const app = express()
-app.use(express.json({ limit: "50mb" }))
+
+// Security: Reduce payload limit (prevent DoS)
+app.use(express.json({ limit: "10mb" }))
+
+// Security: Add security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('X-XSS-Protection', '1; mode=block')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
+  next()
+})
 
 // Clean URLs (tanpa .html)
 app.get("/", (req, res) =>
@@ -205,6 +220,14 @@ if (!process.env.JWT_SECRET) {
   )
 }
 
+// ===== ADMIN KEY =====
+const ADMIN_KEY = process.env.ADMIN_KEY || "admin-secret-key"
+if (!process.env.ADMIN_KEY || process.env.ADMIN_KEY === "admin-secret-key") {
+  console.warn(
+    "⚠️  WARNING: ADMIN_KEY not set or using default! Set a strong key in .env"
+  )
+}
+
 // ===== SQLITE DATABASE SETUP =====
 const DB_PATH = path.join(__dirname, "data", "database.sqlite")
 const db = new Database(DB_PATH)
@@ -213,7 +236,8 @@ const db = new Database(DB_PATH)
 db.exec(`
     CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE,
+        phone TEXT UNIQUE,
         password TEXT NOT NULL,
         name TEXT NOT NULL,
         plan TEXT DEFAULT 'trial',
@@ -227,6 +251,46 @@ db.exec(`
     )
 `)
 
+// Add phone column if not exists (for existing databases)
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN phone TEXT UNIQUE`)
+  console.log("✅ Added phone column to users table")
+} catch (e) {
+  // Column already exists, ignore
+}
+
+// Add suspension columns if not exists
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN suspended INTEGER DEFAULT 0`)
+  db.exec(`ALTER TABLE users ADD COLUMN suspendedAt TEXT`)
+  db.exec(`ALTER TABLE users ADD COLUMN suspendReason TEXT`)
+  console.log("✅ Added suspension columns to users table")
+} catch (e) {
+  // Columns already exist, ignore
+}
+
+// Create activity_logs table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS activity_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId TEXT,
+    action TEXT NOT NULL,
+    details TEXT,
+    targetCount INTEGER DEFAULT 0,
+    ip TEXT,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+// Create index for faster queries
+try {
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_logs_userId ON activity_logs(userId)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_logs_action ON activity_logs(action)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_logs_createdAt ON activity_logs(createdAt)`)
+} catch (e) {
+  // Indexes already exist
+}
+
 // ===== USER HELPER FUNCTIONS (SQLite) =====
 const UserDB = {
   findOne: (query) => {
@@ -234,6 +298,12 @@ const UserDB = {
       const row = db
         .prepare("SELECT * FROM users WHERE email = ?")
         .get(query.email.toLowerCase())
+      return row ? UserDB._formatUser(row) : null
+    }
+    if (query.phone) {
+      const row = db
+        .prepare("SELECT * FROM users WHERE phone = ?")
+        .get(query.phone)
       return row ? UserDB._formatUser(row) : null
     }
     return null
@@ -289,7 +359,7 @@ const UserDB = {
       fields.push("subscriptionEndsAt = ?")
       values.push(
         updates.subscriptionEndsAt?.toISOString?.() ||
-          updates.subscriptionEndsAt
+        updates.subscriptionEndsAt
       )
     }
     if (updates.maxGroups !== undefined) {
@@ -322,6 +392,7 @@ const UserDB = {
     _id: row.id,
     id: row.id,
     email: row.email,
+    phone: row.phone,
     password: row.password,
     name: row.name,
     plan: row.plan,
@@ -335,6 +406,9 @@ const UserDB = {
     },
     broadcastToday: row.broadcastToday,
     lastBroadcastDate: row.lastBroadcastDate,
+    suspended: row.suspended || 0,
+    suspendedAt: row.suspendedAt,
+    suspendReason: row.suspendReason,
     createdAt: row.createdAt ? new Date(row.createdAt) : null,
     save: async function () {
       UserDB.update(this.id, {
@@ -349,20 +423,24 @@ const UserDB = {
       })
     },
   }),
+
+  delete: (id) => {
+    db.prepare("DELETE FROM users WHERE id = ?").run(id)
+  },
 }
 
 // ===== PLAN LIMITS =====
 const PLAN_LIMITS = {
-  trial: { 
-    maxGroups: 3, 
+  trial: {
+    maxGroups: 3,
     maxBroadcastPerDay: 50,
     maxAutoReplies: 3,
     maxSchedules: 10,
     maxTemplates: 5,
     maxCommands: 3
   },
-  pro: { 
-    maxGroups: 999, 
+  pro: {
+    maxGroups: 999,
     maxBroadcastPerDay: 500,
     maxAutoReplies: 999,
     maxSchedules: 999,
@@ -377,6 +455,160 @@ function getUserLimits(userId) {
   if (!user) return PLAN_LIMITS.trial
   return PLAN_LIMITS[user.plan] || PLAN_LIMITS.trial
 }
+
+// ===== ACTIVITY LOGGING =====
+const ActivityLog = {
+  // Log an activity
+  log: (userId, action, details = null, targetCount = 0, ip = null) => {
+    try {
+      const stmt = db.prepare(`
+        INSERT INTO activity_logs (userId, action, details, targetCount, ip, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `)
+      stmt.run(userId, action, details, targetCount, ip, new Date().toISOString())
+    } catch (e) {
+      console.error("Failed to log activity:", e.message)
+    }
+  },
+
+  // Get logs with pagination
+  getLogs: (options = {}) => {
+    const { userId, action, limit = 100, offset = 0 } = options
+    let query = "SELECT * FROM activity_logs WHERE 1=1"
+    const params = []
+
+    if (userId) {
+      query += " AND userId = ?"
+      params.push(userId)
+    }
+    if (action) {
+      query += " AND action = ?"
+      params.push(action)
+    }
+
+    query += " ORDER BY createdAt DESC LIMIT ? OFFSET ?"
+    params.push(limit, offset)
+
+    return db.prepare(query).all(...params)
+  },
+
+  // Get activity stats for a user (last 24 hours)
+  getUserStats: (userId) => {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+    const stats = db.prepare(`
+      SELECT action, COUNT(*) as count, SUM(targetCount) as totalTargets
+      FROM activity_logs 
+      WHERE userId = ? AND createdAt > ?
+      GROUP BY action
+    `).all(userId, yesterday)
+
+    return stats.reduce((acc, s) => {
+      acc[s.action] = { count: s.count, targets: s.totalTargets || 0 }
+      return acc
+    }, {})
+  },
+
+  // Clean old logs (older than 30 days)
+  cleanup: () => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    db.prepare("DELETE FROM activity_logs WHERE createdAt < ?").run(thirtyDaysAgo)
+  }
+}
+
+// ===== SPAM DETECTION =====
+const SPAM_THRESHOLDS = {
+  broadcastsPerDay: 100,      // Max broadcasts per day
+  autoRepliesPerHour: 50,     // Max auto-replies per hour
+  messagesPerMinute: 20,      // Max messages per minute
+  suspiciousKeywords: [
+    "judi", "togel", "slot", "casino", "betting",
+    "pinjol", "pinjaman online", "gestun",
+    "invest bodong", "money game", "ponzi",
+    "narkoba", "drugs", "ganja"
+  ]
+}
+
+function checkSuspiciousActivity(userId) {
+  const stats = ActivityLog.getUserStats(userId)
+  const issues = []
+  let riskScore = 0
+
+  // Check broadcast volume
+  if (stats.broadcast && stats.broadcast.targets > SPAM_THRESHOLDS.broadcastsPerDay) {
+    issues.push(`High broadcast volume: ${stats.broadcast.targets} messages/day`)
+    riskScore += 30
+  }
+
+  // Check auto-reply frequency (need to calculate hourly)
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const recentReplies = db.prepare(`
+    SELECT COUNT(*) as count FROM activity_logs 
+    WHERE userId = ? AND action = 'auto_reply' AND createdAt > ?
+  `).get(userId, oneHourAgo)
+
+  if (recentReplies && recentReplies.count > SPAM_THRESHOLDS.autoRepliesPerHour) {
+    issues.push(`High auto-reply rate: ${recentReplies.count}/hour`)
+    riskScore += 25
+  }
+
+  // Check for suspicious keywords in recent messages
+  const recentLogs = db.prepare(`
+    SELECT details FROM activity_logs 
+    WHERE userId = ? AND action IN ('broadcast', 'schedule_sent') 
+    AND createdAt > datetime('now', '-1 day')
+    LIMIT 50
+  `).all(userId)
+
+  for (const log of recentLogs) {
+    if (log.details) {
+      const lowerDetails = log.details.toLowerCase()
+      for (const keyword of SPAM_THRESHOLDS.suspiciousKeywords) {
+        if (lowerDetails.includes(keyword)) {
+          issues.push(`Suspicious keyword detected: "${keyword}"`)
+          riskScore += 20
+          break
+        }
+      }
+    }
+  }
+
+  return {
+    isSpam: riskScore >= 50,
+    isSuspicious: riskScore >= 25,
+    riskScore: Math.min(riskScore, 100),
+    issues
+  }
+}
+
+// Get all suspicious users
+function getSuspiciousUsers() {
+  const users = UserDB.find()
+  const suspicious = []
+
+  for (const user of users) {
+    const check = checkSuspiciousActivity(user.id)
+    if (check.isSuspicious) {
+      suspicious.push({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        plan: user.plan,
+        suspended: user.suspended,
+        ...check
+      })
+    }
+  }
+
+  return suspicious.sort((a, b) => b.riskScore - a.riskScore)
+}
+
+// Run log cleanup daily
+setInterval(() => {
+  ActivityLog.cleanup()
+  console.log("🧹 Old activity logs cleaned up")
+}, 24 * 60 * 60 * 1000)
 
 // ===== CONFIGURATION =====
 const PORT = process.env.PORT || 3000
@@ -852,6 +1084,12 @@ async function handleIncomingMessage(userId, client, msg) {
         console.log(
           `[${userId}] Auto-reply triggered for keyword: ${reply.keyword}`
         )
+
+        // Update trigger count
+        reply.triggerCount = (reply.triggerCount || 0) + 1
+        reply.lastTriggered = new Date().toISOString()
+        writeAutoReplies(userId, autoReplies)
+
         break
       }
     }
@@ -908,17 +1146,51 @@ async function destroySession(userId, clearAuthData = false) {
 }
 
 // ===== MULTER UPLOAD CONFIG =====
+// Security: Validate MIME types
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'video/mp4', 'video/webm',
+  'audio/mpeg', 'audio/mp3', 'audio/wav',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+]
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+  destination: (req, file, cb) => {
+    // Security: Validate userId to prevent path traversal
+    const userId = req.params.userId || req.authUserId
+    if (!userId || userId.includes('..') || userId.includes('/') || userId.includes('\\')) {
+      return cb(new Error('Invalid user ID'))
+    }
+    const userDir = path.join(UPLOADS_DIR, userId)
+    if (!fs.existsSync(userDir)) {
+      fs.mkdirSync(userDir, { recursive: true })
+    }
+    cb(null, userDir)
+  },
   filename: (req, file, cb) =>
     cb(
       null,
       `${Date.now()}-${Math.random().toString(36).substr(2, 9)}${path.extname(
         file.originalname
-      )}`
+      ).toLowerCase()}`
     ),
 })
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } })
+
+const fileFilter = (req, file, cb) => {
+  if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    cb(null, true)
+  } else {
+    cb(new Error('Invalid file type. Only images, videos, audio, and documents allowed.'), false)
+  }
+}
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }
+})
 
 // =============================================
 // ===== AUTH SECURITY =====
@@ -1079,7 +1351,7 @@ app.post("/api/auth/register", async (req, res) => {
     // Check if user exists (by email or phone)
     const existingByEmail = email ? UserDB.findOne({ email }) : null
     const existingByPhone = phone ? UserDB.findOne({ phone }) : null
-    
+
     if (existingByEmail) {
       return res.status(400).json({ error: "Email sudah terdaftar" })
     }
@@ -1101,7 +1373,7 @@ app.post("/api/auth/register", async (req, res) => {
       trialEndsAt,
       limits: PLAN_LIMITS.trial,
     }
-    
+
     if (email) userData.email = email
     if (phone) userData.phone = phone
 
@@ -1159,7 +1431,7 @@ app.post("/api/auth/login", async (req, res) => {
       email = email.toLowerCase().trim()
       user = UserDB.findOne({ email })
     }
-    
+
     // Try to find user by phone
     if (!user && phone) {
       phone = normalizePhone(phone)
@@ -1184,6 +1456,9 @@ app.post("/api/auth/login", async (req, res) => {
       expiresIn: "30d",
     })
 
+    // Log successful login
+    ActivityLog.log(user.id, "login", null, 0, ip)
+
     res.json({
       success: true,
       token,
@@ -1206,6 +1481,16 @@ app.post("/api/auth/login", async (req, res) => {
 
 // ===== PASSWORD RESET =====
 const resetTokens = new Map()
+
+// Cleanup expired reset tokens every 15 minutes
+setInterval(() => {
+  const now = Date.now()
+  for (const [token, data] of resetTokens) {
+    if (now > data.expiry) {
+      resetTokens.delete(token)
+    }
+  }
+}, 15 * 60 * 1000)
 
 // Forgot password - Generate reset token
 app.post("/api/auth/forgot-password", async (req, res) => {
@@ -1433,6 +1718,16 @@ async function requireAuth(req, res, next) {
         .json({ error: "Subscription expired", code: "SUBSCRIPTION_EXPIRED" })
     }
 
+    // Check if user is suspended
+    if (user.suspended) {
+      return res
+        .status(403)
+        .json({
+          error: "Account suspended: " + (user.suspendReason || "Violation of terms"),
+          code: "ACCOUNT_SUSPENDED"
+        })
+    }
+
     req.user = user
     next()
   } catch (error) {
@@ -1440,24 +1735,55 @@ async function requireAuth(req, res, next) {
   }
 }
 
-// =============================================
-// ===== ADMIN ROUTES =====
-// =============================================
+// ===== ADMIN RATE LIMITING =====
+const adminAttempts = new Map()
+const ADMIN_RATE_LIMIT = { maxAttempts: 5, windowMs: 15 * 60 * 1000 } // 5 attempts per 15 min
 
-const ADMIN_KEY = process.env.ADMIN_KEY || "admin-secret-key"
-if (!process.env.ADMIN_KEY || process.env.ADMIN_KEY === "admin-secret-key") {
-  console.warn(
-    "⚠️  WARNING: ADMIN_KEY not set or using default! Set a strong key in .env"
-  )
+function checkAdminRateLimit(ip) {
+  const now = Date.now()
+  const attempts = adminAttempts.get(ip) || { count: 0, firstAttempt: now }
+
+  // Reset if window expired
+  if (now - attempts.firstAttempt > ADMIN_RATE_LIMIT.windowMs) {
+    adminAttempts.set(ip, { count: 1, firstAttempt: now })
+    return { allowed: true }
+  }
+
+  if (attempts.count >= ADMIN_RATE_LIMIT.maxAttempts) {
+    const remainingMs = ADMIN_RATE_LIMIT.windowMs - (now - attempts.firstAttempt)
+    return { allowed: false, message: `Too many attempts. Try again in ${Math.ceil(remainingMs / 60000)} minutes` }
+  }
+
+  attempts.count++
+  adminAttempts.set(ip, attempts)
+  return { allowed: true }
 }
 
-// Admin: List all users
-app.get("/api/admin/users", (req, res) => {
+// Admin auth middleware with rate limiting
+function requireAdminAuth(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress
   const adminKey = req.headers["x-admin-key"]
-  if (adminKey !== ADMIN_KEY) {
+
+  // Check rate limit first
+  const rateCheck = checkAdminRateLimit(ip)
+  if (!rateCheck.allowed) {
+    return res.status(429).json({ error: rateCheck.message })
+  }
+
+  // Validate admin key
+  if (!adminKey || adminKey !== ADMIN_KEY) {
+    // Log failed attempt
+    console.warn(`⚠️ Failed admin auth attempt from IP: ${ip}`)
     return res.status(403).json({ error: "Forbidden" })
   }
 
+  // Reset attempts on success
+  adminAttempts.delete(ip)
+  next()
+}
+
+// Admin: List all users
+app.get("/api/admin/users", requireAdminAuth, (req, res) => {
   const users = UserDB.find().map((u) => {
     const { password, ...userWithoutPassword } = u
     return userWithoutPassword
@@ -1466,12 +1792,7 @@ app.get("/api/admin/users", (req, res) => {
 })
 
 // Admin: Activate Pro subscription
-app.post("/api/admin/activate", async (req, res) => {
-  const adminKey = req.headers["x-admin-key"]
-  if (adminKey !== ADMIN_KEY) {
-    return res.status(403).json({ error: "Forbidden" })
-  }
-
+app.post("/api/admin/activate", requireAdminAuth, async (req, res) => {
   const { email, months } = req.body
 
   try {
@@ -1506,27 +1827,28 @@ app.post("/api/admin/activate", async (req, res) => {
 })
 
 // Admin: Delete user
-app.delete("/api/admin/users/:id", (req, res) => {
-  const adminKey = req.headers["x-admin-key"]
-  if (adminKey !== ADMIN_KEY) {
-    return res.status(403).json({ error: "Forbidden" })
-  }
-
+app.delete("/api/admin/users/:id", requireAdminAuth, async (req, res) => {
   const { id } = req.params
-  
+
   try {
     // Delete user from database
-    UserDB.delete(parseInt(id))
-    
+    UserDB.delete(id)
+
     // Also destroy their session if exists
-    if (userSessions.has(id)) {
-      const session = userSessions.get(id)
-      if (session.client) {
-        session.client.destroy().catch(() => {})
+    if (sessions.has(id)) {
+      const client = sessions.get(id)
+      if (client) {
+        try {
+          await client.destroy()
+        } catch (e) {
+          console.error(`Error destroying session ${id}:`, e)
+        }
       }
-      userSessions.delete(id)
+      sessions.delete(id)
+      sessionStatuses.delete(id)
+      qrCodes.delete(id)
     }
-    
+
     res.json({ success: true, message: "User deleted" })
   } catch (error) {
     res.status(500).json({ error: "Failed to delete user" })
@@ -1534,38 +1856,186 @@ app.delete("/api/admin/users/:id", (req, res) => {
 })
 
 // Admin: Clear all sessions
-app.post("/api/admin/sessions/clear", async (req, res) => {
-  const adminKey = req.headers["x-admin-key"]
-  if (adminKey !== ADMIN_KEY) {
-    return res.status(403).json({ error: "Forbidden" })
-  }
-
+app.post("/api/admin/sessions/clear", requireAdminAuth, async (req, res) => {
   try {
-    const sessionCount = userSessions.size
-    
+    const sessionCount = sessions.size
+
     // Destroy all clients
-    for (const [userId, session] of userSessions) {
-      if (session.client) {
+    for (const [userId, client] of sessions) {
+      if (client) {
         try {
-          await session.client.destroy()
+          await client.destroy()
         } catch (e) {
           console.error(`Error destroying session ${userId}:`, e)
         }
       }
     }
-    
+
     // Clear all sessions
-    userSessions.clear()
-    
+    sessions.clear()
+    sessionStatuses.clear()
+    qrCodes.clear()
+
     res.json({ success: true, message: `Cleared ${sessionCount} sessions` })
   } catch (error) {
     res.status(500).json({ error: "Failed to clear sessions" })
   }
 })
 
-// =============================================
-// ===== API ENDPOINTS - SESSION MANAGEMENT =====
-// =============================================
+// Admin: Get activity logs
+app.get("/api/admin/logs", requireAdminAuth, (req, res) => {
+  const { userId, action, limit = 100, offset = 0 } = req.query
+
+  try {
+    const logs = ActivityLog.getLogs({
+      userId,
+      action,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    })
+
+    // Get user info for each log
+    const logsWithUser = logs.map(log => {
+      const user = UserDB.findById(log.userId)
+      return {
+        ...log,
+        userName: user?.name || "Unknown",
+        userEmail: user?.email || user?.phone || "-"
+      }
+    })
+
+    res.json({ success: true, logs: logsWithUser })
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get logs" })
+  }
+})
+
+// Admin: Get suspicious users
+app.get("/api/admin/suspicious", requireAdminAuth, (req, res) => {
+  try {
+    const suspicious = getSuspiciousUsers()
+    res.json({ success: true, users: suspicious })
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get suspicious users" })
+  }
+})
+
+// Admin: Suspend user
+app.post("/api/admin/suspend/:userId", requireAdminAuth, async (req, res) => {
+  const { userId } = req.params
+  const { reason } = req.body
+
+  try {
+    const user = UserDB.findById(userId)
+    if (!user) {
+      return res.status(404).json({ error: "User not found" })
+    }
+
+    // Update user suspension status
+    db.prepare(`
+      UPDATE users SET suspended = 1, suspendedAt = ?, suspendReason = ?
+      WHERE id = ?
+    `).run(new Date().toISOString(), reason || "Violation of terms", userId)
+
+    // Destroy their WhatsApp session
+    if (sessions.has(userId)) {
+      const client = sessions.get(userId)
+      if (client) {
+        try {
+          await client.destroy()
+        } catch (e) {
+          console.error(`Error destroying session ${userId}:`, e)
+        }
+      }
+      sessions.delete(userId)
+      sessionStatuses.delete(userId)
+      qrCodes.delete(userId)
+    }
+
+    // Log the suspension
+    ActivityLog.log(userId, "suspended", reason || "Violation of terms", 0, null)
+
+    console.log(`⛔ User ${user.email || user.phone} suspended: ${reason}`)
+
+    res.json({
+      success: true,
+      message: `User ${user.email || user.phone} has been suspended`,
+      user: { id: userId, name: user.name, suspended: true }
+    })
+  } catch (error) {
+    res.status(500).json({ error: "Failed to suspend user" })
+  }
+})
+
+// Admin: Unsuspend user
+app.post("/api/admin/unsuspend/:userId", requireAdminAuth, (req, res) => {
+  const { userId } = req.params
+
+  try {
+    const user = UserDB.findById(userId)
+    if (!user) {
+      return res.status(404).json({ error: "User not found" })
+    }
+
+    // Update user suspension status
+    db.prepare(`
+      UPDATE users SET suspended = 0, suspendedAt = NULL, suspendReason = NULL
+      WHERE id = ?
+    `).run(userId)
+
+    // Log the unsuspension
+    ActivityLog.log(userId, "unsuspended", null, 0, null)
+
+    console.log(`✅ User ${user.email || user.phone} unsuspended`)
+
+    res.json({
+      success: true,
+      message: `User ${user.email || user.phone} has been unsuspended`,
+      user: { id: userId, name: user.name, suspended: false }
+    })
+  } catch (error) {
+    res.status(500).json({ error: "Failed to unsuspend user" })
+  }
+})
+
+// Admin: Get user activity details
+app.get("/api/admin/user/:userId/activity", (req, res) => {
+  const adminKey = req.headers["x-admin-key"]
+  if (adminKey !== ADMIN_KEY) {
+    return res.status(403).json({ error: "Forbidden" })
+  }
+
+  const { userId } = req.params
+
+  try {
+    const user = UserDB.findById(userId)
+    if (!user) {
+      return res.status(404).json({ error: "User not found" })
+    }
+
+    const stats = ActivityLog.getUserStats(userId)
+    const recentLogs = ActivityLog.getLogs({ userId, limit: 50 })
+    const suspiciousCheck = checkSuspiciousActivity(userId)
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        plan: user.plan,
+        suspended: user.suspended,
+        suspendReason: user.suspendReason
+      },
+      stats,
+      recentActivity: recentLogs,
+      riskAssessment: suspiciousCheck
+    })
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get user activity" })
+  }
+})
 
 
 // Start a new session (requires auth, user can only start their own session)
@@ -1656,7 +2126,7 @@ app.post("/api/session/pairing-code", requireUserAuth, async (req, res) => {
 
     // Request pairing code
     const pairingCode = await client.requestPairingCode(normalizedPhone)
-    
+
     // Store pairing code for polling
     pairingCodes.set(userId, {
       code: pairingCode,
@@ -1674,7 +2144,7 @@ app.post("/api/session/pairing-code", requireUserAuth, async (req, res) => {
     })
   } catch (error) {
     console.error(`❌ Pairing code error for ${userId}:`, error)
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Gagal generate pairing code. " + (error.message || "Coba lagi."),
       details: error.message
     })
@@ -1705,24 +2175,24 @@ app.get("/api/sessions", (req, res) => {
 
   const sessionList = []
 
-  sessions.forEach((client, oderId) => {
-    const status = sessionStatuses.get(oderId) || "unknown"
-    const phone = sessionPhones.get(oderId) || null
-    const connectedAt = sessionConnectedAt.get(oderId) || null
-    
+  sessions.forEach((client, userId) => {
+    const status = sessionStatuses.get(userId) || "unknown"
+    const phone = sessionPhones.get(userId) || null
+    const connectedAt = sessionConnectedAt.get(userId) || null
+
     // Get user info
-    const user = UserDB.findById(oderId)
-    
+    const user = UserDB.findById(userId)
+
     sessionList.push({
-      id: oderId,
-      oderId, // backward compatibility
-      userId: oderId,
+      id: userId,
+      oderId: userId, // backward compatibility (deprecated)
+      userId: userId,
       userName: user?.name || "Unknown",
       userEmail: user?.email || "-",
       phone: phone,
       status: status,
       connectedAt: connectedAt,
-      hasQR: qrCodes.has(oderId),
+      hasQR: qrCodes.has(userId),
     })
   })
 
@@ -2001,13 +2471,13 @@ function parseSpintax(text) {
 // ===== BROADCAST =====
 app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
   const { userId } = req.params
-  const { 
-    message, 
-    groups, 
+  const {
+    message,
+    groups,
     image,
     // Anti-Ban Options
     randomDelayMs = { min: 2000, max: 5000 },
-    sleepMode = { enabled: false, after: 20, durationMs: 60000 } 
+    sleepMode = { enabled: false, after: 20, durationMs: 60000 }
   } = req.body
 
   if (!message && !image) {
@@ -2032,7 +2502,7 @@ app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
       selected: groups.length
     })
   }
-  
+
   // Reset counter if new day
   let broadcastToday = user?.broadcastToday || 0
   if (user?.lastBroadcastDate !== today) {
@@ -2072,8 +2542,8 @@ app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
 
     // Sleep Mode Logic
     if (sleepMode.enabled && i > 0 && i % sleepMode.after === 0) {
-        console.log(`[${userId}] Sleep mode active. Pausing for ${sleepMode.durationMs}ms...`)
-        await delay(sleepMode.durationMs)
+      console.log(`[${userId}] Sleep mode active. Pausing for ${sleepMode.durationMs}ms...`)
+      await delay(sleepMode.durationMs)
     }
 
     try {
@@ -2086,7 +2556,7 @@ app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
       if (settings.typing?.enabled) {
         const chat = await req.client.getChatById(groupId)
         await chat.sendStateTyping()
-        
+
         // Dynamic typing duration based on message length
         const typingDuration = Math.min((uniqueMessage.length * 50), 3000) + 500
         await delay(typingDuration)
@@ -2137,6 +2607,9 @@ app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
       lastBroadcastDate: today
     })
   }
+
+  // Log broadcast activity
+  ActivityLog.log(userId, "broadcast", message?.substring(0, 100), successCount, null)
 
   res.json({
     success: successCount,
@@ -2295,6 +2768,13 @@ app.post("/api/:userId/schedules", requireUserAuth, (req, res) => {
     return res
       .status(400)
       .json({ error: "Scheduled time and groups are required" })
+  }
+
+  // Validate message or image is provided
+  if (!message && !image) {
+    return res
+      .status(400)
+      .json({ error: "Message or image is required for schedule" })
   }
 
   const schedules = readSchedules(userId)
@@ -2830,6 +3310,25 @@ async function checkSchedules() {
         console.log(
           `[${userId}] Scheduled broadcast completed: ${successCount} success, ${failCount} failed`
         )
+
+        // Handle recurring schedules
+        if (schedule.recurring && schedule.recurring !== "none") {
+          const nextTime = new Date(schedule.scheduledTime)
+
+          if (schedule.recurring === "daily") {
+            nextTime.setDate(nextTime.getDate() + 1)
+          } else if (schedule.recurring === "weekly") {
+            nextTime.setDate(nextTime.getDate() + 7)
+          }
+
+          schedule.scheduledTime = nextTime.toISOString()
+          schedule.status = "pending"
+          delete schedule.sentAt
+
+          console.log(`[${userId}] Recurring schedule rescheduled to: ${nextTime.toISOString()}`)
+        }
+
+        writeSchedules(userId, schedules)
       }
     }
   })

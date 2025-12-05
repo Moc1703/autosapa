@@ -48,23 +48,23 @@ function showConfirm(message, onConfirm, onCancel = null) {
     const msgEl = document.getElementById('confirmMessage');
     const btnConfirm = document.getElementById('confirmYes');
     const btnCancel = document.getElementById('confirmNo');
-    
+
     if (!modal) {
         // Fallback to native confirm if modal doesn't exist
         if (confirm(message)) onConfirm();
         else if (onCancel) onCancel();
         return;
     }
-    
+
     msgEl.textContent = message;
     modal.classList.remove('hidden');
-    
+
     const cleanup = () => {
         modal.classList.add('hidden');
         btnConfirm.onclick = null;
         btnCancel.onclick = null;
     };
-    
+
     btnConfirm.onclick = () => { cleanup(); onConfirm(); };
     btnCancel.onclick = () => { cleanup(); if (onCancel) onCancel(); };
 }
@@ -81,13 +81,13 @@ function initOfflineDetection() {
             toast('You are offline. Some features may not work.', 'warning');
         }
     };
-    
+
     window.addEventListener('online', () => {
         isOnline = true;
         updateStatus();
         toast('Back online!', 'success');
     });
-    
+
     window.addEventListener('offline', updateStatus);
     updateStatus();
 }
@@ -99,7 +99,7 @@ function initKeyboardShortcuts() {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
         }
-        
+
         // Ctrl+Enter to send broadcast
         if (e.ctrlKey && e.key === 'Enter') {
             const activeTab = document.querySelector('.tab-panel.active');
@@ -108,7 +108,7 @@ function initKeyboardShortcuts() {
                 sendBroadcast();
             }
         }
-        
+
         // Ctrl+S to save draft
         if (e.ctrlKey && e.key === 's') {
             const activeTab = document.querySelector('.tab-panel.active');
@@ -124,21 +124,21 @@ function initKeyboardShortcuts() {
 // Drag and drop for images
 function initDragDrop() {
     const uploadAreas = document.querySelectorAll('.upload-area');
-    
+
     uploadAreas.forEach(area => {
         area.addEventListener('dragover', (e) => {
             e.preventDefault();
             area.classList.add('drag-over');
         });
-        
+
         area.addEventListener('dragleave', () => {
             area.classList.remove('drag-over');
         });
-        
+
         area.addEventListener('drop', (e) => {
             e.preventDefault();
             area.classList.remove('drag-over');
-            
+
             const file = e.dataTransfer.files[0];
             if (file && file.type.startsWith('image/')) {
                 const input = area.querySelector('input[type="file"]');
@@ -196,12 +196,12 @@ async function apiFetch(endpoint, options = {}) {
     const defaultHeaders = {
         'Authorization': `Bearer ${authToken}`
     };
-    
+
     if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
         defaultHeaders['Content-Type'] = 'application/json';
         options.body = JSON.stringify(options.body);
     }
-    
+
     return fetch(endpoint, {
         ...options,
         headers: {
@@ -233,17 +233,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/login';
         return;
     }
-    
+
     // Check if session is connected, if not redirect to scan
     const isConnected = await checkSessionConnected();
     if (!isConnected) {
         window.location.href = '/scan';
         return;
     }
-    
+
     // Save userId
     localStorage.setItem('wa_userId', userId);
-    
+
     checkStatus();
     loadData();
     loadDashboardStats(); // Initial load
@@ -251,15 +251,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadQuickActions();
     loadMedia();
     setInterval(checkStatus, 5000);
-    
+
     // Initialize new features
     initOfflineDetection();
     initKeyboardShortcuts();
     setTimeout(initDragDrop, 500); // Wait for DOM
-    
+
     // Background sync groups (after 5 seconds to let WhatsApp load chats)
     setTimeout(backgroundSyncGroups, 5000);
-    
+
     // Check dark mode
     if (localStorage.getItem('darkMode') === 'true') {
         document.body.classList.add('dark-mode');
@@ -287,20 +287,20 @@ async function checkAuthToken() {
         const res = await fetch('/api/auth/me', {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
+
         const data = await res.json();
-        
+
         if (!data.success) return false;
-        
+
         currentUser = data.user;
-        
+
         // Check if subscription is active
         if (!data.user.isActive) {
             alert('Subscription Anda telah berakhir. Silakan upgrade ke Pro.');
             window.location.href = '/dashboard';
             return false;
         }
-        
+
         return true;
     } catch (e) {
         console.error('Auth check failed:', e);
@@ -312,28 +312,28 @@ async function checkAuthToken() {
 async function backgroundSyncGroups() {
     // Only sync if no groups yet
     if (groups.length > 0) return;
-    
+
     console.log('Background sync: Starting...');
-    
+
     let attempts = 0;
     const maxAttempts = 6; // Try 6 times (30 seconds total)
-    
+
     const trySync = async () => {
         attempts++;
         try {
-            const res = await apiFetch(getUserApi() + '/groups/sync', { 
+            const res = await apiFetch(getUserApi() + '/groups/sync', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
             const data = await res.json();
-            
+
             if (data.total > 0) {
                 console.log(`Background sync: Found ${data.total} groups!`);
                 toast(`Synced ${data.total} groups from WhatsApp`, 'success');
                 loadGroups();
                 return;
             }
-            
+
             if (attempts < maxAttempts) {
                 console.log(`Background sync: No groups yet, retry ${attempts}/${maxAttempts}`);
                 setTimeout(trySync, 5000);
@@ -346,7 +346,7 @@ async function backgroundSyncGroups() {
             }
         }
     };
-    
+
     trySync();
 }
 
@@ -357,7 +357,7 @@ async function checkAuth() {
             headers: { 'X-Auth-Token': authToken }
         });
         const data = await res.json();
-        
+
         if (data.authEnabled && !data.authenticated) {
             showModal('loginModal');
             return false;
@@ -372,18 +372,18 @@ async function checkAuth() {
 async function login() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
-    
+
     if (!username || !password) return toast('Please fill all fields', 'error');
-    
+
     try {
         const res = await fetch(API + '/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
-        
+
         const data = await res.json();
-        
+
         if (data.success && data.token) {
             authToken = data.token;
             localStorage.setItem('authToken', authToken);
@@ -407,7 +407,7 @@ async function logout() {
     } catch (e) {
         // Ignore errors
     }
-    
+
     authToken = '';
     localStorage.removeItem('authToken');
     toast('Logged out', 'success');
@@ -418,28 +418,28 @@ async function switchWhatsApp() {
     if (!confirm('Yakin ingin ganti akun WhatsApp?\n\nSession lama akan dihapus dan Anda perlu scan QR code baru.')) {
         return;
     }
-    
+
     try {
         toast('Menghapus session WhatsApp...', 'info');
-        
+
         const res = await fetch('/api/session/start', {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authToken}`
             },
             body: JSON.stringify({ userId, clearAuth: true })
         });
-        
+
         const data = await res.json();
         console.log('Switch WA result:', data);
-        
+
         toast('Session dihapus. Redirecting ke scan QR...', 'success');
-        
+
         setTimeout(() => {
             window.location.href = '/scan';
         }, 1500);
-        
+
     } catch (error) {
         console.error('Switch WhatsApp failed:', error);
         toast('Gagal menghapus session', 'error');
@@ -453,7 +453,7 @@ async function checkStatus() {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
         const data = await res.json();
-        
+
         let className, statusText;
         if (data.status === 'connected') {
             className = 'status-badge connected';
@@ -465,7 +465,7 @@ async function checkStatus() {
             className = 'status-badge disconnected';
             statusText = 'Disconnected';
         }
-        
+
         // Update header, desktop sidebar, and mobile menu status
         updateStatusBadge('statusBadge', 'statusText', className, statusText);
         updateStatusBadge('statusBadgeDesktop', 'statusTextDesktop', className, statusText);
@@ -489,11 +489,11 @@ function toggleMobileMenu() {
     const menu = document.getElementById('mobileMenu');
     const overlay = document.getElementById('mobileMenuOverlay');
     const hamburger = document.getElementById('hamburgerBtn');
-    
+
     menu.classList.toggle('active');
     overlay.classList.toggle('active');
     hamburger.classList.toggle('active');
-    
+
     // Prevent body scroll when menu is open
     document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
 }
@@ -502,20 +502,25 @@ function toggleMobileMenu() {
 function switchTab(tab) {
     // Hide all panels
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    
+
     // Update mobile menu items
     document.querySelectorAll('.mobile-menu-item').forEach(n => n.classList.remove('active'));
     const mobileMenuItem = document.querySelector(`.mobile-menu-item[data-tab="${tab}"]`);
     if (mobileMenuItem) mobileMenuItem.classList.add('active');
-    
+
     // Update desktop sidebar
     document.querySelectorAll('.sidebar-item').forEach(n => n.classList.remove('active'));
     const desktopNav = document.querySelector(`.sidebar-item[data-tab="${tab}"]`);
     if (desktopNav) desktopNav.classList.add('active');
-    
+
+    // Update bottom navigation (mobile)
+    document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+    const bottomNavItem = document.querySelector(`.bottom-nav-item[data-tab="${tab}"]`);
+    if (bottomNavItem) bottomNavItem.classList.add('active');
+
     // Show selected panel
     document.getElementById('tab-' + tab).classList.add('active');
-    
+
     // Load data for tab
     if (tab === 'dashboard') { loadDashboardStats(); }
     if (tab === 'broadcast') { loadQuickActions(); loadMedia(); }
@@ -537,7 +542,7 @@ async function loadGroups() {
         groups = await res.json();
         renderGroupsList();
         renderGroupSelect();
-        
+
         // Update both mobile and desktop stats
         const el1 = document.getElementById('totalGroups');
         const el2 = document.getElementById('totalGroupsDesktop');
@@ -559,7 +564,7 @@ function renderGroupsList() {
             </div>`;
         return;
     }
-    
+
     list.innerHTML = groups.map(g => `
         <div class="group-item">
             <div class="group-icon">👥</div>
@@ -583,7 +588,7 @@ function renderGroupSelect() {
         list.innerHTML = `<div class="empty-state"><p class="text-muted">No groups yet</p></div>`;
         return;
     }
-    
+
     list.innerHTML = groups.map(g => `
         <div class="group-select-item" onclick="toggleGroupSelect(this, '${escapeAttr(g.groupId || g.id)}')">
             <input type="checkbox" value="${escapeAttr(g.groupId || g.id)}" onclick="event.stopPropagation(); updateSelectedCount()">
@@ -629,7 +634,7 @@ function filterGroups() {
 function previewImage(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     selectedImage = file;
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -654,7 +659,7 @@ function removeImage() {
 function previewReplyImage(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     replyImage = file;
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -668,7 +673,7 @@ function previewReplyImage(event) {
 function previewScheduleImage(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     scheduleImage = file;
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -689,9 +694,9 @@ function toggleSafeMode() {
     const toggle = document.getElementById('safeModeToggle');
     const customSettings = document.getElementById('customAntiBanSettings');
     const badge = document.getElementById('antiBanIndicator');
-    
+
     toggle.classList.toggle('active');
-    
+
     if (toggle.classList.contains('active')) {
         customSettings.classList.add('hidden');
         badge.textContent = 'Safe Mode ON';
@@ -715,15 +720,15 @@ let activeTargetTab = 'groups';
 
 function switchTargetTab(tab) {
     activeTargetTab = tab;
-    
+
     // UI Updates
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(`tabBtn-${tab}`).classList.add('active');
-    
+
     document.getElementById('targetPanel-groups').classList.add('hidden');
     document.getElementById('targetPanel-manual').classList.add('hidden');
     document.getElementById(`targetPanel-${tab}`).classList.remove('hidden');
-    
+
     // Update count display
     if (tab === 'groups') updateSelectedCount();
     else updateManualCount();
@@ -740,7 +745,7 @@ function updateManualCount() {
 function extractNumbers(text) {
     if (!text) return [];
     // Split by comma, new line, or space
-    return text.split(/[\n,;]+/) 
+    return text.split(/[\n,;]+/)
         .map(n => n.replace(/\D/g, '')) // Remove non-digits
         .filter(n => n.length >= 10) // Filter invalid length
         .map(n => {
@@ -767,14 +772,14 @@ async function sendBroadcast() {
         const text = document.getElementById('manualNumbers').value;
         const numbers = extractNumbers(text);
         if (!numbers.length) return toast('Please enter at least one valid number', 'error');
-        
+
         // Format for backend (append @c.us for contacts)
         recipients = numbers.map(n => n.endsWith('@c.us') ? n : `${n}@c.us`);
         targetType = 'manual';
     }
-    
+
     if (!message && !selectedImage) return toast('Please enter a message or select an image', 'error');
-    
+
     // Anti-Ban Parameters
     const isSafeMode = document.getElementById('safeModeToggle')?.classList.contains('active') ?? true;
     let randomDelayMs = { min: 2000, max: 5000 };
@@ -800,28 +805,28 @@ async function sendBroadcast() {
     const btn = document.getElementById('sendBtn');
     const progressDiv = document.getElementById('broadcastProgress');
     const progressText = document.getElementById('progressText');
-    
+
     btn.disabled = true;
     btn.textContent = '⏳ Sending...';
     progressDiv.classList.remove('hidden');
-    
+
     // Estimate Time & Show
     const avgDelay = (randomDelayMs.min + randomDelayMs.max) / 2;
     const estTimeMs = (recipients.length * avgDelay) + (sleepMode.enabled ? (Math.floor(recipients.length / sleepMode.after) * sleepMode.durationMs) : 0);
     const estMins = Math.ceil(estTimeMs / 60000);
     progressText.textContent = `Sending to ${recipients.length} ${targetType}. Est. time: ${estMins} mins...`;
-    
+
     try {
         let imageData = null;
         if (selectedImage) {
             imageData = await toBase64(selectedImage);
         }
-        
+
         const res = await apiFetch(getUserApi() + '/broadcast', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                message, 
+            body: JSON.stringify({
+                message,
                 groups: recipients, // Backend uses 'groups' var but handles IDs genericly
                 targetType,         // Hint for backend (optional but good for logging)
                 image: imageData,
@@ -829,15 +834,15 @@ async function sendBroadcast() {
                 sleepMode
             })
         });
-        
+
         const data = await res.json();
-        
+
         if (data.error) throw new Error(data.error);
 
         showResult(data);
         if (activeTargetTab === 'manual') {
-             // Clear manual numbers on success? maybe optional.
-             // document.getElementById('manualNumbers').value = '';
+            // Clear manual numbers on success? maybe optional.
+            // document.getElementById('manualNumbers').value = '';
         }
         document.getElementById('quickMessage').value = '';
         removeImage();
@@ -855,14 +860,14 @@ async function sendBroadcast() {
 function showResult(data) {
     const section = document.getElementById('resultSection');
     const card = document.getElementById('resultCard');
-    
+
     section.classList.remove('hidden');
     card.className = 'result-card ' + (data.failed === 0 ? 'success' : 'error');
-    
+
     document.getElementById('resultTitle').textContent = data.failed === 0 ? 'Broadcast Sent!' : 'Partially Sent';
     document.getElementById('resultSuccess').textContent = data.success || 0;
     document.getElementById('resultFailed').textContent = data.failed || 0;
-    
+
     setTimeout(() => section.classList.add('hidden'), 5000);
 }
 
@@ -874,25 +879,25 @@ async function loadStats() {
             apiFetch(getUserApi() + '/groups'),
             apiFetch(getUserApi() + '/autoreplies')
         ]);
-        
+
         const hist = await histRes.json();
         const grps = await groupRes.json();
         const replies = await replyRes.json();
-        
+
         const today = new Date().toDateString();
         const sentToday = hist.filter(h => new Date(h.timestamp).toDateString() === today)
             .reduce((sum, h) => sum + (h.successCount || h.success || 0), 0);
-        
+
         // Update both mobile and desktop
         const el1 = document.getElementById('totalSent');
         const el2 = document.getElementById('totalSentDesktop');
         if (el1) el1.textContent = sentToday;
         if (el2) el2.textContent = sentToday;
-        
+
         const total = hist.reduce((sum, h) => sum + (h.successCount || h.success || 0) + (h.failCount || h.failed || 0), 0);
         const success = hist.reduce((sum, h) => sum + (h.successCount || h.success || 0), 0);
         const rate = total > 0 ? Math.round(success / total * 100) : 0;
-        
+
         document.getElementById('statTotal').textContent = success;
         document.getElementById('statSuccess').textContent = rate + '%';
         document.getElementById('statGroups').textContent = grps.length;
@@ -912,16 +917,16 @@ function showAddGroup() {
 async function saveGroup() {
     const name = document.getElementById('groupNameInput').value.trim();
     const id = document.getElementById('groupIdInput').value.trim();
-    
+
     if (!name || !id) return toast('Please fill all fields', 'error');
-    
+
     try {
         await apiFetch(getUserApi() + '/groups', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, id })
         });
-        
+
         closeModal('addGroupModal');
         toast('Group added!', 'success');
         loadGroups();
@@ -945,16 +950,16 @@ async function deleteGroup(id) {
 async function discoverGroups() {
     showModal('discoverModal');
     document.getElementById('discoveredList').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    
+
     try {
         const res = await apiFetch(getUserApi() + '/whatsapp-groups');
         const data = await res.json();
-        
+
         if (!data.length) {
             document.getElementById('discoveredList').innerHTML = '<div class="empty-state"><p class="text-muted">No groups found. Make sure WhatsApp is connected.</p></div>';
             return;
         }
-        
+
         document.getElementById('discoveredList').innerHTML = data.map(g => `
             <div class="card-list-item" onclick="addDiscoveredGroup('${escapeAttr(g.id)}', '${escapeAttr(g.name)}')">
                 <div class="card-icon-large" style="background:var(--bg-subtle); color:var(--primary)">👥</div>
@@ -1001,7 +1006,7 @@ function renderContacts() {
         list.innerHTML = '<div class="empty-state"><p class="text-muted">Save contacts for quick access</p></div>';
         return;
     }
-    
+
     list.innerHTML = contacts.map(c => `
         <div class="group-card-item" data-name="${escapeAttr(c.name)}" data-number="${escapeAttr(c.number)}">
             <div class="group-icon-large" style="background: var(--success-light); color: var(--success);">👤</div>
@@ -1032,16 +1037,16 @@ function showAddContact() {
 async function saveContact() {
     const name = document.getElementById('contactName').value.trim();
     const number = document.getElementById('contactNumber').value.trim();
-    
+
     if (!name || !number) return toast('Please fill all fields', 'error');
-    
+
     try {
         await apiFetch(getUserApi() + '/contacts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, number })
         });
-        
+
         closeModal('addContactModal');
         toast('Contact added!', 'success');
         loadContacts();
@@ -1084,7 +1089,7 @@ function renderAutoReplies() {
             </div>`;
         return;
     }
-    
+
     list.innerHTML = autoReplies.map((r, i) => `
         <div class="card-list-item">
             <div class="card-info">
@@ -1119,22 +1124,22 @@ async function saveAutoReply() {
     const keyword = document.getElementById('replyKeyword').value.trim();
     const matchType = document.getElementById('replyMatchType').value;
     const response = document.getElementById('replyResponse').value.trim();
-    
+
     if (!keyword) return toast('Please enter a keyword', 'error');
     if (!response && !replyImage) return toast('Please enter a response or add an image', 'error');
-    
+
     try {
         let imageData = null;
         if (replyImage) {
             imageData = await toBase64(replyImage);
         }
-        
+
         await apiFetch(getUserApi() + '/autoreplies', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ keyword, matchType, response, image: imageData, enabled: true })
         });
-        
+
         closeModal('addReplyModal');
         toast('Auto reply added!', 'success');
         loadAutoReplies();
@@ -1147,7 +1152,7 @@ async function toggleAutoReply(id) {
     try {
         const reply = autoReplies.find(r => r.id === id);
         if (!reply) return;
-        
+
         await apiFetch(getUserApi() + '/autoreplies/' + id, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -1188,7 +1193,7 @@ function renderCommands() {
         list.innerHTML = '<div class="empty-state"><p class="text-muted">No commands. Create !help, !menu, etc.</p></div>';
         return;
     }
-    
+
     list.innerHTML = commands.map(c => `
         <div class="card-list-item" data-command="${escapeAttr(c.command)}" data-response="${escapeAttr(c.response || '')}">
             <div class="card-icon-large" style="background:var(--bg-secondary); color:var(--primary)">⚡</div>
@@ -1218,7 +1223,7 @@ let editingCommandId = null;
 function editCommand(id) {
     const cmd = commands.find(c => c.id === id);
     if (!cmd) return;
-    
+
     editingCommandId = id;
     document.getElementById('commandName').value = cmd.command;
     document.getElementById('commandResponse').value = cmd.response;
@@ -1228,10 +1233,10 @@ function editCommand(id) {
 async function saveCommand() {
     let command = document.getElementById('commandName').value.trim();
     const response = document.getElementById('commandResponse').value.trim();
-    
+
     if (!command || !response) return toast('Please fill all fields', 'error');
     if (!command.startsWith('!')) command = '!' + command;
-    
+
     try {
         if (editingCommandId) {
             // Update existing
@@ -1251,7 +1256,7 @@ async function saveCommand() {
             });
             toast('Command added!', 'success');
         }
-        
+
         closeModal('addCommandModal');
         loadCommands();
     } catch (e) {
@@ -1293,16 +1298,16 @@ let currentScheduleFilter = 'all';
 
 function renderSchedules() {
     const searchQuery = (document.getElementById('searchSchedules')?.value || '').toLowerCase();
-    
+
     // Update stats
     const pendingCount = schedules.filter(s => s.status !== 'sent').length;
     const today = new Date().toDateString();
     const sentTodayCount = schedules.filter(s => s.status === 'sent' && new Date(s.sentAt).toDateString() === today).length;
-    
+
     document.getElementById('schedPending')?.textContent && (document.getElementById('schedPending').textContent = pendingCount);
     document.getElementById('schedSentToday')?.textContent && (document.getElementById('schedSentToday').textContent = sentTodayCount);
     document.getElementById('schedTotal')?.textContent && (document.getElementById('schedTotal').textContent = schedules.length);
-    
+
     // Filter by status
     let filtered = schedules;
     if (currentScheduleFilter === 'pending') {
@@ -1310,15 +1315,15 @@ function renderSchedules() {
     } else if (currentScheduleFilter === 'sent') {
         filtered = schedules.filter(s => s.status === 'sent');
     }
-    
+
     // Filter by search
     if (searchQuery) {
-        filtered = filtered.filter(s => 
+        filtered = filtered.filter(s =>
             (s.name || '').toLowerCase().includes(searchQuery) ||
             (s.message || '').toLowerCase().includes(searchQuery)
         );
     }
-    
+
     const list = document.getElementById('scheduleList');
     if (!filtered.length) {
         list.innerHTML = `
@@ -1330,7 +1335,7 @@ function renderSchedules() {
             </div>`;
         return;
     }
-    
+
     list.innerHTML = filtered.map(s => {
         const isSent = s.status === 'sent';
         const groupCount = s.groups?.length || s.groupIds?.length || 0;
@@ -1363,7 +1368,7 @@ function switchScheduleTab(tab) {
     // Update tabs
     document.getElementById('tabSchedules').classList.toggle('active', tab === 'schedules');
     document.getElementById('tabTemplates').classList.toggle('active', tab === 'templates');
-    
+
     // Update panels
     document.getElementById('panelSchedules').classList.toggle('active', tab === 'schedules');
     document.getElementById('panelTemplates').classList.toggle('active', tab === 'templates');
@@ -1371,12 +1376,12 @@ function switchScheduleTab(tab) {
 
 function filterScheduleStatus(status) {
     currentScheduleFilter = status;
-    
+
     // Update filter buttons
     document.querySelectorAll('.schedule-filter .filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === status);
     });
-    
+
     renderSchedules();
 }
 
@@ -1394,7 +1399,7 @@ function showAddSchedule() {
     document.getElementById('scheduleUploadText').textContent = '📷 Tap to add image';
     document.getElementById('scheduleSelectAll').checked = false;
     scheduleImage = null;
-    
+
     // Populate group list in schedule modal
     const listEl = document.getElementById('scheduleGroupList');
     if (!groups.length) {
@@ -1427,26 +1432,26 @@ async function saveSchedule() {
     const message = document.getElementById('scheduleMessage').value.trim();
     const scheduledTime = document.getElementById('scheduleTime').value;
     const repeat = document.getElementById('scheduleRepeat').value;
-    
+
     // Get selected groups from schedule modal
     const selectedGroups = [...document.querySelectorAll('.schedule-group-checkbox:checked')].map(cb => cb.value);
     if (!selectedGroups.length) return toast('Please select at least one group', 'error');
-    
+
     if (!message && !scheduleImage) return toast('Please enter a message or add an image', 'error');
     if (!scheduledTime) return toast('Please select date and time', 'error');
-    
+
     try {
         let imageData = null;
         if (scheduleImage) {
             imageData = await toBase64(scheduleImage);
         }
-        
+
         await apiFetch(getUserApi() + '/schedules', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: name || null, message, scheduledTime, groups: selectedGroups, repeat: repeat || null, image: imageData })
         });
-        
+
         closeModal('addScheduleModal');
         toast('Schedule created!', 'success');
         loadSchedules();
@@ -1490,21 +1495,21 @@ function renderTemplates() {
             </div>`;
         return;
     }
-    
+
     const searchQuery = (document.getElementById('searchTemplates')?.value || '').toLowerCase();
     let filtered = templates;
     if (searchQuery) {
-        filtered = templates.filter(t => 
+        filtered = templates.filter(t =>
             (t.name || '').toLowerCase().includes(searchQuery) ||
             (t.message || '').toLowerCase().includes(searchQuery)
         );
     }
-    
+
     if (!filtered.length) {
         list.innerHTML = '<div class="empty-state"><p class="text-muted">No matching templates</p></div>';
         return;
     }
-    
+
     list.innerHTML = filtered.map((t, i) => `
         <div class="template-card" onclick="useTemplate(${templates.indexOf(t)})">
             <div class="template-card-header">
@@ -1533,7 +1538,7 @@ let editingTemplateId = null;
 function editTemplate(id) {
     const tpl = templates.find(t => t.id === id);
     if (!tpl) return;
-    
+
     editingTemplateId = id;
     document.getElementById('templateName').value = tpl.name;
     document.getElementById('templateMessage').value = tpl.message;
@@ -1576,9 +1581,9 @@ function showAddTemplate() {
 async function saveTemplate() {
     const name = document.getElementById('templateName').value.trim();
     const message = document.getElementById('templateMessage').value.trim();
-    
+
     if (!name || !message) return toast('Please fill all fields', 'error');
-    
+
     try {
         if (editingTemplateId) {
             // Update existing
@@ -1598,7 +1603,7 @@ async function saveTemplate() {
             });
             toast('Template saved!', 'success');
         }
-        
+
         closeModal('addTemplateModal');
         loadTemplates();
     } catch (e) {
@@ -1636,17 +1641,17 @@ function renderHistory() {
         list.innerHTML = '<div class="empty-state"><p class="text-muted">No broadcast history yet</p></div>';
         return;
     }
-    
+
     // Pagination
     const totalItems = history.length;
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     const page = Math.min(currentPage.history, totalPages);
     currentPage.history = page;
-    
+
     const startIdx = totalItems - (page * ITEMS_PER_PAGE);
     const endIdx = startIdx + ITEMS_PER_PAGE;
     const pageItems = history.slice(Math.max(0, startIdx), endIdx).reverse();
-    
+
     let html = pageItems.map(h => {
         const success = h.successCount || h.success || 0;
         const failed = h.failCount || h.failed || 0;
@@ -1665,7 +1670,7 @@ function renderHistory() {
             </div>
         `;
     }).join('');
-    
+
     // Pagination controls
     if (totalPages > 1) {
         html += `
@@ -1676,7 +1681,7 @@ function renderHistory() {
             </div>
         `;
     }
-    
+
     list.innerHTML = html;
 }
 
@@ -1700,7 +1705,7 @@ async function clearHistory() {
 
 function exportCSV() {
     if (!history.length) return toast('No history to export', 'error');
-    
+
     const headers = ['Date', 'Message', 'Success', 'Failed'];
     const rows = history.map(h => [
         formatDate(h.timestamp),
@@ -1708,7 +1713,7 @@ function exportCSV() {
         h.successCount || h.success || 0,
         h.failCount || h.failed || 0
     ]);
-    
+
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -1716,7 +1721,7 @@ function exportCSV() {
     a.href = url;
     a.download = `broadcast-history-${Date.now()}.csv`;
     a.click();
-    
+
     toast('CSV downloaded', 'success');
 }
 
@@ -1725,7 +1730,7 @@ async function loadSettings() {
     try {
         const res = await apiFetch(getUserApi() + '/settings');
         settings = await res.json();
-        
+
         // Settings use nested structure: settings.queue.enabled, settings.auth.enabled
         if (settings.queue?.enabled) document.getElementById('queueToggle')?.classList.add('active');
         if (settings.typing?.enabled) document.getElementById('typingToggle')?.classList.add('active');
@@ -1742,13 +1747,13 @@ async function loadSettings() {
 async function toggleSetting(key) {
     const toggle = document.getElementById(key + 'Toggle');
     const isActive = toggle.classList.toggle('active');
-    
+
     // Map key to nested structure
     const payload = {};
     if (key === 'queue') payload.queue = { enabled: isActive };
     else if (key === 'typing') payload.typing = { enabled: isActive };
     else if (key === 'auth') payload.auth = { enabled: isActive };
-    
+
     try {
         await apiFetch(getUserApi() + '/settings', {
             method: 'PUT',
@@ -1773,14 +1778,14 @@ function toggleDarkMode() {
 async function addBlacklist() {
     const number = document.getElementById('blacklistInput').value.trim();
     if (!number) return toast('Please enter a number', 'error');
-    
+
     try {
         await apiFetch(getUserApi() + '/blacklist', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ number })
         });
-        
+
         document.getElementById('blacklistInput').value = '';
         toast('Number blocked', 'success');
     } catch (e) {
@@ -1791,16 +1796,16 @@ async function addBlacklist() {
 async function showBlacklist() {
     showModal('blacklistModal');
     document.getElementById('blacklistContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    
+
     try {
         const res = await apiFetch(getUserApi() + '/blacklist');
         blacklist = await res.json();
-        
+
         if (!blacklist.length) {
             document.getElementById('blacklistContent').innerHTML = '<div class="empty-state"><p class="text-muted">No blocked numbers</p></div>';
             return;
         }
-        
+
         document.getElementById('blacklistContent').innerHTML = blacklist.map(b => `
             <div class="card-list-item">
                 <div class="card-icon-large" style="background:var(--bg-subtle); color:var(--danger)">🚫</div>
@@ -1830,14 +1835,14 @@ async function downloadBackup() {
     try {
         const res = await apiFetch(getUserApi() + '/backup');
         const data = await res.json();
-        
+
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `wa-backup-${Date.now()}.json`;
         a.click();
-        
+
         toast('Backup downloaded', 'success');
     } catch (e) {
         toast('Failed to create backup', 'error');
@@ -1847,28 +1852,28 @@ async function downloadBackup() {
 async function restoreBackup(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     if (!confirm('This will replace all current data. Continue?')) {
         event.target.value = '';
         return;
     }
-    
+
     try {
         const text = await file.text();
         const data = JSON.parse(text);
-        
+
         await apiFetch(getUserApi() + '/backup/restore', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        
+
         toast('Backup restored!', 'success');
         loadData();
     } catch (e) {
         toast('Failed to restore backup', 'error');
     }
-    
+
     event.target.value = '';
 }
 
@@ -1876,16 +1881,16 @@ async function restoreBackup(event) {
 async function viewLogs() {
     showModal('logsModal');
     document.getElementById('logsContent').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    
+
     try {
         const res = await apiFetch(getUserApi() + '/messagelogs');
         const logs = await res.json();
-        
+
         if (!logs.length) {
             document.getElementById('logsContent').innerHTML = '<div class="empty-state"><p class="text-muted">No message logs</p></div>';
             return;
         }
-        
+
         document.getElementById('logsContent').innerHTML = logs.slice(-50).reverse().map(l => `
             <div class="card-list-item">
                 <div class="card-info">
@@ -1920,24 +1925,24 @@ function toast(message, type = 'info', title = '') {
     const container = document.getElementById('toastContainer');
     const t = document.createElement('div');
     t.className = 'toast ' + type;
-    
+
     const icons = {
         success: '✅',
         error: '❌',
         warning: '⚠️',
         info: 'ℹ️'
     };
-    
+
     const titles = {
         success: 'Success',
         error: 'Error',
         warning: 'Warning',
         info: 'Info'
     };
-    
+
     const icon = icons[type] || icons.info;
     const toastTitle = title || titles[type] || titles.info;
-    
+
     t.innerHTML = `
         <div class="toast-icon">${icon}</div>
         <div class="toast-content">
@@ -1996,12 +2001,12 @@ async function loadQuickActions() {
 function renderQuickActions() {
     const container = document.getElementById('quickActionsGrid');
     if (!container) return;
-    
+
     if (!quickActions.length) {
         container.innerHTML = '<p class="text-muted text-center">No quick actions yet</p>';
         return;
     }
-    
+
     container.innerHTML = quickActions.map(q => `
         <div class="quick-card ${q.color || ''}">
             <button class="quick-card-delete" onclick="event.stopPropagation(); deleteQuickAction('${q.id}')" title="Delete">×</button>
@@ -2015,7 +2020,7 @@ function renderQuickActions() {
 
 async function deleteQuickAction(id) {
     if (!confirm('Delete this quick action?')) return;
-    
+
     try {
         await apiFetch(getUserApi() + '/quickactions/' + id, { method: 'DELETE' });
         toast('Deleted', 'success');
@@ -2028,13 +2033,13 @@ async function deleteQuickAction(id) {
 async function executeQuickAction(id) {
     const action = quickActions.find(q => q.id === id);
     if (!action) return;
-    
+
     toast('Executing ' + action.name + '...', 'info');
-    
+
     try {
         const res = await apiFetch(getUserApi() + '/quickactions/' + id + '/execute', { method: 'POST' });
         const data = await res.json();
-        
+
         if (data.success !== undefined) {
             toast(`Done! ✅ ${data.success} sent`, 'success');
         } else {
@@ -2053,18 +2058,18 @@ async function saveQuickAction() {
     const name = document.getElementById('quickActionName')?.value.trim();
     const message = document.getElementById('quickActionMessage')?.value.trim();
     const icon = document.getElementById('quickActionIcon')?.value || '⚡';
-    
+
     if (!name || !message) return toast('Please fill all fields', 'error');
-    
+
     const selectedGroups = [...document.querySelectorAll('#groupSelectList input:checked')].map(cb => cb.value);
-    
+
     try {
         await apiFetch(getUserApi() + '/quickactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, message, icon, groups: selectedGroups })
         });
-        
+
         closeModal('addQuickActionModal');
         toast('Quick action saved!', 'success');
         loadQuickActions();
@@ -2089,12 +2094,12 @@ async function loadMedia() {
 function renderMedia() {
     const container = document.getElementById('mediaGrid');
     if (!container) return;
-    
+
     if (!mediaFiles.length) {
         container.innerHTML = '<p class="text-muted text-center">No images uploaded</p>';
         return;
     }
-    
+
     container.innerHTML = mediaFiles.map(m => `
         <div class="media-item">
             <img src="/uploads/${m}" alt="${m}" onclick="selectMedia('${m}')">
@@ -2110,7 +2115,7 @@ function selectMedia(filename) {
 
 async function deleteMedia(filename) {
     if (!confirm('Delete this image?')) return;
-    
+
     try {
         await apiFetch(getUserApi() + '/media/' + filename, { method: 'DELETE' });
         toast('Deleted', 'success');
@@ -2137,7 +2142,7 @@ async function loadCategories() {
 function renderCategoryChips() {
     const container = document.getElementById('categoryChips');
     if (!container) return;
-    
+
     const chips = ['all', ...categories];
     container.innerHTML = chips.map(c => `
         <button class="category-chip ${selectedCategory === c ? 'active' : ''}" onclick="filterByCategory('${c}')">
@@ -2149,7 +2154,7 @@ function renderCategoryChips() {
 function filterByCategory(category) {
     selectedCategory = category;
     renderCategoryChips();
-    
+
     document.querySelectorAll('#groupsList .list-item').forEach(item => {
         const cat = item.dataset.category || '';
         item.style.display = (category === 'all' || cat === category) ? '' : 'none';
@@ -2175,14 +2180,14 @@ async function exportGroups() {
     try {
         const res = await apiFetch(getUserApi() + '/groups/export');
         const data = await res.json();
-        
+
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `groups-export-${Date.now()}.json`;
         a.click();
-        
+
         toast('Groups exported', 'success');
     } catch (e) {
         toast('Failed to export', 'error');
@@ -2192,23 +2197,23 @@ async function exportGroups() {
 async function importGroups(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     try {
         const text = await file.text();
         const data = JSON.parse(text);
-        
+
         await apiFetch(getUserApi() + '/groups/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        
+
         toast('Groups imported!', 'success');
         loadGroups();
     } catch (e) {
         toast('Failed to import', 'error');
     }
-    
+
     event.target.value = '';
 }
 
@@ -2216,7 +2221,7 @@ async function importGroups(event) {
 async function syncGroups() {
     const btn = document.getElementById('syncBtn');
     const emptyBtn = document.getElementById('emptySyncBtn');
-    
+
     // Disable buttons
     [btn, emptyBtn].forEach(b => {
         if (b) {
@@ -2224,28 +2229,28 @@ async function syncGroups() {
             b.innerHTML = '⏳ Syncing...<small style="display:block; font-weight:normal; font-size:11px;">Please wait 10-30 seconds</small>';
         }
     });
-    
+
     toast('Syncing groups from WhatsApp... This may take 10-30 seconds', 'info');
-    
+
     let attempts = 0;
     const maxAttempts = 6;
-    
+
     const trySync = async () => {
         attempts++;
         try {
-            const res = await apiFetch(getUserApi() + '/groups/sync', { 
+            const res = await apiFetch(getUserApi() + '/groups/sync', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
             const data = await res.json();
-            
+
             if (data.total > 0) {
                 toast(`✅ Synced! Found ${data.total} groups (${data.added || 0} new)`, 'success');
                 loadGroups();
                 resetSyncButtons();
                 return;
             }
-            
+
             // No groups found yet
             if (attempts < maxAttempts) {
                 toast(`Waiting for chats to load... (${attempts}/${maxAttempts})`, 'info');
@@ -2263,7 +2268,7 @@ async function syncGroups() {
             }
         }
     };
-    
+
     function resetSyncButtons() {
         if (btn) {
             btn.disabled = false;
@@ -2274,7 +2279,7 @@ async function syncGroups() {
             emptyBtn.innerHTML = '🔄 Sync All Groups<small style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Auto-import from WhatsApp (recommended)</small>';
         }
     }
-    
+
     trySync();
 }
 
@@ -2285,7 +2290,7 @@ async function togglePinGroup(groupId) {
             method: 'PUT'
         });
         const data = await res.json();
-        
+
         toast(data.pinned ? 'Group pinned' : 'Group unpinned', 'success');
         loadGroups();
     } catch (e) {
@@ -2307,11 +2312,11 @@ async function duplicateSchedule(id) {
 // ===== RETRY FAILED BROADCAST =====
 async function retryBroadcast(historyId) {
     toast('Retrying failed messages...', 'info');
-    
+
     try {
         const res = await apiFetch(getUserApi() + '/history/' + historyId + '/retry', { method: 'POST' });
         const data = await res.json();
-        
+
         toast(`Retry complete! ✅ ${data.success || 0} sent`, 'success');
         loadHistory();
     } catch (e) {
@@ -2333,9 +2338,9 @@ async function loadAnalytics() {
 function renderAnalyticsChart(data) {
     const container = document.getElementById('analyticsChart');
     if (!container || !data.daily) return;
-    
+
     const maxVal = Math.max(...data.daily.map(d => d.count), 1);
-    
+
     container.innerHTML = `
         <div class="chart-bar">
             ${data.daily.map(d => `
@@ -2352,16 +2357,16 @@ function renderAnalyticsChart(data) {
 // ===== FORWARD MESSAGE =====
 async function forwardMessage(messageId) {
     const selectedGroups = [...document.querySelectorAll('#groupSelectList input:checked')].map(cb => cb.value);
-    
+
     if (!selectedGroups.length) return toast('Please select groups first', 'error');
-    
+
     try {
         const res = await apiFetch(getUserApi() + '/forward', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messageId, groups: selectedGroups })
         });
-        
+
         const data = await res.json();
         toast(`Forwarded to ${data.success || 0} groups`, 'success');
     } catch (e) {
@@ -2373,16 +2378,16 @@ async function forwardMessage(messageId) {
 async function previewMessage() {
     const message = document.getElementById('quickMessage').value.trim();
     if (!message) return toast('Please enter a message first', 'error');
-    
+
     try {
         const res = await apiFetch(getUserApi() + '/preview', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message })
         });
-        
+
         const data = await res.json();
-        
+
         const preview = document.getElementById('messagePreview');
         if (preview) {
             preview.innerHTML = `<div class="preview-box">${escapeHtml(data.preview || message)}</div>`;
@@ -2396,7 +2401,7 @@ async function previewMessage() {
 // ===== DRAFT SYSTEM =====
 async function saveDraft() {
     const message = document.getElementById('quickMessage').value.trim();
-    
+
     try {
         await apiFetch(getUserApi() + '/draft', {
             method: 'POST',
@@ -2413,7 +2418,7 @@ async function loadDraft() {
     try {
         const res = await apiFetch(getUserApi() + '/draft');
         const data = await res.json();
-        
+
         if (data.message) {
             document.getElementById('quickMessage').value = data.message;
             toast('Draft loaded', 'success');
@@ -2427,16 +2432,16 @@ async function loadDraft() {
 async function showGroupMembers(groupId) {
     showModal('membersModal');
     document.getElementById('membersList').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    
+
     try {
         const res = await apiFetch(getUserApi() + '/groups/' + encodeURIComponent(groupId) + '/members');
         const data = await res.json();
-        
+
         if (!data.length) {
             document.getElementById('membersList').innerHTML = '<div class="empty-state"><p class="text-muted">No members found</p></div>';
             return;
         }
-        
+
         document.getElementById('membersList').innerHTML = data.map(m => `
             <div class="card-list-item">
                 <div class="card-icon-large" style="background:var(--bg-subtle); color:var(--text-secondary)">👤</div>
@@ -2458,11 +2463,11 @@ let bulkSelected = [];
 function toggleBulkMode() {
     bulkMode = !bulkMode;
     bulkSelected = [];
-    
+
     document.querySelectorAll('.list').forEach(list => {
         list.classList.toggle('bulk-mode', bulkMode);
     });
-    
+
     document.getElementById('bulkActions')?.classList.toggle('hidden', !bulkMode);
     toast(bulkMode ? 'Bulk mode enabled' : 'Bulk mode disabled', 'info');
 }
@@ -2470,14 +2475,14 @@ function toggleBulkMode() {
 async function bulkDeleteGroups() {
     if (!bulkSelected.length) return toast('No items selected', 'error');
     if (!confirm(`Delete ${bulkSelected.length} groups?`)) return;
-    
+
     try {
         await apiFetch(getUserApi() + '/groups/bulk-delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids: bulkSelected })
         });
-        
+
         toast(`Deleted ${bulkSelected.length} groups`, 'success');
         toggleBulkMode();
         loadGroups();
@@ -2491,7 +2496,7 @@ async function loadAutoReplyStats() {
     try {
         const res = await apiFetch(getUserApi() + '/autoreplies/stats');
         const data = await res.json();
-        
+
         const container = document.getElementById('autoReplyStats');
         if (container) {
             container.innerHTML = `
@@ -2513,7 +2518,7 @@ async function loadAutoReplyStats() {
 // ===== CLEAR MESSAGE LOGS =====
 async function clearMessageLogs() {
     if (!confirm('Clear all message logs?')) return;
-    
+
     try {
         await apiFetch(getUserApi() + '/messagelogs', { method: 'DELETE' });
         toast('Logs cleared', 'success');
@@ -2526,26 +2531,26 @@ async function clearMessageLogs() {
 // ===== BROADCAST BY CATEGORY =====
 async function broadcastByCategory(category) {
     const message = document.getElementById('quickMessage').value.trim();
-    
+
     if (!message && !selectedImage) return toast('Please enter a message or select an image', 'error');
     if (!category) return toast('Please select a category', 'error');
-    
+
     const btn = document.getElementById('sendBtn');
     btn.disabled = true;
     btn.textContent = '⏳ Sending...';
-    
+
     try {
         let imageData = null;
         if (selectedImage) {
             imageData = await toBase64(selectedImage);
         }
-        
+
         const res = await apiFetch(getUserApi() + '/broadcast/category', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message, category, image: imageData })
         });
-        
+
         const data = await res.json();
         showResult(data);
         document.getElementById('quickMessage').value = '';
@@ -2564,7 +2569,7 @@ async function loadGroupsStats() {
     try {
         const res = await apiFetch(getUserApi() + '/groups/stats');
         const data = await res.json();
-        
+
         const container = document.getElementById('groupsStatsContainer');
         if (container) {
             container.innerHTML = `
@@ -2592,15 +2597,15 @@ async function loadSchedulesPreview() {
     try {
         const res = await apiFetch(getUserApi() + '/schedules/preview');
         const data = await res.json();
-        
+
         const container = document.getElementById('upcomingSchedules');
         if (!container) return;
-        
+
         if (!data.upcoming || !data.upcoming.length) {
             container.innerHTML = '<p class="text-muted">No upcoming schedules</p>';
             return;
         }
-        
+
         container.innerHTML = data.upcoming.slice(0, 5).map(s => `
             <div class="list-item-compact">
                 <span class="text-muted">${formatDate(s.scheduledTime)}</span>
@@ -2615,7 +2620,7 @@ async function loadSchedulesPreview() {
 // ===== BULK DELETE TEMPLATES =====
 async function bulkDeleteTemplates(ids) {
     if (!confirm(`Delete ${ids.length} templates?`)) return;
-    
+
     try {
         await apiFetch(getUserApi() + '/templates/bulk-delete', {
             method: 'POST',
@@ -2632,7 +2637,7 @@ async function bulkDeleteTemplates(ids) {
 // ===== BULK DELETE SCHEDULES =====
 async function bulkDeleteSchedules(ids) {
     if (!confirm(`Delete ${ids.length} schedules?`)) return;
-    
+
     try {
         await apiFetch(getUserApi() + '/schedules/bulk-delete', {
             method: 'POST',
@@ -2662,12 +2667,12 @@ async function loadDashboardStats() {
     // Update Stats Cards
     const elGroups = document.getElementById('dashTotalGroups');
     if (elGroups) elGroups.textContent = groups.length;
-    
+
     // Calculate sent today
     const todayStr = new Date().toDateString();
     const sentToday = history.filter(h => new Date(h.timestamp).toDateString() === todayStr)
-                             .reduce((sum, h) => sum + (h.successCount || h.success || 0), 0);
-    
+        .reduce((sum, h) => sum + (h.successCount || h.success || 0), 0);
+
     const elSent = document.getElementById('dashTotalSent');
     if (elSent) elSent.textContent = sentToday;
 
@@ -2687,9 +2692,9 @@ async function loadDashboardStats() {
         } else {
             const recent = history.slice(-5).reverse();
             list.innerHTML = recent.map(h => {
-                 const success = h.successCount || h.success || 0;
-                 const failed = h.failCount || h.failed || 0;
-                 return `
+                const success = h.successCount || h.success || 0;
+                const failed = h.failCount || h.failed || 0;
+                return `
                 <div class="activity-item">
                     <div class="activity-icon">${failed > 0 ? '⚠️' : '✅'}</div>
                     <div class="activity-content">
