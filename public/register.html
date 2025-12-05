@@ -3,253 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar - AutoSapa Pro</title>
+    <title>Daftar - AutoSapa</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: #0b141a;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
+        
         .auth-container {
-            background: #1e293b;
-            border-radius: 20px;
-            padding: 40px;
+            background: #1f2c34;
+            border-radius: 16px;
+            padding: 40px 32px;
             width: 100%;
-            max-width: 480px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 440px;
+            border: 1px solid #2a3942;
         }
+        
         .logo {
             text-align: center;
-            font-size: 28px;
-            font-weight: 700;
-            color: #fff;
             margin-bottom: 8px;
         }
-        .logo span { color: #22c55e; }
-        .subtitle {
-            text-align: center;
-            color: #94a3b8;
-            margin-bottom: 12px;
+        .logo-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 10px;
         }
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: #e9edef;
+        }
+        .logo-text span { color: #25D366; }
+        
         .trial-badge {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-            color: white;
             text-align: center;
-            padding: 12px;
-            border-radius: 10px;
             margin-bottom: 24px;
+        }
+        .trial-badge span {
+            display: inline-block;
+            background: rgba(37, 211, 102, 0.15);
+            color: #25D366;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
             font-weight: 600;
         }
+        
+        /* Tabs */
+        .auth-tabs {
+            display: flex;
+            background: #182229;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: #8696a0;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .auth-tab.active {
+            background: #25D366;
+            color: #0b141a;
+        }
+        
+        /* Form */
         .form-group { margin-bottom: 16px; }
         .form-label {
             display: block;
-            color: #e2e8f0;
-            margin-bottom: 8px;
+            color: #8696a0;
+            font-size: 13px;
             font-weight: 500;
+            margin-bottom: 6px;
         }
         .form-input {
             width: 100%;
-            padding: 14px 16px;
-            background: #0f172a;
-            border: 2px solid #334155;
+            padding: 12px 14px;
+            background: #182229;
+            border: 1px solid #2a3942;
             border-radius: 10px;
-            color: #f1f5f9;
-            font-size: 16px;
-            transition: all 0.2s;
+            color: #e9edef;
+            font-size: 15px;
+            transition: border-color 0.2s;
         }
         .form-input:focus {
             outline: none;
-            border-color: #22c55e;
+            border-color: #25D366;
         }
-        .form-input::placeholder { color: #64748b; }
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-            color: white;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3);
-        }
-        .btn-primary:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .links {
-            text-align: center;
-            margin-top: 24px;
-        }
-        .links a {
-            color: #22c55e;
-            text-decoration: none;
-        }
-        .links a:hover { text-decoration: underline; }
-        .error-msg {
-            background: #7f1d1d;
-            color: #fecaca;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: none;
-        }
-        .success-msg {
-            background: #14532d;
-            color: #bbf7d0;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            display: none;
-        }
-        .back-link {
-            display: block;
-            text-align: center;
-            color: #64748b;
-            text-decoration: none;
-            margin-top: 20px;
-        }
-        .back-link:hover { color: #94a3b8; }
-        .features-list {
-            background: #0f172a;
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 24px;
-        }
-        .features-list li {
-            color: #94a3b8;
-            padding: 6px 0;
-            font-size: 14px;
-            list-style: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .features-list li::before {
-            content: '✓';
-            color: #22c55e;
-        }
+        .form-input::placeholder { color: #667781; }
         
-        /* Disclaimer styles */
-        .disclaimer-box {
-            margin-bottom: 12px;
-        }
-        .checkbox-label {
+        .checkbox-row {
             display: flex;
             align-items: flex-start;
             gap: 10px;
-            cursor: pointer;
-            font-size: 13px;
-            color: #94a3b8;
-            line-height: 1.5;
+            margin-bottom: 12px;
         }
-        .checkbox-label input[type="checkbox"] {
+        .checkbox-row input {
             width: 18px;
             height: 18px;
             margin-top: 2px;
-            accent-color: #22c55e;
-            cursor: pointer;
-            flex-shrink: 0;
+            accent-color: #25D366;
         }
-        .checkbox-label a {
-            color: #22c55e;
-            text-decoration: underline;
+        .checkbox-row label {
+            color: #8696a0;
+            font-size: 13px;
+            line-height: 1.4;
         }
-        .warning-box {
-            background: #7f1d1d33;
-            border: 1px solid #7f1d1d;
+        .checkbox-row a {
+            color: #25D366;
+            text-decoration: none;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #25D366;
+            border: none;
             border-radius: 10px;
-            padding: 16px;
-            margin: 20px 0;
+            color: #0b141a;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
         }
-        .warning-box p {
-            color: #fecaca;
+        .btn:hover { background: #1da851; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .error-msg, .success-msg {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
             font-size: 14px;
-            margin-bottom: 10px;
+            display: none;
         }
-        .warning-box ul {
-            padding-left: 20px;
-        }
-        .warning-box li {
+        .error-msg {
+            background: rgba(239, 68, 68, 0.15);
             color: #fca5a5;
-            font-size: 12px;
-            margin-bottom: 6px;
         }
+        .success-msg {
+            background: rgba(37, 211, 102, 0.15);
+            color: #25D366;
+        }
+        
+        .auth-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #2a3942;
+            color: #8696a0;
+            font-size: 14px;
+        }
+        .auth-footer a {
+            color: #25D366;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            color: #667781;
+            font-size: 13px;
+            text-decoration: none;
+            margin-top: 16px;
+        }
+        
+        .hidden { display: none !important; }
         
         /* Modal */
         .modal {
-            display: none;
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
             padding: 20px;
+            z-index: 100;
         }
         .modal.active { display: flex; }
         .modal-content {
-            background: #1e293b;
+            background: #1f2c34;
             border-radius: 16px;
             padding: 24px;
-            max-width: 600px;
-            width: 100%;
+            max-width: 500px;
             max-height: 80vh;
             overflow-y: auto;
+            border: 1px solid #2a3942;
         }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .modal-content h3 {
+            color: #e9edef;
             margin-bottom: 16px;
+            font-size: 18px;
         }
-        .modal-header h3 { color: #f1f5f9; }
-        .modal-close {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 28px;
-            cursor: pointer;
-        }
-        .modal-body {
-            color: #94a3b8;
+        .modal-content p {
+            color: #8696a0;
             font-size: 14px;
-            line-height: 1.7;
+            line-height: 1.6;
+            margin-bottom: 12px;
         }
-        .modal-body h4 {
-            color: #f1f5f9;
-            margin: 16px 0 8px;
+        .modal-close {
+            background: #25D366;
+            color: #0b141a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
         }
     </style>
 </head>
 <body>
     <div class="auth-container">
-        <div class="logo">Auto<span>Sapa</span></div>
-        <p class="subtitle">Buat akun baru</p>
+        <div class="logo">
+            <div class="logo-icon">📡</div>
+            <div class="logo-text">Auto<span>Sapa</span></div>
+        </div>
         
-        <div class="trial-badge">🎉 Gratis 10 Hari Trial!</div>
+        <div class="trial-badge">
+            <span>🎁 10 Hari Trial Gratis</span>
+        </div>
         
-        <ul class="features-list">
-            <li>Broadcast ke 3 grup</li>
-            <li>50 pesan per hari</li>
-            <li>Auto reply & scheduling</li>
-            <li>Tidak perlu kartu kredit</li>
-        </ul>
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchMethod('email')">Email</button>
+            <button class="auth-tab" onclick="switchMethod('phone')">No HP</button>
+        </div>
         
         <div class="error-msg" id="errorMsg"></div>
         <div class="success-msg" id="successMsg"></div>
@@ -257,153 +257,85 @@
         <form id="registerForm">
             <div class="form-group">
                 <label class="form-label">Nama Lengkap</label>
-                <input type="text" class="form-input" id="name" placeholder="John Doe" required>
+                <input type="text" class="form-input" id="name" placeholder="Nama Anda" required>
             </div>
-            <div class="form-group">
+            
+            <div class="form-group" id="emailGroup">
                 <label class="form-label">Email</label>
-                <input type="email" class="form-input" id="email" placeholder="email@example.com" required>
+                <input type="email" class="form-input" id="email" placeholder="email@example.com">
             </div>
+            <div class="form-group hidden" id="phoneGroup">
+                <label class="form-label">Nomor HP</label>
+                <input type="tel" class="form-input" id="phone" placeholder="08xxxxxxxxxx">
+            </div>
+            
             <div class="form-group">
                 <label class="form-label">Password</label>
-                <input type="password" class="form-input" id="password" placeholder="Minimal 6 karakter" minlength="6" required>
+                <input type="password" class="form-input" id="password" placeholder="Minimal 6 karakter" required minlength="6">
             </div>
             <div class="form-group">
                 <label class="form-label">Konfirmasi Password</label>
                 <input type="password" class="form-input" id="confirmPassword" placeholder="Ulangi password" required>
             </div>
             
-            <div class="disclaimer-box">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="agreeTerms" required>
-                    <span>Saya menyetujui <a href="#" onclick="showTerms(); return false;">Syarat & Ketentuan</a> dan <a href="#" onclick="showPrivacy(); return false;">Kebijakan Privasi</a> AutoSapa</span>
-                </label>
+            <div class="checkbox-row">
+                <input type="checkbox" id="agreeTerms" required>
+                <label for="agreeTerms">Saya setuju dengan <a href="#" onclick="showModal('termsModal')">Syarat & Ketentuan</a></label>
+            </div>
+            <div class="checkbox-row">
+                <input type="checkbox" id="agreeUsage" required>
+                <label for="agreeUsage">Saya tidak akan menggunakan untuk spam atau kegiatan ilegal</label>
             </div>
             
-            <div class="disclaimer-box">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="agreeUsage" required>
-                    <span>Saya memahami bahwa layanan ini <strong style="color:#fecaca;">BUKAN</strong> untuk spam, penipuan, perjudian, atau aktivitas ilegal lainnya</span>
-                </label>
-            </div>
-            
-            <div class="warning-box">
-                <p>⚠️ <strong>Peringatan Penting:</strong></p>
-                <ul>
-                    <li>Gunakan hanya untuk broadcast yang sah dengan izin penerima</li>
-                    <li>Dilarang keras untuk spam, scam, judi online, atau konten dewasa</li>
-                    <li>Kami tidak bertanggung jawab atas penyalahgunaan layanan</li>
-                    <li>Akun yang melanggar akan diblokir permanen tanpa pengembalian dana</li>
-                </ul>
-            </div>
-            
-            <button type="submit" class="btn btn-primary" id="registerBtn">Daftar Sekarang</button>
+            <button type="submit" class="btn" id="registerBtn">Daftar Sekarang</button>
         </form>
         
-        <div class="links">
-            Sudah punya akun? <a href="/login">Login</a>
+        <div class="auth-footer">
+            Sudah punya akun? <a href="/login">Masuk</a>
         </div>
         
-        <a href="/" class="back-link">← Kembali ke Homepage</a>
+        <a href="/" class="back-link">← Kembali ke beranda</a>
     </div>
     
     <!-- Terms Modal -->
     <div class="modal" id="termsModal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>📜 Syarat & Ketentuan</h3>
-                <button class="modal-close" onclick="closeModal('termsModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4>1. Penggunaan Layanan</h4>
-                <p>Dengan menggunakan AutoSapa, Anda setuju untuk menggunakan layanan ini hanya untuk tujuan yang sah dan sesuai dengan hukum yang berlaku di Indonesia.</p>
-                
-                <h4>2. Larangan Penggunaan</h4>
-                <p>Anda dilarang menggunakan layanan ini untuk:</p>
-                <ul>
-                    <li>Mengirim pesan spam atau tidak diinginkan</li>
-                    <li>Menyebarkan konten penipuan (scam)</li>
-                    <li>Promosi perjudian online (slot, togel, dll)</li>
-                    <li>Menyebarkan konten dewasa/pornografi</li>
-                    <li>Kegiatan yang melanggar hukum</li>
-                </ul>
-                
-                <h4>3. Pembatasan Tanggung Jawab</h4>
-                <p>AutoSapa tidak bertanggung jawab atas konten yang dikirim pengguna. Semua tanggung jawab ada pada pengguna.</p>
-                
-                <h4>4. Penghentian Layanan</h4>
-                <p>Kami berhak menghentikan akses Anda kapan saja jika ditemukan pelanggaran, tanpa pengembalian dana.</p>
-                
-                <h4>5. Pembayaran</h4>
-                <p>Semua pembayaran bersifat final dan tidak dapat dikembalikan kecuali ada kesepakatan tertulis.</p>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Privacy Modal -->
-    <div class="modal" id="privacyModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>🔒 Kebijakan Privasi</h3>
-                <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4>1. Data yang Kami Kumpulkan</h4>
-                <p>Kami mengumpulkan: email, nama, dan data penggunaan layanan. Kami TIDAK menyimpan pesan WhatsApp Anda.</p>
-                
-                <h4>2. Penggunaan Data</h4>
-                <p>Data digunakan untuk:</p>
-                <ul>
-                    <li>Menyediakan dan meningkatkan layanan</li>
-                    <li>Mengirim notifikasi terkait akun</li>
-                    <li>Mencegah penyalahgunaan</li>
-                </ul>
-                
-                <h4>3. Keamanan Data</h4>
-                <p>Password Anda di-enkripsi. Kami menggunakan protokol keamanan standar industri.</p>
-                
-                <h4>4. Hak Pengguna</h4>
-                <p>Anda dapat meminta penghapusan data akun dengan menghubungi tim support.</p>
-            </div>
+            <h3>Syarat & Ketentuan</h3>
+            <p>Dengan menggunakan AutoSapa, Anda setuju untuk:</p>
+            <p>1. Menggunakan layanan sesuai ketentuan yang berlaku</p>
+            <p>2. Tidak menggunakan untuk spam atau aktivitas ilegal</p>
+            <p>3. Bertanggung jawab atas konten yang dikirim</p>
+            <p>4. Mematuhi kebijakan WhatsApp</p>
+            <button class="modal-close" onclick="closeModal('termsModal')">Tutup</button>
         </div>
     </div>
 
     <script>
-        // Check if already logged in
-        const token = localStorage.getItem('token');
-        if (token) {
+        if (localStorage.getItem('token')) {
             window.location.href = '/dashboard';
         }
         
-        function showTerms() {
-            document.getElementById('termsModal').classList.add('active');
+        let method = 'email';
+        
+        function switchMethod(m) {
+            method = m;
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('emailGroup').classList.toggle('hidden', m !== 'email');
+            document.getElementById('phoneGroup').classList.toggle('hidden', m !== 'phone');
         }
         
-        function showPrivacy() {
-            document.getElementById('privacyModal').classList.add('active');
-        }
-        
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-        
-        // Close modal on outside click
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.remove('active');
-                }
-            });
-        });
+        function showModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-            const agreeTerms = document.getElementById('agreeTerms').checked;
-            const agreeUsage = document.getElementById('agreeUsage').checked;
             const btn = document.getElementById('registerBtn');
             const errorMsg = document.getElementById('errorMsg');
             const successMsg = document.getElementById('successMsg');
@@ -411,15 +343,18 @@
             errorMsg.style.display = 'none';
             successMsg.style.display = 'none';
             
-            // Validations
-            if (password !== confirmPassword) {
-                errorMsg.textContent = 'Password tidak cocok!';
+            if (method === 'email' && !email) {
+                errorMsg.textContent = 'Email diperlukan';
                 errorMsg.style.display = 'block';
                 return;
             }
-            
-            if (!agreeTerms || !agreeUsage) {
-                errorMsg.textContent = 'Anda harus menyetujui semua syarat dan ketentuan';
+            if (method === 'phone' && !phone) {
+                errorMsg.textContent = 'Nomor HP diperlukan';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            if (password !== confirmPassword) {
+                errorMsg.textContent = 'Password tidak cocok';
                 errorMsg.style.display = 'block';
                 return;
             }
@@ -428,10 +363,14 @@
             btn.textContent = 'Loading...';
             
             try {
+                const body = { name, password };
+                if (method === 'email') body.email = email;
+                else body.phone = phone;
+                
                 const res = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
+                    body: JSON.stringify(body)
                 });
                 
                 const data = await res.json();
@@ -439,20 +378,17 @@
                 if (data.success) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    successMsg.textContent = '✅ ' + data.message;
+                    successMsg.textContent = '✓ ' + data.message;
                     successMsg.style.display = 'block';
-                    
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1500);
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
                 } else {
-                    errorMsg.textContent = data.error || 'Registration failed';
+                    errorMsg.textContent = data.error || 'Registrasi gagal';
                     errorMsg.style.display = 'block';
                     btn.disabled = false;
                     btn.textContent = 'Daftar Sekarang';
                 }
             } catch (error) {
-                errorMsg.textContent = 'Connection error. Please try again.';
+                errorMsg.textContent = 'Koneksi error. Coba lagi.';
                 errorMsg.style.display = 'block';
                 btn.disabled = false;
                 btn.textContent = 'Daftar Sekarang';
@@ -461,4 +397,3 @@
     </script>
 </body>
 </html>
-

@@ -1778,16 +1778,38 @@ document.addEventListener('click', (e) => {
 });
 
 // ===== TOAST =====
-function toast(message, type = 'info') {
+function toast(message, type = 'info', title = '') {
     const container = document.getElementById('toastContainer');
     const t = document.createElement('div');
     t.className = 'toast ' + type;
+    
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
+    
+    const titles = {
+        success: 'Success',
+        error: 'Error',
+        warning: 'Warning',
+        info: 'Info'
+    };
+    
+    const icon = icons[type] || icons.info;
+    const toastTitle = title || titles[type] || titles.info;
+    
     t.innerHTML = `
-        <span class="toast-message">${escapeHtml(message)}</span>
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-content">
+            <div class="toast-title">${escapeHtml(toastTitle)}</div>
+            <div class="toast-message">${escapeHtml(message)}</div>
+        </div>
         <button class="toast-close" onclick="this.parentElement.remove()">×</button>
     `;
     container.appendChild(t);
-    setTimeout(() => t.remove(), 4000);
+    setTimeout(() => t.remove(), 5000);
 }
 
 // ===== UTILITIES =====

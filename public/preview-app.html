@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview - AutoSapa</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Desktop Sidebar (hidden on mobile) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">📡</div>
+                    <span>AutoSapa</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="sidebar-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
+                    <span class="sidebar-icon">🏠</span>
+                    <span class="sidebar-text">Dashboard</span>
+                </button>
+                <button class="sidebar-item" onclick="switchTab('broadcast')" data-tab="broadcast">
+                    <span class="sidebar-icon">📢</span>
+                    <span class="sidebar-text">Broadcast</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Container -->
+        <div class="app-container">
+            <!-- Mobile Header -->
+            <header class="app-header">
+                <div class="header-content">
+                    <button class="hamburger" id="hamburgerBtn" onclick="toggleMobileMenu()">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <div class="logo">
+                        <div class="logo-icon">📡</div>
+                        <span>AutoSapa</span>
+                    </div>
+                    <div class="status-badge connected">
+                        <span class="status-dot"></span>
+                        <span>Connected</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Mobile Slide Menu -->
+            <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="toggleMobileMenu()"></div>
+            <nav class="mobile-menu" id="mobileMenu">
+                <div class="mobile-menu-header">
+                    <div class="logo">
+                        <div class="logo-icon">📡</div>
+                        <span>AutoSapa</span>
+                    </div>
+                    <button class="mobile-menu-close" onclick="toggleMobileMenu()">×</button>
+                </div>
+                <div class="mobile-menu-items">
+                    <button class="mobile-menu-item active" onclick="switchTab('dashboard'); toggleMobileMenu()">
+                        <span class="mobile-menu-icon">🏠</span>
+                        <span>Dashboard</span>
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTab('broadcast'); toggleMobileMenu()">
+                        <span class="mobile-menu-icon">📢</span>
+                        <span>Broadcast</span>
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTab('groups'); toggleMobileMenu()">
+                        <span class="mobile-menu-icon">👥</span>
+                        <span>Groups</span>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="app-main">
+                <div class="tab-panel active" id="tab-dashboard">
+                    <div class="page-header">
+                        <h1 class="page-title">🏠 Dashboard</h1>
+                        <p class="text-muted">Preview Mode - Test Hamburger Menu</p>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <h3>✅ Hamburger Menu Test</h3>
+                            <p style="margin-top: 12px; color: var(--text-secondary);">
+                                Resize browser ke < 768px atau buka di mobile untuk test hamburger menu.
+                            </p>
+                            <p style="margin-top: 8px; color: var(--text-secondary);">
+                                Klik ☰ di kiri atas untuk buka menu.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-panel" id="tab-broadcast">
+                    <div class="page-header">
+                        <h1 class="page-title">📢 Broadcast</h1>
+                    </div>
+                    <div class="card"><div class="card-body">Broadcast content here</div></div>
+                </div>
+                
+                <div class="tab-panel" id="tab-groups">
+                    <div class="page-header">
+                        <h1 class="page-title">👥 Groups</h1>
+                    </div>
+                    <div class="card"><div class="card-body">Groups content here</div></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Mobile Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const hamburger = document.getElementById('hamburgerBtn');
+            
+            console.log('Toggle mobile menu called');
+            console.log('Menu:', menu);
+            console.log('Overlay:', overlay);
+            
+            if (menu && overlay) {
+                menu.classList.toggle('active');
+                overlay.classList.toggle('active');
+                if (hamburger) hamburger.classList.toggle('active');
+                console.log('Menu active:', menu.classList.contains('active'));
+            }
+        }
+
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-panel').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.mobile-menu-item').forEach(m => m.classList.remove('active'));
+            
+            document.getElementById('tab-' + tab)?.classList.add('active');
+            document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
+        }
+    </script>
+</body>
+</html>

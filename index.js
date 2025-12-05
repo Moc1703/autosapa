@@ -353,8 +353,29 @@ const UserDB = {
 
 // ===== PLAN LIMITS =====
 const PLAN_LIMITS = {
-  trial: { maxGroups: 3, maxBroadcastPerDay: 50 },
-  pro: { maxGroups: 999, maxBroadcastPerDay: 500 },
+  trial: { 
+    maxGroups: 3, 
+    maxBroadcastPerDay: 50,
+    maxAutoReplies: 3,
+    maxSchedules: 10,
+    maxTemplates: 5,
+    maxCommands: 3
+  },
+  pro: { 
+    maxGroups: 999, 
+    maxBroadcastPerDay: 500,
+    maxAutoReplies: 999,
+    maxSchedules: 999,
+    maxTemplates: 999,
+    maxCommands: 999
+  },
+}
+
+// Helper function to get user limits
+function getUserLimits(userId) {
+  const user = UserDB.findById(userId)
+  if (!user) return PLAN_LIMITS.trial
+  return PLAN_LIMITS[user.plan] || PLAN_LIMITS.trial
 }
 
 // ===== CONFIGURATION =====
@@ -968,6 +989,24 @@ function sanitizeName(name) {
     .substring(0, 100)
 }
 
+function isValidPhone(phone) {
+  // Indonesian phone format: 08xxx or +628xxx, minimum 10 digits
+  const cleaned = phone.replace(/\D/g, "")
+  return cleaned.length >= 10 && cleaned.length <= 15
+}
+
+function normalizePhone(phone) {
+  // Convert to standard format (remove leading 0, add 62)
+  let cleaned = phone.replace(/\D/g, "")
+  if (cleaned.startsWith("0")) {
+    cleaned = "62" + cleaned.substring(1)
+  }
+  if (!cleaned.startsWith("62")) {
+    cleaned = "62" + cleaned
+  }
+  return cleaned
+}
+
 // =============================================
 // ===== AUTH ROUTES =====
 // =============================================
@@ -983,38 +1022,62 @@ app.post("/api/auth/register", async (req, res) => {
       return res.status(429).json({ error: rateCheck.message })
     }
 
-    let { email, password, name } = req.body
+    let { email, phone, password, name } = req.body
 
-    if (!email || !password || !name) {
+    // Must have email OR phone
+    if ((!email && !phone) || !password || !name) {
       return res
         .status(400)
-        .json({ error: "Email, password, and name are required" })
+        .json({ error: "Email atau No HP, password, dan nama diperlukan" })
     }
 
     // Sanitize and validate
-    email = email.toLowerCase().trim()
     name = sanitizeName(name)
-
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ error: "Invalid email format" })
-    }
 
     if (!isStrongPassword(password)) {
       return res
         .status(400)
-        .json({ error: "Password must be at least 6 characters" })
+        .json({ error: "Password minimal 6 karakter" })
     }
 
     if (name.length < 2) {
       return res
         .status(400)
-        .json({ error: "Name must be at least 2 characters" })
+        .json({ error: "Nama minimal 2 karakter" })
     }
 
-    // Check if user exists
-    const existingUser = UserDB.findOne({ email })
-    if (existingUser) {
-      return res.status(400).json({ error: "Email already registered" })
+    let identifier = null
+    let identifierType = null
+
+    // Validate email if provided
+    if (email) {
+      email = email.toLowerCase().trim()
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ error: "Format email tidak valid" })
+      }
+      identifier = email
+      identifierType = "email"
+    }
+
+    // Validate phone if provided (and no email)
+    if (phone && !email) {
+      if (!isValidPhone(phone)) {
+        return res.status(400).json({ error: "Format nomor HP tidak valid (min 10 digit)" })
+      }
+      phone = normalizePhone(phone)
+      identifier = phone
+      identifierType = "phone"
+    }
+
+    // Check if user exists (by email or phone)
+    const existingByEmail = email ? UserDB.findOne({ email }) : null
+    const existingByPhone = phone ? UserDB.findOne({ phone }) : null
+    
+    if (existingByEmail) {
+      return res.status(400).json({ error: "Email sudah terdaftar" })
+    }
+    if (existingByPhone) {
+      return res.status(400).json({ error: "No HP sudah terdaftar" })
     }
 
     // Hash password with higher cost factor
@@ -1024,29 +1087,34 @@ app.post("/api/auth/register", async (req, res) => {
     const trialEndsAt = new Date()
     trialEndsAt.setDate(trialEndsAt.getDate() + 10)
 
-    const user = UserDB.create({
-      email,
+    const userData = {
       password: hashedPassword,
       name,
       plan: "trial",
       trialEndsAt,
       limits: PLAN_LIMITS.trial,
-    })
+    }
+    
+    if (email) userData.email = email
+    if (phone) userData.phone = phone
+
+    const user = UserDB.create(userData)
 
     // Generate token
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email || user.phone },
       JWT_SECRET,
       { expiresIn: "30d" }
     )
 
     res.json({
       success: true,
-      message: "Registration successful! 10-day free trial started.",
+      message: "Registrasi berhasil! 10 hari trial gratis dimulai.",
       token,
       user: {
         id: user._id,
         email: user.email,
+        phone: user.phone,
         name: user.name,
         plan: user.plan,
         trialEndsAt: user.trialEndsAt,
@@ -1055,7 +1123,7 @@ app.post("/api/auth/register", async (req, res) => {
     })
   } catch (error) {
     console.error("Registration error:", error)
-    res.status(500).json({ error: "Registration failed" })
+    res.status(500).json({ error: "Registrasi gagal" })
   }
 })
 
@@ -1070,31 +1138,42 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(429).json({ error: rateCheck.message })
     }
 
-    let { email, password } = req.body
+    let { email, phone, password } = req.body
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" })
+    // Must have email OR phone
+    if ((!email && !phone) || !password) {
+      return res.status(400).json({ error: "Email/No HP dan password diperlukan" })
     }
 
-    email = email.toLowerCase().trim()
+    let user = null
 
-    // Find user
-    const user = UserDB.findOne({ email })
+    // Try to find user by email
+    if (email) {
+      email = email.toLowerCase().trim()
+      user = UserDB.findOne({ email })
+    }
+    
+    // Try to find user by phone
+    if (!user && phone) {
+      phone = normalizePhone(phone)
+      user = UserDB.findOne({ phone })
+    }
+
     if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" })
+      return res.status(401).json({ error: "Email/No HP atau password salah" })
     }
 
     // Check password
     const isValid = await bcrypt.compare(password, user.password)
     if (!isValid) {
-      return res.status(401).json({ error: "Invalid email or password" })
+      return res.status(401).json({ error: "Email/No HP atau password salah" })
     }
 
     // Reset rate limit on successful login
     resetAuthAttempts(ip)
 
     // Generate token
-    const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
+    const token = jwt.sign({ userId: user.id, email: user.email || user.phone }, JWT_SECRET, {
       expiresIn: "30d",
     })
 
@@ -1104,6 +1183,7 @@ app.post("/api/auth/login", async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
+        phone: user.phone,
         name: user.name,
         plan: user.plan,
         trialEndsAt: user.trialEndsAt,
@@ -1113,7 +1193,7 @@ app.post("/api/auth/login", async (req, res) => {
     })
   } catch (error) {
     console.error("Login error:", error)
-    res.status(500).json({ error: "Login failed" })
+    res.status(500).json({ error: "Login gagal" })
   }
 })
 
@@ -1418,9 +1498,68 @@ app.post("/api/admin/activate", async (req, res) => {
   }
 })
 
+// Admin: Delete user
+app.delete("/api/admin/users/:id", (req, res) => {
+  const adminKey = req.headers["x-admin-key"]
+  if (adminKey !== ADMIN_KEY) {
+    return res.status(403).json({ error: "Forbidden" })
+  }
+
+  const { id } = req.params
+  
+  try {
+    // Delete user from database
+    UserDB.delete(parseInt(id))
+    
+    // Also destroy their session if exists
+    if (userSessions.has(id)) {
+      const session = userSessions.get(id)
+      if (session.client) {
+        session.client.destroy().catch(() => {})
+      }
+      userSessions.delete(id)
+    }
+    
+    res.json({ success: true, message: "User deleted" })
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete user" })
+  }
+})
+
+// Admin: Clear all sessions
+app.post("/api/admin/sessions/clear", async (req, res) => {
+  const adminKey = req.headers["x-admin-key"]
+  if (adminKey !== ADMIN_KEY) {
+    return res.status(403).json({ error: "Forbidden" })
+  }
+
+  try {
+    const sessionCount = userSessions.size
+    
+    // Destroy all clients
+    for (const [userId, session] of userSessions) {
+      if (session.client) {
+        try {
+          await session.client.destroy()
+        } catch (e) {
+          console.error(`Error destroying session ${userId}:`, e)
+        }
+      }
+    }
+    
+    // Clear all sessions
+    userSessions.clear()
+    
+    res.json({ success: true, message: `Cleared ${sessionCount} sessions` })
+  } catch (error) {
+    res.status(500).json({ error: "Failed to clear sessions" })
+  }
+})
+
 // =============================================
 // ===== API ENDPOINTS - SESSION MANAGEMENT =====
 // =============================================
+
 
 // Start a new session (requires auth, user can only start their own session)
 app.post("/api/session/start", requireUserAuth, async (req, res) => {
@@ -1469,6 +1608,70 @@ app.get("/api/session/qr/:userId", requireUserAuth, (req, res) => {
   }
 
   res.json({ success: true, status: "qr", qr })
+})
+
+// Request pairing code for phone number linking
+const pairingCodes = new Map()
+
+app.post("/api/session/pairing-code", requireUserAuth, async (req, res) => {
+  const { userId, phoneNumber } = req.body
+
+  if (!userId || !phoneNumber) {
+    return res.status(400).json({ error: "userId and phoneNumber are required" })
+  }
+
+  // Verify user is starting their own session
+  if (userId !== req.authUserId) {
+    return res.status(403).json({ error: "You can only use your own session" })
+  }
+
+  // Normalize phone number (remove +, spaces, etc)
+  let normalizedPhone = phoneNumber.replace(/\D/g, "")
+  if (normalizedPhone.startsWith("0")) {
+    normalizedPhone = "62" + normalizedPhone.substring(1)
+  }
+  if (!normalizedPhone.startsWith("62")) {
+    normalizedPhone = "62" + normalizedPhone
+  }
+
+  try {
+    // Make sure session is started first
+    if (!sessions.has(userId)) {
+      await initSession(userId, false, false)
+      // Wait a bit for client to initialize
+      await new Promise(resolve => setTimeout(resolve, 3000))
+    }
+
+    const client = sessions.get(userId)
+    if (!client) {
+      return res.status(400).json({ error: "Session not ready. Try again." })
+    }
+
+    // Request pairing code
+    const pairingCode = await client.requestPairingCode(normalizedPhone)
+    
+    // Store pairing code for polling
+    pairingCodes.set(userId, {
+      code: pairingCode,
+      phone: normalizedPhone,
+      createdAt: Date.now()
+    })
+
+    console.log(`📱 Pairing code generated for user ${userId}: ${pairingCode}`)
+
+    res.json({
+      success: true,
+      pairingCode: pairingCode,
+      phone: normalizedPhone,
+      message: "Masukkan kode ini di WhatsApp: Linked Devices > Link with phone number"
+    })
+  } catch (error) {
+    console.error(`❌ Pairing code error for ${userId}:`, error)
+    res.status(500).json({ 
+      error: "Gagal generate pairing code. " + (error.message || "Coba lagi."),
+      details: error.message
+    })
+  }
 })
 
 // Get session status (requires auth, user can only check their own status)
@@ -1624,6 +1827,9 @@ app.post("/api/:userId/groups", requireUserAuth, (req, res) => {
   }
 
   const groups = readGroups(userId)
+
+  // No limit on saving groups - limit is only on broadcast selection
+
   groups.push({
     id: Date.now().toString(),
     name,
@@ -1708,10 +1914,12 @@ app.post("/api/:userId/groups/sync", requireSession, async (req, res) => {
       (g) => !waGroupIds.includes(g.groupId || g.id)
     ).length
 
-    const updatedGroups = [
+    let updatedGroups = [
       ...savedGroups.filter((g) => waGroupIds.includes(g.groupId || g.id)),
       ...newGroups,
     ]
+
+    // No limit on saving groups - limit is only on broadcast selection
 
     writeGroups(userId, updatedGroups)
 
@@ -1770,6 +1978,39 @@ app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
 
   if (!groups || groups.length === 0) {
     return res.status(400).json({ error: "At least one group is required" })
+  }
+
+  // Check broadcast daily limit
+  const user = UserDB.findById(userId)
+  const limits = getUserLimits(userId)
+  const today = new Date().toDateString()
+
+  // Check group selection limit (maxGroups = max groups per broadcast)
+  if (groups.length > limits.maxGroups) {
+    return res.status(403).json({
+      error: `Trial hanya bisa broadcast ke ${limits.maxGroups} grup sekaligus. Upgrade ke Pro untuk unlimited.`,
+      code: "GROUP_SELECTION_LIMIT",
+      limit: limits.maxGroups,
+      selected: groups.length
+    })
+  }
+  
+  // Reset counter if new day
+  let broadcastToday = user?.broadcastToday || 0
+  if (user?.lastBroadcastDate !== today) {
+    broadcastToday = 0
+  }
+
+  // Check if limit reached
+  if (broadcastToday + groups.length > limits.maxBroadcastPerDay) {
+    const remaining = limits.maxBroadcastPerDay - broadcastToday
+    return res.status(403).json({
+      error: `Limit broadcast harian tercapai. Sisa quota: ${remaining}/${limits.maxBroadcastPerDay}. Upgrade ke Pro untuk 500/hari.`,
+      code: "BROADCAST_LIMIT_REACHED",
+      limit: limits.maxBroadcastPerDay,
+      used: broadcastToday,
+      remaining: remaining
+    })
   }
 
   const settings = readSettings(userId)
@@ -1831,8 +2072,17 @@ app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
   })
   writeHistory(userId, history)
 
+  // Update broadcast counter
+  const successCount = results.filter((r) => r.success).length
+  if (successCount > 0 && user) {
+    UserDB.update(userId, {
+      broadcastToday: broadcastToday + successCount,
+      lastBroadcastDate: today
+    })
+  }
+
   res.json({
-    success: results.filter((r) => r.success).length,
+    success: successCount,
     failed: results.filter((r) => !r.success).length,
     results,
   })
@@ -1852,6 +2102,17 @@ app.post("/api/:userId/autoreplies", requireUserAuth, (req, res) => {
   }
 
   const replies = readAutoReplies(userId)
+  const limits = getUserLimits(userId)
+
+  // Check auto-reply limit
+  if (replies.length >= limits.maxAutoReplies) {
+    return res.status(403).json({
+      error: `Limit auto-reply tercapai (${limits.maxAutoReplies}). Upgrade ke Pro untuk unlimited.`,
+      code: "LIMIT_REACHED",
+      limit: limits.maxAutoReplies
+    })
+  }
+
   replies.push({
     id: Date.now().toString(),
     keyword: keyword.toLowerCase(),
@@ -1905,6 +2166,17 @@ app.post("/api/:userId/templates", requireUserAuth, (req, res) => {
   }
 
   const templates = readTemplates(userId)
+  const limits = getUserLimits(userId)
+
+  // Check template limit
+  if (templates.length >= limits.maxTemplates) {
+    return res.status(403).json({
+      error: `Limit template tercapai (${limits.maxTemplates}). Upgrade ke Pro untuk unlimited.`,
+      code: "LIMIT_REACHED",
+      limit: limits.maxTemplates
+    })
+  }
+
   templates.push({
     id: Date.now().toString(),
     name,
@@ -1969,6 +2241,18 @@ app.post("/api/:userId/schedules", requireUserAuth, (req, res) => {
   }
 
   const schedules = readSchedules(userId)
+  const limits = getUserLimits(userId)
+
+  // Check schedule limit (only count pending schedules)
+  const pendingSchedules = schedules.filter(s => s.status === 'pending')
+  if (pendingSchedules.length >= limits.maxSchedules) {
+    return res.status(403).json({
+      error: `Limit schedule tercapai (${limits.maxSchedules}). Upgrade ke Pro untuk unlimited.`,
+      code: "LIMIT_REACHED",
+      limit: limits.maxSchedules
+    })
+  }
+
   schedules.push({
     id: Date.now().toString(),
     name:
@@ -2011,6 +2295,17 @@ app.post("/api/:userId/commands", requireUserAuth, (req, res) => {
   if (!command.startsWith("!")) command = "!" + command
 
   const commands = readCommands(userId)
+  const limits = getUserLimits(userId)
+
+  // Check command limit
+  if (commands.length >= limits.maxCommands) {
+    return res.status(403).json({
+      error: `Limit command tercapai (${limits.maxCommands}). Upgrade ke Pro untuk unlimited.`,
+      code: "LIMIT_REACHED",
+      limit: limits.maxCommands
+    })
+  }
+
   commands.push({
     id: Date.now().toString(),
     command: command.toLowerCase(),

@@ -1,437 +1,454 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scan QR - WhatsApp Bot</title>
+    <title>Connect WhatsApp - AutoSapa</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0b141a;
             min-height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             padding: 20px;
         }
         
         .scan-container {
-            background: white;
-            border-radius: 24px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 400px;
+            background: #1f2c34;
+            border-radius: 16px;
+            padding: 32px;
             width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid #2a3942;
         }
         
-        .logo {
-            font-size: 48px;
-            margin-bottom: 16px;
+        .logo-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 16px;
         }
         
         h1 {
-            color: #1f2937;
-            font-size: 24px;
+            color: #e9edef;
+            font-size: 20px;
             margin-bottom: 8px;
         }
-        
         .subtitle {
-            color: #6b7280;
-            margin-bottom: 32px;
-        }
-        
-        #qr-container {
-            background: #f9fafb;
-            border-radius: 16px;
-            padding: 24px;
+            color: #8696a0;
+            font-size: 14px;
             margin-bottom: 24px;
-            min-height: 280px;
+        }
+        
+        /* Tabs */
+        .method-tabs {
             display: flex;
-            justify-content: center;
-            align-items: center;
+            background: #182229;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 24px;
         }
-        
-        #qr-container img {
+        .method-tab {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
             border-radius: 8px;
+            color: #8696a0;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .method-tab.active {
+            background: #25D366;
+            color: #0b141a;
         }
         
+        /* QR Container */
+        #qr-container {
+            background: #182229;
+            border-radius: 12px;
+            padding: 24px;
+            min-height: 240px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        #qr-container img { border-radius: 8px; }
+        #qr-container canvas { border-radius: 8px; }
+        
+        /* Phone Section */
+        .phone-section { display: none; }
+        .phone-section.active { display: block; }
+        
+        .form-input {
+            width: 100%;
+            padding: 14px;
+            background: #182229;
+            border: 1px solid #2a3942;
+            border-radius: 10px;
+            color: #e9edef;
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #25D366;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #25D366;
+            border: none;
+            border-radius: 10px;
+            color: #0b141a;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn:disabled { opacity: 0.6; }
+        
+        .pairing-code {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+        
+        /* Status */
         .status {
-            padding: 12px 24px;
-            border-radius: 100px;
-            font-weight: 500;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
         }
+        .status.loading { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .status.qr { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .status.connected { background: rgba(37, 211, 102, 0.15); color: #25D366; }
+        .status.error { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .status.pairing { background: rgba(37, 211, 102, 0.15); color: #25D366; }
         
-        .status.loading {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .status.qr {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-        
-        .status.connected {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        
-        .status.error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        
+        /* Spinner */
         .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #e5e7eb;
-            border-top-color: #6366f1;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #2a3942;
+            border-top-color: #25D366;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
+        /* Instructions */
         .instructions {
-            margin-top: 24px;
-            text-align: left;
-            background: #f3f4f6;
-            border-radius: 12px;
+            background: #182229;
+            border-radius: 10px;
             padding: 16px;
+            text-align: left;
+            margin-top: 20px;
         }
-        
-        .instructions h3 {
-            font-size: 14px;
-            color: #374151;
-            margin-bottom: 12px;
-        }
-        
-        .instructions ol {
-            color: #6b7280;
+        .instructions h4 {
+            color: #e9edef;
             font-size: 13px;
-            padding-left: 20px;
+            margin-bottom: 10px;
         }
-        
-        .instructions li {
-            margin-bottom: 8px;
+        .instructions ol {
+            color: #8696a0;
+            font-size: 12px;
+            padding-left: 18px;
+            line-height: 1.6;
         }
         
         .user-id {
-            font-size: 12px;
-            color: #9ca3af;
+            color: #667781;
+            font-size: 11px;
             margin-top: 16px;
         }
         
-        .restart-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid #2a3942;
+            color: #8696a0;
             padding: 10px 20px;
             border-radius: 8px;
+            font-size: 13px;
             cursor: pointer;
-            font-size: 14px;
-            margin-top: 16px;
+            margin-top: 12px;
             display: none;
         }
+        .refresh-btn.visible { display: inline-block; }
         
-        .restart-btn:hover {
-            background: #dc2626;
-        }
-        
-        .restart-btn.visible {
-            display: inline-block;
-        }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
     <div class="scan-container">
-        <div class="logo">📱</div>
+        <div class="logo-icon">📱</div>
         <h1>Connect WhatsApp</h1>
-        <p class="subtitle">Scan QR code with your WhatsApp</p>
+        <p class="subtitle">Pilih metode koneksi</p>
         
-        <div id="qr-container">
-            <div class="spinner"></div>
+        <div class="method-tabs">
+            <button class="method-tab active" onclick="switchMethod('qr')">Scan QR</button>
+            <button class="method-tab" onclick="switchMethod('phone')">No HP</button>
         </div>
         
-        <div class="status loading" id="status">
-            <span>⏳</span>
-            <span id="status-text">Initializing...</span>
+        <!-- QR Section -->
+        <div id="qr-section">
+            <div id="qr-container">
+                <div class="spinner"></div>
+            </div>
+            
+            <div class="status loading" id="status">
+                <span id="status-text">Memulai...</span>
+            </div>
+            
+            <div class="instructions">
+                <h4>📋 Cara Scan QR:</h4>
+                <ol>
+                    <li>Buka WhatsApp di HP</li>
+                    <li>Tap ⋮ → Perangkat Tertaut</li>
+                    <li>Tap "Tautkan Perangkat"</li>
+                    <li>Scan QR code di atas</li>
+                </ol>
+            </div>
         </div>
         
-        <div class="instructions">
-            <h3>📋 Instructions:</h3>
-            <ol>
-                <li>Open WhatsApp on your phone</li>
-                <li>Tap Menu (⋮) → Linked Devices</li>
-                <li>Tap "Link a Device"</li>
-                <li>Point your phone at this QR code</li>
-            </ol>
+        <!-- Phone Section -->
+        <div id="phone-section" class="phone-section">
+            <div id="phone-input-section">
+                <input type="tel" class="form-input" id="phoneNumber" placeholder="08xxxxxxxxxx">
+                <button class="btn" id="getPairingBtn" onclick="getPairingCode()">Dapatkan Kode</button>
+            </div>
+            
+            <div id="pairing-result" class="hidden">
+                <p style="color:#8696a0; margin-bottom:8px; font-size:14px;">Masukkan kode ini:</p>
+                <div class="pairing-code" id="pairingCodeDisplay">--------</div>
+                <div class="status pairing">Menunggu konfirmasi...</div>
+            </div>
+            
+            <div class="instructions">
+                <h4>📋 Cara Pairing No HP:</h4>
+                <ol>
+                    <li>Buka WhatsApp di HP</li>
+                    <li>Tap ⋮ → Perangkat Tertaut</li>
+                    <li>Tap "Tautkan Perangkat"</li>
+                    <li>Tap "Tautkan dengan nomor telepon"</li>
+                    <li>Masukkan 8-digit kode</li>
+                </ol>
+            </div>
         </div>
         
-        <p class="user-id">Session ID: <span id="user-id-display">-</span></p>
-        <button class="restart-btn" id="restart-btn" onclick="refreshQR()">🔄 Refresh QR</button>
+        <p class="user-id">Session: <span id="user-id-display">-</span></p>
+        <button class="refresh-btn" id="refresh-btn" onclick="refreshQR()">🔄 Refresh</button>
     </div>
 
     <script>
-        // Get user from localStorage (set during login)
         const token = localStorage.getItem('token');
         const userStr = localStorage.getItem('user');
         
-        if (!token || !userStr) {
-            window.location.href = '/login';
-        }
+        if (!token || !userStr) window.location.href = '/login';
         
-        // Use user.id from login as userId (consistent across sessions)
         const user = JSON.parse(userStr);
         const userId = user.id;
-        
-        // Save for other pages
         localStorage.setItem('wa_userId', userId);
-        
-        document.getElementById('user-id-display').textContent = user.email || userId;
+        document.getElementById('user-id-display').textContent = user.email || user.phone || userId;
         
         const qrContainer = document.getElementById('qr-container');
         const statusEl = document.getElementById('status');
         const statusText = document.getElementById('status-text');
+        const refreshBtn = document.getElementById('refresh-btn');
         
-        let qrCode = null;
-        let currentQR = null;
-        let pollFailCount = 0;
-        let qrReceivedTime = 0;
-        const restartBtn = document.getElementById('restart-btn');
+        let qrCode = null, currentQR = null, currentMethod = 'qr';
+        let pollFailCount = 0, qrReceivedTime = 0;
+        
+        function switchMethod(m) {
+            currentMethod = m;
+            document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('qr-section').classList.toggle('hidden', m !== 'qr');
+            document.getElementById('phone-section').classList.toggle('phone-section', m !== 'phone');
+            document.getElementById('phone-section').classList.toggle('active', m === 'phone');
+        }
         
         function updateStatus(type, text) {
             statusEl.className = 'status ' + type;
             statusText.textContent = text;
         }
         
-        function showRefreshBtn() {
-            restartBtn.classList.add('visible');
-        }
+        function showRefreshBtn() { refreshBtn.classList.add('visible'); }
+        function hideRefreshBtn() { refreshBtn.classList.remove('visible'); }
         
-        function hideRefreshBtn() {
-            restartBtn.classList.remove('visible');
+        async function getPairingCode() {
+            const phone = document.getElementById('phoneNumber').value;
+            const btn = document.getElementById('getPairingBtn');
+            
+            if (!phone || phone.length < 10) {
+                alert('Masukkan nomor HP yang valid');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            
+            try {
+                const res = await fetch('/api/session/pairing-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ userId, phoneNumber: phone })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success && data.pairingCode) {
+                    document.getElementById('phone-input-section').classList.add('hidden');
+                    document.getElementById('pairing-result').classList.remove('hidden');
+                    document.getElementById('pairingCodeDisplay').textContent = data.pairingCode;
+                    pollForQR();
+                } else {
+                    alert(data.error || 'Gagal mendapatkan kode');
+                }
+            } catch (e) {
+                alert('Gagal mendapatkan kode');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Dapatkan Kode';
         }
         
         async function refreshQR() {
-            restartBtn.disabled = true;
-            restartBtn.textContent = 'Refreshing...';
+            refreshBtn.disabled = true;
             hideRefreshBtn();
+            updateStatus('loading', 'Refreshing...');
+            qrContainer.innerHTML = '<div class="spinner"></div>';
             
             try {
-                updateStatus('loading', 'Refreshing QR...');
-                qrContainer.innerHTML = `
-                    <div class="spinner"></div>
-                    <p style="color:#6b7280; margin-top:16px; font-size:14px;">
-                        Refreshing QR code...<br>
-                        <small>Mohon tunggu...</small>
-                    </p>
-                `;
-                
-                const response = await fetch('/api/session/start', {
+                await fetch('/api/session/start', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ userId, forceRestart: true })
                 });
-                
-                const data = await response.json();
-                console.log('Refresh result:', data);
-                
                 currentQR = null;
                 pollFailCount = 0;
-                qrReceivedTime = 0;
-                
-                // Start polling for new QR
                 pollForQR();
-                
-            } catch (error) {
-                console.error('Refresh failed:', error);
-                updateStatus('error', 'Gagal, coba lagi');
+            } catch (e) {
+                updateStatus('error', 'Gagal');
                 showRefreshBtn();
-            } finally {
-                restartBtn.disabled = false;
-                restartBtn.textContent = '🔄 Refresh QR';
             }
+            refreshBtn.disabled = false;
         }
         
         async function startSession() {
+            updateStatus('loading', 'Memulai WhatsApp...');
+            qrContainer.innerHTML = '<div class="spinner"></div><p style="color:#8696a0;margin-top:12px;font-size:13px">Mohon tunggu...</p>';
+            
             try {
-                updateStatus('loading', 'Starting WhatsApp...');
-                qrContainer.innerHTML = `
-                    <div class="spinner"></div>
-                    <p style="color:#6b7280; margin-top:16px; font-size:14px;">
-                        Launching browser...<br>
-                        <small>This may take 10-30 seconds</small>
-                    </p>
-                `;
-                
-                const response = await fetch('/api/session/start', {
+                const res = await fetch('/api/session/start', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ userId })
                 });
+                const data = await res.json();
                 
-                const data = await response.json();
-                console.log('Session started:', data);
+                if (data.status === 'connected') { onConnected(); return; }
                 
-                if (data.status === 'connected') {
-                    onConnected();
-                    return;
-                }
-                
-                // Update status while waiting for QR
-                updateStatus('loading', 'Generating QR code...');
-                qrContainer.innerHTML = `
-                    <div class="spinner"></div>
-                    <p style="color:#6b7280; margin-top:16px; font-size:14px;">
-                        Waiting for QR code...
-                    </p>
-                `;
-                
-                // Start polling
+                updateStatus('loading', 'Menunggu QR...');
                 pollForQR();
-                
-            } catch (error) {
-                console.error('Failed to start session:', error);
-                updateStatus('error', 'Failed to start session');
-                qrContainer.innerHTML = '<p style="color:#991b1b">❌ Connection error</p>';
+            } catch (e) {
+                updateStatus('error', 'Gagal memulai');
                 showRefreshBtn();
             }
         }
         
         async function pollForQR() {
             try {
-                const response = await fetch(`/api/session/qr/${userId}`, {
+                const res = await fetch(`/api/session/qr/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                const data = await response.json();
+                const data = await res.json();
+                pollFailCount = 0;
                 
-                console.log('QR poll response:', data);
-                pollFailCount = 0; // Reset on success
+                if (data.status === 'connected') { onConnected(); return; }
                 
-                if (data.status === 'connected') {
-                    onConnected();
-                    return;
-                }
-                
-                // Handle QR expired status
-                if (data.status === 'qr_expired') {
-                    updateStatus('loading', 'QR expired, waiting for new one...');
-                    currentQR = null;
-                }
-                
-                if (data.qr && data.qr !== currentQR) {
+                if (data.qr && data.qr !== currentQR && currentMethod === 'qr') {
                     currentQR = data.qr;
                     qrReceivedTime = Date.now();
                     renderQR(data.qr);
-                    updateStatus('qr', 'Scan QR code now!');
+                    updateStatus('qr', 'Scan QR sekarang!');
                     hideRefreshBtn();
-                } else if (!data.qr && data.status !== 'qr_expired') {
-                    updateStatus('loading', 'Generating QR code...');
                 }
                 
-                // Check if QR has been shown for too long without scanning (60 sec)
                 if (currentQR && Date.now() - qrReceivedTime > 60000) {
-                    updateStatus('loading', 'QR mungkin expired, menunggu refresh...');
+                    updateStatus('loading', 'QR expired');
                     showRefreshBtn();
                 }
                 
-                // Continue polling
                 setTimeout(pollForQR, 2000);
-                
-            } catch (error) {
-                console.error('Poll error:', error);
+            } catch (e) {
                 pollFailCount++;
-                
-                // Show refresh button after multiple failures
                 if (pollFailCount > 5) {
                     updateStatus('error', 'Koneksi bermasalah');
                     showRefreshBtn();
                 }
-                
                 setTimeout(pollForQR, 3000);
             }
         }
         
         function renderQR(qrText) {
             qrContainer.innerHTML = '';
-            
             qrCode = new QRCode(qrContainer, {
-                text: qrText,
-                width: 220,
-                height: 220,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
+                text: qrText, width: 200, height: 200,
+                colorDark: '#000', colorLight: '#fff',
                 correctLevel: QRCode.CorrectLevel.L
             });
         }
         
         function onConnected() {
-            updateStatus('connected', 'Connected!');
-            localStorage.setItem('wa_userId', userId);
-            
-            // Show success and redirect immediately
+            updateStatus('connected', 'Terhubung!');
             document.querySelector('.scan-container').innerHTML = `
-                <div class="logo">✅</div>
-                <h1>WhatsApp Connected!</h1>
-                <p class="subtitle">Redirecting to dashboard...</p>
-                <p style="color:#6b7280; font-size:13px; margin-top:16px;">
-                    Groups will sync automatically in background
-                </p>
+                <div class="logo-icon">✅</div>
+                <h1>WhatsApp Terhubung!</h1>
+                <p class="subtitle">Mengalihkan ke dashboard...</p>
             `;
-            
-            // Redirect to app after 2 seconds
-            setTimeout(() => {
-                window.location.href = '/app';
-            }, 2000);
+            setTimeout(() => { window.location.href = '/app'; }, 2000);
         }
         
-        // Check if already connected
         async function checkExistingSession() {
             try {
-                const response = await fetch(`/api/session/status/${userId}`, {
+                const res = await fetch(`/api/session/status/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                const data = await response.json();
-                
-                if (data.status === 'connected') {
-                    onConnected();
-                    return true;
-                }
-            } catch (e) {
-                // Ignore
-            }
+                const data = await res.json();
+                if (data.status === 'connected') { onConnected(); return true; }
+            } catch (e) {}
             return false;
         }
         
-        // Initialize
         (async () => {
-            const isConnected = await checkExistingSession();
-            if (!isConnected) {
-                startSession();
-            }
+            if (!(await checkExistingSession())) startSession();
         })();
     </script>
 </body>
 </html>
-
-
