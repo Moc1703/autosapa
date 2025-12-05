@@ -680,16 +680,136 @@ function previewScheduleImage(event) {
 }
 
 // ===== BROADCAST =====
+function toggleAntiBanSettings() {
+    const settings = document.getElementById('antiBanSettings');
+    settings.classList.toggle('hidden');
+}
+
+function toggleSafeMode() {
+    const toggle = document.getElementById('safeModeToggle');
+    const customSettings = document.getElementById('customAntiBanSettings');
+    const badge = document.getElementById('antiBanIndicator');
+    
+    toggle.classList.toggle('active');
+    
+    if (toggle.classList.contains('active')) {
+        customSettings.classList.add('hidden');
+        badge.textContent = 'Safe Mode ON';
+        badge.className = 'badge badge-active';
+    } else {
+        customSettings.classList.remove('hidden');
+        badge.textContent = 'Custom Mode';
+        badge.className = 'badge badge-warning';
+    }
+}
+
+function toggleSleepMode() {
+    const toggle = document.getElementById('sleepModeToggle');
+    const settings = document.getElementById('sleepSettings');
+    toggle.classList.toggle('active');
+    settings.classList.toggle('hidden', !toggle.classList.contains('active'));
+}
+
+// Target Tabs
+let activeTargetTab = 'groups';
+
+function switchTargetTab(tab) {
+    activeTargetTab = tab;
+    
+    // UI Updates
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tabBtn-${tab}`).classList.add('active');
+    
+    document.getElementById('targetPanel-groups').classList.add('hidden');
+    document.getElementById('targetPanel-manual').classList.add('hidden');
+    document.getElementById(`targetPanel-${tab}`).classList.remove('hidden');
+    
+    // Update count display
+    if (tab === 'groups') updateSelectedCount();
+    else updateManualCount();
+}
+
+function updateManualCount() {
+    const text = document.getElementById('manualNumbers').value;
+    const numbers = extractNumbers(text);
+    document.getElementById('manualCount').textContent = `${numbers.length} numbers`;
+    document.getElementById('selectedCount').textContent = `${numbers.length} numbers`;
+}
+
+// Extract and normalize numbers from text
+function extractNumbers(text) {
+    if (!text) return [];
+    // Split by comma, new line, or space
+    return text.split(/[\n,;]+/) 
+        .map(n => n.replace(/\D/g, '')) // Remove non-digits
+        .filter(n => n.length >= 10) // Filter invalid length
+        .map(n => {
+            if (n.startsWith('0')) return '62' + n.substring(1);
+            if (n.startsWith('62')) return n;
+            return '62' + n; // Default to ID
+        });
+}
+
+// Listen for manual input
+document.getElementById('manualNumbers')?.addEventListener('input', debounce(updateManualCount, 500));
+
+
 async function sendBroadcast() {
     const message = document.getElementById('quickMessage').value.trim();
-    const selected = [...document.querySelectorAll('#groupSelectList input:checked')].map(cb => cb.value);
+    let recipients = [];
+    let targetType = 'groups';
+
+    // Get Recipients based on active tab
+    if (activeTargetTab === 'groups') {
+        recipients = [...document.querySelectorAll('#groupSelectList input:checked')].map(cb => cb.value);
+        if (!recipients.length) return toast('Please select at least one group', 'error');
+    } else {
+        const text = document.getElementById('manualNumbers').value;
+        const numbers = extractNumbers(text);
+        if (!numbers.length) return toast('Please enter at least one valid number', 'error');
+        
+        // Format for backend (append @c.us for contacts)
+        recipients = numbers.map(n => n.endsWith('@c.us') ? n : `${n}@c.us`);
+        targetType = 'manual';
+    }
     
     if (!message && !selectedImage) return toast('Please enter a message or select an image', 'error');
-    if (!selected.length) return toast('Please select at least one group', 'error');
     
+    // Anti-Ban Parameters
+    const isSafeMode = document.getElementById('safeModeToggle')?.classList.contains('active') ?? true;
+    let randomDelayMs = { min: 2000, max: 5000 };
+    let sleepMode = { enabled: false, after: 20, durationMs: 60000 };
+
+    if (!isSafeMode) {
+        const min = parseInt(document.getElementById('delayMin').value) || 2;
+        const max = parseInt(document.getElementById('delayMax').value) || 5;
+        randomDelayMs = { min: min * 1000, max: max * 1000 };
+
+        const isSleepActive = document.getElementById('sleepModeToggle')?.classList.contains('active');
+        if (isSleepActive) {
+            const sleepAfter = parseInt(document.getElementById('sleepAfter').value) || 50;
+            const sleepDurationMins = parseInt(document.getElementById('sleepDuration').value) || 5;
+            sleepMode = {
+                enabled: true,
+                after: sleepAfter,
+                durationMs: sleepDurationMins * 60 * 1000
+            };
+        }
+    }
+
     const btn = document.getElementById('sendBtn');
+    const progressDiv = document.getElementById('broadcastProgress');
+    const progressText = document.getElementById('progressText');
+    
     btn.disabled = true;
     btn.textContent = '⏳ Sending...';
+    progressDiv.classList.remove('hidden');
+    
+    // Estimate Time & Show
+    const avgDelay = (randomDelayMs.min + randomDelayMs.max) / 2;
+    const estTimeMs = (recipients.length * avgDelay) + (sleepMode.enabled ? (Math.floor(recipients.length / sleepMode.after) * sleepMode.durationMs) : 0);
+    const estMins = Math.ceil(estTimeMs / 60000);
+    progressText.textContent = `Sending to ${recipients.length} ${targetType}. Est. time: ${estMins} mins...`;
     
     try {
         let imageData = null;
@@ -700,19 +820,35 @@ async function sendBroadcast() {
         const res = await apiFetch(getUserApi() + '/broadcast', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, groups: selected, image: imageData })
+            body: JSON.stringify({ 
+                message, 
+                groups: recipients, // Backend uses 'groups' var but handles IDs genericly
+                targetType,         // Hint for backend (optional but good for logging)
+                image: imageData,
+                randomDelayMs,
+                sleepMode
+            })
         });
         
         const data = await res.json();
+        
+        if (data.error) throw new Error(data.error);
+
         showResult(data);
+        if (activeTargetTab === 'manual') {
+             // Clear manual numbers on success? maybe optional.
+             // document.getElementById('manualNumbers').value = '';
+        }
         document.getElementById('quickMessage').value = '';
         removeImage();
         loadStats();
     } catch (e) {
-        toast('Failed to send broadcast', 'error');
+        console.error(e);
+        toast(e.message || 'Failed to send broadcast', 'error');
     } finally {
         btn.disabled = false;
         btn.textContent = '📤 Send Broadcast';
+        progressDiv.classList.add('hidden');
     }
 }
 

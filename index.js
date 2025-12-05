@@ -610,8 +610,8 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
           "--disable-dev-shm-usage",
           "--disable-accelerated-2d-canvas",
           "--no-first-run",
-          "--no-zygote",
-          "--single-process",
+          // "--no-zygote", // Removed to fix SingletonLock error
+          // "--single-process", // Removed to fix SingletonLock crash
           "--disable-gpu",
           "--disable-extensions",
           "--disable-plugins",
@@ -1988,9 +1988,27 @@ app.get("/api/:userId/whatsapp-groups", requireSession, async (req, res) => {
 })
 
 // ===== BROADCAST =====
+// ===== SPINTAX PARSER =====
+function parseSpintax(text) {
+  if (!text) return ""
+  // Regex to match {a|b|c} patterns
+  return text.replace(/\{([^{}]+)\}/g, (match, content) => {
+    const choices = content.split("|")
+    return choices[Math.floor(Math.random() * choices.length)]
+  })
+}
+
+// ===== BROADCAST =====
 app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
   const { userId } = req.params
-  const { message, groups, image } = req.body
+  const { 
+    message, 
+    groups, 
+    image,
+    // Anti-Ban Options
+    randomDelayMs = { min: 2000, max: 5000 },
+    sleepMode = { enabled: false, after: 20, durationMs: 60000 } 
+  } = req.body
 
   if (!message && !image) {
     return res.status(400).json({ error: "Message or image is required" })
@@ -2034,7 +2052,6 @@ app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
   }
 
   const settings = readSettings(userId)
-  const processedMessage = processMessageVariables(message || "")
   const results = []
 
   // Handle image if provided
@@ -2046,45 +2063,65 @@ app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
     }
   }
 
+  // Use default queue settings if randomDelay not valid
+  const minDelay = parseInt(randomDelayMs.min) || (settings.queue?.delayMs || 2000)
+  const maxDelay = parseInt(randomDelayMs.max) || (minDelay + 3000)
+
   for (let i = 0; i < groups.length; i++) {
     const groupId = groups[i]
 
+    // Sleep Mode Logic
+    if (sleepMode.enabled && i > 0 && i % sleepMode.after === 0) {
+        console.log(`[${userId}] Sleep mode active. Pausing for ${sleepMode.durationMs}ms...`)
+        await delay(sleepMode.durationMs)
+    }
+
     try {
+      // Parse Message Variables & Spintax per Recipient
+      // This ensures each person gets a unique variation if Spintax is used
+      let uniqueMessage = processMessageVariables(message || "")
+      uniqueMessage = parseSpintax(uniqueMessage)
+
       // Show typing indicator
       if (settings.typing?.enabled) {
         const chat = await req.client.getChatById(groupId)
         await chat.sendStateTyping()
-        await delay(settings.typing.durationMs || 1500)
+        
+        // Dynamic typing duration based on message length
+        const typingDuration = Math.min((uniqueMessage.length * 50), 3000) + 500
+        await delay(typingDuration)
       }
 
       // Send message
       if (media) {
         await req.client.sendMessage(groupId, media, {
-          caption: processedMessage,
+          caption: uniqueMessage,
         })
       } else {
-        await req.client.sendMessage(groupId, processedMessage)
+        await req.client.sendMessage(groupId, uniqueMessage)
       }
 
       results.push({ groupId, success: true })
-      console.log(`[${userId}] Message sent to: ${groupId}`)
+      console.log(`[${userId}] Message sent to: ${groupId}`) // Log simplified
 
-      // Queue delay
-      if (settings.queue?.enabled && i < groups.length - 1) {
-        await delay(settings.queue.delayMs || 2000)
+      // Random Delay between messages (Anti-Ban Jitter)
+      if (i < groups.length - 1) {
+        const jitter = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay
+        await delay(jitter)
       }
+
     } catch (error) {
       results.push({ groupId, success: false, error: error.message })
       console.error(`[${userId}] Failed to send to ${groupId}:`, error.message)
     }
   }
 
-  // Save to history
+  // Save to history (save the original template, not the spun version)
   const history = readHistory(userId)
   history.push({
     id: Date.now().toString(),
     type: media ? "image" : "text",
-    message: processedMessage.substring(0, 100),
+    message: message.substring(0, 100), // Save original message summary
     groupCount: groups.length,
     successCount: results.filter((r) => r.success).length,
     failCount: results.filter((r) => !r.success).length,

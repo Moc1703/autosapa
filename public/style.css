@@ -197,6 +197,28 @@ body {
     background: currentColor;
 }
 
+/* ===== BADGES (Generic) ===== */
+.badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: normal;
+}
+
+.badge-active {
+    background: var(--success-light);
+    color: var(--success);
+    border: 1px solid rgba(37, 211, 102, 0.2);
+}
+
+.badge-warning {
+    background: var(--warning-light);
+    color: var(--warning);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
 /* ===== PAGE HEADER ===== */
 .page-header {
     margin-bottom: 20px;
@@ -2821,8 +2843,81 @@ kbd {
     display: none;
 }
 
-@media (max-width: 767px) {
-    .mobile-only {
-        display: grid;
-    }
+
+/* ===== TOOLTIPS ===== */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+    margin-left: 6px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 240px;
+    background-color: var(--bg-elevated);
+    color: var(--text);
+    text-align: left;
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-size: 0.75rem;
+    font-weight: normal;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    line-height: 1.4;
+    pointer-events: none;
+}
+
+.tooltip .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--border) transparent transparent transparent;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+
+/* ===== TABS ===== */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.tab-btn {
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--text);
+    background: var(--bg);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: var(--primary-light);
 }

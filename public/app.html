@@ -291,20 +291,110 @@
 
                         <!-- Right Column: Group Selection -->
                         <div class="desktop-col">
+                            <!-- Target Selection Tabs -->
                             <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">Select Groups</h3>
-                                    <span class="selected-count" id="selectedCount">0 selected</span>
+                                <div class="card-header pb-0" style="border-bottom:none; display:block">
+                                    <div class="flex justify-between align-center mb-2">
+                                        <h3 class="card-title">Target Recipients</h3>
+                                        <span class="selected-count" id="selectedCount">0 selected</span>
+                                    </div>
+                                    <div class="tabs">
+                                        <button class="tab-btn active" onclick="switchTargetTab('groups')" id="tabBtn-groups">👥 Groups</button>
+                                        <button class="tab-btn" onclick="switchTargetTab('manual')" id="tabBtn-manual">📝 Manual Input</button>
+                                    </div>
                                 </div>
-                                <div class="select-all-bar">
-                                    <label class="checkbox-row mb-0">
-                                        <input type="checkbox" id="selectAllGroups" onchange="toggleSelectAll()">
-                                        <span>Select All</span>
-                                    </label>
+                                
+                                <!-- Group Selection Panel -->
+                                <div id="targetPanel-groups" class="p-3">
+                                    <div class="select-all-bar">
+                                        <label class="checkbox-row mb-0">
+                                            <input type="checkbox" id="selectAllGroups" onchange="toggleSelectAll()">
+                                            <span>Select All</span>
+                                        </label>
+                                    </div>
+                                    <div class="group-select-list" id="groupSelectList">
+                                        <div class="empty-state">
+                                            <p class="text-muted">No groups yet. Add groups first.</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="group-select-list" id="groupSelectList">
-                                    <div class="empty-state">
-                                        <p class="text-muted">No groups yet. Add groups first.</p>
+
+                                <!-- Manual Input Panel -->
+                                <div id="targetPanel-manual" class="hidden p-3 pt-0">
+                                    <div class="form-group mb-0">
+                                        <textarea class="form-input" id="manualNumbers" placeholder="Paste WhatsApp numbers here... e.g.:&#10;08123456789&#10;628123456789&#10;+62 812-3456-789" style="min-height:200px; font-family:monospace"></textarea>
+                                        <p class="form-hint">
+                                            Auto-formatted to Indonesia (+62). Separate with Enter or Comma.
+                                            <span id="manualCount" class="badge badge-info float-right">0 numbers</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anti-Ban Settings -->
+                            <div class="card mb-4">
+                                <div class="card-header" onclick="toggleAntiBanSettings()" style="cursor: pointer;">
+                                    <h3 class="card-title">🛡️ Anti-Ban Settings</h3>
+                                    <span id="antiBanIndicator" class="badge badge-active">Safe Mode ON</span>
+                                </div>
+                                
+                                <div id="antiBanSettings" class="hidden" style="margin-top: 16px; border-top: 1px solid #2a3942; padding-top: 16px;">
+                                    <!-- Safe Mode Toggle -->
+                                    <div class="toggle-row mb-4">
+                                        <div>
+                                            <span class="toggle-label">
+                                                🔒 Safe Mode
+                                                <div class="tooltip">❓
+                                                    <span class="tooltip-text">Recommended. Automatically uses random delay (5-15s) and typing simulation to mimic human behavior.</span>
+                                                </div>
+                                            </span>
+                                            <p class="form-hint mb-0">Recommended to prevent number banning.</p>
+                                        </div>
+                                        <div class="toggle active" id="safeModeToggle" onclick="toggleSafeMode()"></div>
+                                    </div>
+
+                                    <!-- Custom Settings (Hidden when Safe Mode is ON) -->
+                                    <div id="customAntiBanSettings" class="hidden">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                Random Delay (seconds)
+                                                <div class="tooltip">❓
+                                                    <span class="tooltip-text">Random pause between each message sent.</span>
+                                                </div>
+                                            </label>
+                                            <div class="flex gap-2">
+                                                <input type="number" class="form-input" id="delayMin" placeholder="Min" value="5">
+                                                <span style="align-self:center">-</span>
+                                                <input type="number" class="form-input" id="delayMax" placeholder="Max" value="15">
+                                            </div>
+                                            <p class="form-hint">Randomizer will pick a delay between these values.</p>
+                                        </div>
+
+                                        <div class="toggle-row mb-2">
+                                            <div>
+                                                <span class="toggle-label">
+                                                    😴 Sleep Mode
+                                                    <div class="tooltip">❓
+                                                        <span class="tooltip-text">Takes a long break after sending a batch of messages to cool down account activity.</span>
+                                                    </div>
+                                                </span>
+                                                <p class="form-hint mb-0">Pause after sending X messages</p>
+                                            </div>
+                                            <div class="toggle" id="sleepModeToggle" onclick="toggleSleepMode()"></div>
+                                        </div>
+
+                                        <div id="sleepSettings" class="hidden">
+                                            <div class="form-group">
+                                                <label class="form-label">Sleep rules</label>
+                                                <div class="flex gap-2 align-center">
+                                                    <span>After</span>
+                                                    <input type="number" class="form-input" id="sleepAfter" value="50" style="width: 80px">
+                                                    <span>msgs, sleep for</span>
+                                                    <input type="number" class="form-input" id="sleepDuration" value="5" style="width: 80px">
+                                                    <span>mins</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -328,6 +418,9 @@
                                             <div class="result-stat-value text-danger" id="resultFailed">0</div>
                                             <div class="result-stat-label">Failed</div>
                                         </div>
+                                    </div>
+                                    <div id="broadcastProgress" class="hidden text-center mt-2">
+                                        <p class="text-muted" id="progressText">Sending...</p>
                                     </div>
                                 </div>
                             </div>
@@ -725,8 +818,32 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Version 1.4.0 -->
+                        <div class="changelog-version">
+                            <div class="changelog-header">
+                                <div class="changelog-version-badge">v1.4.0</div>
+                            </div>
+                            <div class="changelog-content">
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">✨ New Features</div>
+                                    <ul class="changelog-list">
+                                        <li><strong>Safe Broadcast:</strong> Anti-Ban protection dengan Random Delay & Smart Typing</li>
+                                        <li><strong>Spintax Support:</strong> Variasi pesan otomatis `{Halo|Hai}` untuk menghindari deteksi spam</li>
+                                        <li><strong>Sleep Mode:</strong> Bot istirahat otomatis setelah mengirim sekian pesan</li>
+                                        <li><strong>Manual Input:</strong> Kirim broadcast langsung ke list nomor HP tanpa save kontak</li>
+                                    </ul>
+                                </div>
+                                <div class="changelog-section">
+                                    <div class="changelog-section-title">🐛 Bug Fixes</div>
+                                    <ul class="changelog-list">
+                                        <li>Fixed Puppeteer SingletonLock issue pada inisialisasi sesi baru</li>
+                                        <li>Improved error handling saat broadcast</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
 
-                        <!-- Version 1.2.0 -->
+                        <!-- Version 1.3.0 -->
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.2.0</div>
