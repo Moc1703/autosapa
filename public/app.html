@@ -484,63 +484,79 @@
 
                 <!-- Tab: Schedule -->
                 <div class="tab-panel" id="tab-schedule">
-                    <div class="page-header">
-                        <h1 class="page-title">📅 Schedule & Templates</h1>
+                    <!-- Header -->
+                    <div class="schedule-header">
+                        <div>
+                            <h1 class="page-title">Schedule</h1>
+                            <p class="page-subtitle">Manage scheduled broadcasts and templates</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="showAddSchedule()">+ New Schedule</button>
                     </div>
 
-                    <div class="desktop-grid">
-                        <div class="desktop-col">
-                            <!-- Scheduled Broadcasts (Pending) -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">📅 Scheduled Broadcasts</h3>
-                                    <button class="btn btn-sm btn-primary" onclick="showAddSchedule()">+ New</button>
-                                </div>
-                                <div class="search-box mb-2">
-                                    <input type="text" class="form-input" id="searchSchedules" placeholder="🔍 Search schedules..." oninput="filterSchedules()">
-                                </div>
-                                <div id="scheduleList">
-                                    <div class="empty-state">
-                                        <div class="empty-icon">📅</div>
-                                        <div class="empty-title">No schedules</div>
-                                        <p class="empty-text">Schedule broadcasts for later</p>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Stats Row -->
+                    <div class="schedule-stats">
+                        <div class="schedule-stat-card">
+                            <span class="schedule-stat-value" id="schedPending">0</span>
+                            <span class="schedule-stat-label">Pending</span>
+                        </div>
+                        <div class="schedule-stat-card">
+                            <span class="schedule-stat-value" id="schedSentToday">0</span>
+                            <span class="schedule-stat-label">Sent Today</span>
+                        </div>
+                        <div class="schedule-stat-card">
+                            <span class="schedule-stat-value" id="schedTotal">0</span>
+                            <span class="schedule-stat-label">Total</span>
+                        </div>
+                    </div>
 
-                            <!-- Archive (Sent) -->
-                            <div class="card mt-4">
-                                <div class="card-header">
-                                    <h3 class="card-title">📦 Archive</h3>
-                                    <button class="btn btn-sm btn-secondary" onclick="toggleArchive()">
-                                        <span id="archiveToggleText">Show</span>
-                                    </button>
-                                </div>
-                                <div id="archiveList" class="hidden">
-                                    <div class="empty-state">
-                                        <p class="text-muted">No archived schedules</p>
-                                    </div>
-                                </div>
-                                <div id="archiveCount" class="text-muted text-center" style="padding: 12px; font-size: 13px;">
-                                    0 sent schedules
-                                </div>
+                    <!-- Tabs: Schedules / Templates -->
+                    <div class="schedule-tabs">
+                        <button class="schedule-tab active" onclick="switchScheduleTab('schedules')" id="tabSchedules">
+                            Schedules
+                        </button>
+                        <button class="schedule-tab" onclick="switchScheduleTab('templates')" id="tabTemplates">
+                            Templates
+                        </button>
+                    </div>
+
+                    <!-- Schedules Panel -->
+                    <div class="schedule-panel active" id="panelSchedules">
+                        <div class="schedule-toolbar">
+                            <div class="search-box" style="flex:1; margin-bottom:0;">
+                                <input type="text" class="form-input" id="searchSchedules" placeholder="Search schedules..." oninput="filterSchedules()">
+                            </div>
+                            <div class="schedule-filter">
+                                <button class="filter-btn active" onclick="filterScheduleStatus('all')">All</button>
+                                <button class="filter-btn" onclick="filterScheduleStatus('pending')">Pending</button>
+                                <button class="filter-btn" onclick="filterScheduleStatus('sent')">Sent</button>
                             </div>
                         </div>
 
-                        <div class="desktop-col">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">📝 Templates</h3>
-                                    <button class="btn btn-sm btn-primary" onclick="showAddTemplate()">+ New</button>
-                                </div>
-                                <div class="search-box mb-3">
-                                    <input type="text" class="form-input" id="searchTemplates" placeholder="Search templates..." oninput="filterTemplates()">
-                                </div>
-                                <div class="list" id="templatesList">
-                                    <div class="empty-state">
-                                        <p class="text-muted">Save message templates for quick use</p>
-                                    </div>
-                                </div>
+                        <div class="schedule-list" id="scheduleList">
+                            <div class="empty-state">
+                                <div class="empty-icon">📅</div>
+                                <div class="empty-title">No schedules yet</div>
+                                <p class="empty-text">Create your first scheduled broadcast</p>
+                                <button class="btn btn-primary mt-4" onclick="showAddSchedule()">+ Create Schedule</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Templates Panel -->
+                    <div class="schedule-panel" id="panelTemplates">
+                        <div class="schedule-toolbar">
+                            <div class="search-box" style="flex:1; margin-bottom:0;">
+                                <input type="text" class="form-input" id="searchTemplates" placeholder="Search templates..." oninput="filterTemplates()">
+                            </div>
+                            <button class="btn btn-primary" onclick="showAddTemplate()">+ New Template</button>
+                        </div>
+
+                        <div class="template-grid" id="templatesList">
+                            <div class="empty-state">
+                                <div class="empty-icon">📝</div>
+                                <div class="empty-title">No templates yet</div>
+                                <p class="empty-text">Save message templates for quick reuse</p>
+                                <button class="btn btn-primary mt-4" onclick="showAddTemplate()">+ Create Template</button>
                             </div>
                         </div>
                     </div>

@@ -1151,125 +1151,95 @@ async function loadSchedules() {
     }
 }
 
+let currentScheduleFilter = 'all';
+
 function renderSchedules() {
     const searchQuery = (document.getElementById('searchSchedules')?.value || '').toLowerCase();
     
-    // Split schedules into pending and sent
-    const pendingSchedules = schedules.filter(s => s.status !== 'sent');
-    const sentSchedules = schedules.filter(s => s.status === 'sent');
+    // Update stats
+    const pendingCount = schedules.filter(s => s.status !== 'sent').length;
+    const today = new Date().toDateString();
+    const sentTodayCount = schedules.filter(s => s.status === 'sent' && new Date(s.sentAt).toDateString() === today).length;
     
-    // Filter pending by search query
-    const filteredPending = searchQuery 
-        ? pendingSchedules.filter(s => 
+    document.getElementById('schedPending')?.textContent && (document.getElementById('schedPending').textContent = pendingCount);
+    document.getElementById('schedSentToday')?.textContent && (document.getElementById('schedSentToday').textContent = sentTodayCount);
+    document.getElementById('schedTotal')?.textContent && (document.getElementById('schedTotal').textContent = schedules.length);
+    
+    // Filter by status
+    let filtered = schedules;
+    if (currentScheduleFilter === 'pending') {
+        filtered = schedules.filter(s => s.status !== 'sent');
+    } else if (currentScheduleFilter === 'sent') {
+        filtered = schedules.filter(s => s.status === 'sent');
+    }
+    
+    // Filter by search
+    if (searchQuery) {
+        filtered = filtered.filter(s => 
             (s.name || '').toLowerCase().includes(searchQuery) ||
             (s.message || '').toLowerCase().includes(searchQuery)
-        )
-        : pendingSchedules;
+        );
+    }
     
-    // Render pending schedules
     const list = document.getElementById('scheduleList');
-    if (!filteredPending.length) {
+    if (!filtered.length) {
         list.innerHTML = `
             <div class="empty-state">
                 <div class="empty-icon">📅</div>
-                <div class="empty-title">${searchQuery ? 'No matching schedules' : 'No pending schedules'}</div>
-                <p class="empty-text">${searchQuery ? 'Try a different search' : 'Schedule broadcasts for later'}</p>
+                <div class="empty-title">${searchQuery ? 'No matching schedules' : 'No schedules yet'}</div>
+                <p class="empty-text">${searchQuery ? 'Try a different search' : 'Create your first scheduled broadcast'}</p>
+                ${!searchQuery ? '<button class="btn btn-primary mt-4" onclick="showAddSchedule()">+ Create Schedule</button>' : ''}
             </div>`;
-    } else {
-        list.innerHTML = filteredPending.map(s => `
-            <div class="card-list-item">
-                <div class="card-info">
-                    <div class="card-title">
-                        ${escapeHtml(s.name || 'Untitled Schedule')}
-                        ${s.image ? '<span class="card-badge info">📷</span>' : ''}
+        return;
+    }
+    
+    list.innerHTML = filtered.map(s => {
+        const isSent = s.status === 'sent';
+        const groupCount = s.groups?.length || s.groupIds?.length || 0;
+        return `
+            <div class="schedule-card ${isSent ? 'sent' : ''}" data-status="${s.status || 'pending'}">
+                <div class="schedule-card-icon">${isSent ? '✅' : '📅'}</div>
+                <div class="schedule-card-content">
+                    <div class="schedule-card-header">
+                        <span class="schedule-card-name">${escapeHtml(s.name || 'Untitled Schedule')}</span>
+                        <span class="schedule-card-badge ${isSent ? 'sent' : 'pending'}">${isSent ? 'Sent' : 'Pending'}</span>
+                        ${s.image ? '<span class="schedule-card-badge pending">📷</span>' : ''}
                     </div>
-                    <div class="card-subtitle">
-                        <span style="color:var(--primary)">🕐 ${formatDate(s.scheduledTime)}</span>
-                        ${s.repeat || s.recurring ? `<span class="card-badge warning">🔄 ${s.repeat || s.recurring}</span>` : ''}
-                        <span class="card-badge warning">pending</span>
-                    </div>
-                    <div class="card-subtitle" style="margin-top:4px">
-                        ${escapeHtml((s.message || 'Image only').substring(0, 60))}${s.message?.length > 60 ? '...' : ''}
-                    </div>
-                    <div class="card-subtitle" style="margin-top:4px; font-size:12px">
-                        📤 ${s.groups?.length || s.groupIds?.length || 0} groups
+                    <div class="schedule-card-message">${escapeHtml(s.message || 'Image only')}</div>
+                    <div class="schedule-card-meta">
+                        <span>🕐 ${formatDate(s.scheduledTime)}</span>
+                        <span>👥 ${groupCount} groups</span>
+                        ${s.repeat ? `<span>🔄 ${s.repeat}</span>` : ''}
                     </div>
                 </div>
-                <div class="flex gap-2">
-                    <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')">📋</button>
-                    <button class="btn btn-sm btn-danger btn-icon" onclick="deleteSchedule('${s.id}')">🗑️</button>
+                <div class="schedule-card-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')" title="Duplicate">📋</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSchedule('${s.id}')" title="Delete">🗑️</button>
                 </div>
             </div>
-        `).join('');
-    }
-    
-    // Render archive
-    renderArchive(sentSchedules, searchQuery);
+        `;
+    }).join('');
 }
 
-function renderArchive(sentSchedules, searchQuery) {
-    // Filter archive by search query too
-    const filteredSent = searchQuery 
-        ? sentSchedules.filter(s => 
-            (s.name || '').toLowerCase().includes(searchQuery) ||
-            (s.message || '').toLowerCase().includes(searchQuery)
-        )
-        : sentSchedules;
+function switchScheduleTab(tab) {
+    // Update tabs
+    document.getElementById('tabSchedules').classList.toggle('active', tab === 'schedules');
+    document.getElementById('tabTemplates').classList.toggle('active', tab === 'templates');
     
-    // Update archive count
-    const countEl = document.getElementById('archiveCount');
-    if (countEl) {
-        countEl.textContent = `${filteredSent.length} sent schedule${filteredSent.length !== 1 ? 's' : ''}`;
-    }
-    
-    // Render archive list
-    const archiveList = document.getElementById('archiveList');
-    if (!archiveList) return;
-    
-    if (!filteredSent.length) {
-        archiveList.innerHTML = `
-            <div class="empty-state">
-                <p class="text-muted">${searchQuery ? 'No matching archived schedules' : 'No archived schedules yet'}</p>
-            </div>`;
-    } else {
-        archiveList.innerHTML = filteredSent.map(s => `
-            <div class="card-list-item" style="opacity: 0.8; background: var(--bg-subtle);">
-                <div class="card-info">
-                    <div class="card-title">
-                        ${escapeHtml(s.name || 'Untitled Schedule')}
-                        <span class="card-badge success">✓ sent</span>
-                    </div>
-                    <div class="card-subtitle">
-                        <span>📅 Scheduled: ${formatDate(s.scheduledTime)}</span>
-                        ${s.sentAt ? `<span> • ✅ Sent: ${formatDate(s.sentAt)}</span>` : ''}
-                    </div>
-                    <div class="card-subtitle" style="margin-top:4px">
-                        ${escapeHtml((s.message || 'Image only').substring(0, 60))}${s.message?.length > 60 ? '...' : ''}
-                    </div>
-                </div>
-                <div class="flex gap-2">
-                    <button class="btn btn-sm btn-secondary" onclick="duplicateSchedule('${s.id}')">📋</button>
-                    <button class="btn btn-sm btn-danger btn-icon" onclick="deleteSchedule('${s.id}')">🗑️</button>
-                </div>
-            </div>
-        `).join('');
-    }
+    // Update panels
+    document.getElementById('panelSchedules').classList.toggle('active', tab === 'schedules');
+    document.getElementById('panelTemplates').classList.toggle('active', tab === 'templates');
 }
 
-function toggleArchive() {
-    const archiveList = document.getElementById('archiveList');
-    const toggleText = document.getElementById('archiveToggleText');
-    const countEl = document.getElementById('archiveCount');
+function filterScheduleStatus(status) {
+    currentScheduleFilter = status;
     
-    if (archiveList.classList.contains('hidden')) {
-        archiveList.classList.remove('hidden');
-        toggleText.textContent = 'Hide';
-        if (countEl) countEl.classList.add('hidden');
-    } else {
-        archiveList.classList.add('hidden');
-        toggleText.textContent = 'Show';
-        if (countEl) countEl.classList.remove('hidden');
-    }
+    // Update filter buttons
+    document.querySelectorAll('.schedule-filter .filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === status);
+    });
+    
+    renderSchedules();
 }
 
 function filterSchedules() {
@@ -1373,21 +1343,40 @@ async function loadTemplates() {
 function renderTemplates() {
     const list = document.getElementById('templatesList');
     if (!templates.length) {
-        list.innerHTML = '<div class="empty-state"><p class="text-muted">Save message templates for quick use</p></div>';
+        list.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📝</div>
+                <div class="empty-title">No templates yet</div>
+                <p class="empty-text">Save message templates for quick reuse</p>
+                <button class="btn btn-primary mt-4" onclick="showAddTemplate()">+ Create Template</button>
+            </div>`;
         return;
     }
     
-    list.innerHTML = templates.map((t, i) => `
-        <div class="card-list-item" data-name="${escapeAttr(t.name)}" data-message="${escapeAttr(t.message || '')}" onclick="useTemplate(${i})">
-            <div class="card-icon-large" style="background:var(--bg-secondary); color:var(--primary)">📝</div>
-            <div class="card-info">
-                <div class="card-title">${escapeHtml(t.name)}</div>
-                <div class="card-subtitle">${escapeHtml((t.message || '').substring(0, 60))}...</div>
+    const searchQuery = (document.getElementById('searchTemplates')?.value || '').toLowerCase();
+    let filtered = templates;
+    if (searchQuery) {
+        filtered = templates.filter(t => 
+            (t.name || '').toLowerCase().includes(searchQuery) ||
+            (t.message || '').toLowerCase().includes(searchQuery)
+        );
+    }
+    
+    if (!filtered.length) {
+        list.innerHTML = '<div class="empty-state"><p class="text-muted">No matching templates</p></div>';
+        return;
+    }
+    
+    list.innerHTML = filtered.map((t, i) => `
+        <div class="template-card" onclick="useTemplate(${templates.indexOf(t)})">
+            <div class="template-card-header">
+                <span class="template-card-name">${escapeHtml(t.name)}</span>
+                <div class="template-card-actions">
+                    <button class="btn btn-sm btn-secondary btn-icon" onclick="event.stopPropagation(); editTemplate('${t.id}')" title="Edit">✏️</button>
+                    <button class="btn btn-sm btn-danger btn-icon" onclick="event.stopPropagation(); deleteTemplate('${t.id}')" title="Delete">🗑️</button>
+                </div>
             </div>
-            <div class="flex gap-2">
-                <button class="btn btn-sm btn-secondary btn-icon" onclick="event.stopPropagation(); editTemplate('${t.id}')">✏️</button>
-                <button class="btn btn-sm btn-danger btn-icon" onclick="event.stopPropagation(); deleteTemplate('${t.id}')">🗑️</button>
-            </div>
+            <div class="template-card-message">${escapeHtml(t.message || '')}</div>
         </div>
     `).join('');
 }
