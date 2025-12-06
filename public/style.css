@@ -159,7 +159,26 @@ body {
     .app-main {
         max-width: 100%;
         margin: 0;
-        padding: 24px;
+        padding: 60px 40px;
+    }
+
+    .desktop-grid,
+    .stats-grid,
+    .stats-grid-4,
+    .card,
+    .page-header {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Reset margins for cards inside grids */
+    .desktop-grid .card,
+    .stats-grid .stat-card,
+    .stats-grid-4 .stat-card {
+        margin-left: 0;
+        margin-right: 0;
+        max-width: 100%;
     }
 
     .tab-panel {
@@ -258,7 +277,7 @@ body {
 
 /* ===== PAGE HEADER ===== */
 .page-header {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .page-title {
@@ -660,11 +679,17 @@ select.form-input {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .stats-grid-4 {
     grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 769px) {
+    .stats-grid-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
 
 .stat-card {
@@ -2262,7 +2287,7 @@ kbd {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 24px;
-        align-items: start;
+        /* align-items: start; removed to allow stretching */
     }
 
     .desktop-col {

@@ -821,6 +821,7 @@
         </div>
 
         <!-- Tab: History -->
+        <!-- Tab: History -->
         <div class="tab-panel" id="tab-history">
             <div class="page-header">
                 <h1 class="page-title">📊 Statistics</h1>
@@ -845,9 +846,8 @@
                 </div>
             </div>
 
-            <!-- Desktop Grid Layout -->
             <div class="desktop-grid">
-                <!-- Left Column: Chart -->
+                <!-- Left Column -->
                 <div class="desktop-col">
                     <div class="card">
                         <div class="card-header">
@@ -860,7 +860,7 @@
                     </div>
                 </div>
 
-                <!-- Right Column: Recent Activity -->
+                <!-- Right Column -->
                 <div class="desktop-col">
                     <div class="card">
                         <div class="card-header">
@@ -887,10 +887,10 @@
             </div>
 
             <div class="desktop-grid">
+                <!-- Left Column -->
                 <div class="desktop-col">
                     <div class="card">
                         <h3 class="card-title mb-4">General</h3>
-
                         <div class="toggle-row">
                             <div>
                                 <span class="toggle-label">Anti-Ban Queue</span>
@@ -898,7 +898,6 @@
                             </div>
                             <div class="toggle" id="queueToggle" onclick="toggleSetting('queue')"></div>
                         </div>
-
                         <div class="toggle-row">
                             <div>
                                 <span class="toggle-label">Typing Indicator</span>
@@ -906,8 +905,6 @@
                             </div>
                             <div class="toggle" id="typingToggle" onclick="toggleSetting('typing')"></div>
                         </div>
-
-
                         <div class="toggle-row">
                             <div>
                                 <span class="toggle-label">Login Protection</span>
@@ -926,11 +923,11 @@
                             <input type="text" class="form-input" id="blacklistInput"
                                 placeholder="Enter number to block (62812xxx)">
                         </div>
-                        <button class="btn btn-danger btn-block" onclick="addBlacklist()">🚫 Block
-                            Number</button>
+                        <button class="btn btn-danger btn-block" onclick="addBlacklist()">🚫 Block Number</button>
                     </div>
                 </div>
 
+                <!-- Right Column -->
                 <div class="desktop-col">
                     <div class="card">
                         <h3 class="card-title mb-4">💾 Backup & Data</h3>
@@ -946,8 +943,7 @@
 
                     <div class="card">
                         <h3 class="card-title mb-4">📋 Message Logs</h3>
-                        <button class="btn btn-secondary btn-block" onclick="viewLogs()">View Incoming
-                            Messages</button>
+                        <button class="btn btn-secondary btn-block" onclick="viewLogs()">View Incoming Messages</button>
                     </div>
 
                     <div class="card">
