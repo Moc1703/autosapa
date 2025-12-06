@@ -3105,6 +3105,79 @@ app.post("/api/:userId/backup/restore", requireUserAuth, (req, res) => {
   }
 })
 
+// ===== ANALYTICS =====
+app.get("/api/:userId/analytics/best-times", requireUserAuth, (req, res) => {
+  const { userId } = req.params
+  const history = readHistory(userId)
+
+  // Analyze broadcast history by hour of day
+  const hourlyStats = Array(24).fill(0).map(() => ({ sent: 0, success: 0 }))
+
+  history.forEach(h => {
+    if (!h.timestamp) return
+    const hour = new Date(h.timestamp).getHours()
+    hourlyStats[hour].sent += (h.successCount || 0) + (h.failCount || 0)
+    hourlyStats[hour].success += (h.successCount || 0)
+  })
+
+  // Find best hours (highest success rate with minimum sends)
+  const bestHours = hourlyStats
+    .map((stats, hour) => ({
+      hour,
+      sent: stats.sent,
+      success: stats.success,
+      rate: stats.sent > 0 ? Math.round((stats.success / stats.sent) * 100) : 0
+    }))
+    .filter(h => h.sent >= 5) // Minimum 5 messages to be considered
+    .sort((a, b) => b.rate - a.rate || b.sent - a.sent)
+    .slice(0, 3)
+
+  res.json({
+    hourlyStats: hourlyStats.map((s, i) => ({ hour: i, ...s })),
+    bestHours,
+    totalAnalyzed: history.length
+  })
+})
+
+app.get("/api/:userId/analytics/group-stats", requireUserAuth, (req, res) => {
+  const { userId } = req.params
+  const history = readHistory(userId)
+  const groups = readGroups(userId)
+
+  // Build stats per group
+  const groupStats = {}
+
+  // Initialize with all groups
+  groups.forEach(g => {
+    groupStats[g.groupId] = {
+      name: g.name,
+      sent: 0,
+      success: 0,
+      failed: 0
+    }
+  })
+
+  // Count from history (simplified - counts broadcast totals)
+  history.forEach(h => {
+    const targets = h.targets || []
+    targets.forEach(groupId => {
+      if (!groupStats[groupId]) {
+        groupStats[groupId] = { name: groupId, sent: 0, success: 0, failed: 0 }
+      }
+      groupStats[groupId].sent++
+      groupStats[groupId].success += h.successCount > 0 ? 1 : 0
+      groupStats[groupId].failed += h.failCount > 0 ? 1 : 0
+    })
+  })
+
+  // Convert to array and sort by activity
+  const stats = Object.entries(groupStats)
+    .map(([id, data]) => ({ id, ...data }))
+    .sort((a, b) => b.sent - a.sent)
+
+  res.json(stats)
+})
+
 // ===== STATISTICS =====
 app.get("/api/:userId/stats", requireUserAuth, (req, res) => {
   const { userId } = req.params

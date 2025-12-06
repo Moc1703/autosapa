@@ -168,6 +168,273 @@ function debounce(func, wait) {
     };
 }
 
+// Swipe actions for mobile
+function initSwipeActions() {
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let currentSwipeEl = null;
+    const minSwipeDistance = 80;
+
+    document.addEventListener('touchstart', (e) => {
+        const target = e.target.closest('.schedule-card, .card-list-item');
+        if (!target) return;
+
+        touchStartX = e.changedTouches[0].screenX;
+        currentSwipeEl = target;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+        if (!currentSwipeEl) return;
+
+        touchEndX = e.changedTouches[0].screenX;
+        const swipeDistance = touchStartX - touchEndX;
+
+        // Swipe left = delete reveal
+        if (swipeDistance > minSwipeDistance) {
+            currentSwipeEl.classList.add('swiped-left');
+            // Find and show delete button or trigger delete
+            const deleteBtn = currentSwipeEl.querySelector('.btn-danger');
+            if (deleteBtn) {
+                deleteBtn.classList.add('swipe-revealed');
+            }
+        }
+        // Swipe right = cancel
+        else if (swipeDistance < -minSwipeDistance) {
+            currentSwipeEl.classList.remove('swiped-left');
+            const deleteBtn = currentSwipeEl.querySelector('.btn-danger');
+            if (deleteBtn) deleteBtn.classList.remove('swipe-revealed');
+        }
+
+        currentSwipeEl = null;
+    }, { passive: true });
+
+    // Reset swipe on click elsewhere
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.swiped-left')) {
+            document.querySelectorAll('.swiped-left').forEach(el => {
+                el.classList.remove('swiped-left');
+                el.querySelectorAll('.swipe-revealed').forEach(btn => btn.classList.remove('swipe-revealed'));
+            });
+        }
+    });
+}
+
+// ===== DRAFT AUTO-SAVE =====
+const DRAFT_KEY = 'autosapa_draft';
+const saveDraftDebounced = debounce(saveDraft, 1000);
+
+function saveDraft() {
+    const message = document.getElementById('quickMessage')?.value || '';
+    if (message.trim()) {
+        const draft = {
+            message,
+            savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+        // Show indicator
+        const indicator = document.getElementById('draftIndicator');
+        if (indicator) {
+            indicator.classList.remove('hidden');
+            setTimeout(() => indicator.classList.add('hidden'), 2000);
+        }
+    } else {
+        localStorage.removeItem(DRAFT_KEY);
+    }
+}
+
+function loadDraft() {
+    const draftStr = localStorage.getItem(DRAFT_KEY);
+    if (!draftStr) return;
+
+    try {
+        const draft = JSON.parse(draftStr);
+        const textarea = document.getElementById('quickMessage');
+        if (textarea && draft.message) {
+            textarea.value = draft.message;
+            toast('Draft restored', 'info');
+        }
+    } catch (e) {
+        console.error('Failed to load draft:', e);
+    }
+}
+
+function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+}
+
+// ===== EXPORT/IMPORT SCHEDULES =====
+function exportSchedules() {
+    if (!schedules.length) {
+        toast('No schedules to export', 'error');
+        return;
+    }
+
+    const data = JSON.stringify(schedules, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `schedules_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+    toast('Schedules exported!', 'success');
+}
+
+async function importSchedules(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        const text = await file.text();
+        const imported = JSON.parse(text);
+
+        if (!Array.isArray(imported)) {
+            toast('Invalid schedule file', 'error');
+            return;
+        }
+
+        // Import each schedule
+        let count = 0;
+        for (const schedule of imported) {
+            // Skip already sent or duplicate
+            if (schedule.status === 'sent') continue;
+
+            await apiFetch(getUserApi() + '/schedules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: schedule.name,
+                    message: schedule.message,
+                    groupIds: schedule.groupIds || schedule.groups,
+                    scheduledTime: schedule.scheduledTime,
+                    recurring: schedule.recurring,
+                    image: schedule.image
+                })
+            });
+            count++;
+        }
+
+        toast(`Imported ${count} schedule(s)!`, 'success');
+        loadSchedules();
+    } catch (e) {
+        toast('Failed to import: ' + e.message, 'error');
+    }
+
+    event.target.value = '';
+}
+
+// ===== CLONE TEMPLATE TO SCHEDULE =====
+function scheduleFromTemplate(templateIndex) {
+    const template = templates[templateIndex];
+    if (!template) return;
+
+    showAddSchedule();
+
+    // Pre-fill from template
+    document.getElementById('scheduleMessage').value = template.message || '';
+    document.getElementById('scheduleName').value = `Schedule: ${template.name}`;
+
+    toast('Create schedule from template', 'info');
+}
+
+// ===== BROWSER NOTIFICATIONS =====
+async function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+    }
+}
+
+function showBrowserNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/favicon.png' });
+    }
+}
+
+// ===== ANALYTICS =====
+async function loadBestTimes() {
+    try {
+        const res = await apiFetch(getUserApi() + '/analytics/best-times');
+        const data = await res.json();
+
+        const container = document.getElementById('bestTimesContainer');
+        if (!container) return;
+
+        if (!data.bestHours?.length) {
+            container.innerHTML = '<p class="text-muted text-center">Not enough data yet. Send more broadcasts to see analytics.</p>';
+            return;
+        }
+
+        // Render heatmap
+        let html = '<div class="best-times-heatmap">';
+
+        // Hour labels
+        html += '<div class="heatmap-row">';
+        for (let h = 0; h < 24; h++) {
+            html += `<div class="heatmap-label">${h.toString().padStart(2, '0')}</div>`;
+        }
+        html += '</div>';
+
+        // Heatmap cells
+        html += '<div class="heatmap-row">';
+        data.hourlyStats.forEach(s => {
+            const intensity = s.sent > 0 ? Math.min(s.success / Math.max(...data.hourlyStats.map(x => x.success || 1)), 1) : 0;
+            const color = intensity > 0.7 ? 'high' : intensity > 0.3 ? 'mid' : 'low';
+            html += `<div class="heatmap-cell ${color}" title="Hour ${s.hour}: ${s.sent} sent, ${s.success} success"></div>`;
+        });
+        html += '</div>';
+
+        // Best hours recommendation
+        html += '<div class="best-hours-list">';
+        html += '<strong>🏆 Best Hours to Send:</strong><br>';
+        data.bestHours.forEach(h => {
+            html += `<span class="badge badge-success">${h.hour}:00 (${h.rate}% success)</span> `;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('Error loading best times:', e);
+    }
+}
+
+async function loadGroupStats() {
+    try {
+        const res = await apiFetch(getUserApi() + '/analytics/group-stats');
+        const stats = await res.json();
+
+        const container = document.getElementById('groupStatsContainer');
+        if (!container) return;
+
+        if (!stats.length) {
+            container.innerHTML = '<p class="text-muted text-center">No group activity data yet.</p>';
+            return;
+        }
+
+        let html = '<div class="group-stats-list">';
+        stats.slice(0, 10).forEach(g => {
+            const rate = g.sent > 0 ? Math.round((g.success / g.sent) * 100) : 0;
+            html += `
+                <div class="group-stat-item">
+                    <span class="group-stat-name">${escapeHtml(g.name || g.id)}</span>
+                    <div class="group-stat-bar">
+                        <div class="group-stat-fill" style="width: ${rate}%"></div>
+                    </div>
+                    <span class="group-stat-value">${g.sent} sent</span>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+    } catch (e) {
+        console.error('Error loading group stats:', e);
+    }
+}
+
+
 // Check if user is logged in
 const authToken = localStorage.getItem('token');
 const userStr = localStorage.getItem('user');
@@ -256,6 +523,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     initOfflineDetection();
     initKeyboardShortcuts();
     setTimeout(initDragDrop, 500); // Wait for DOM
+    setTimeout(initSwipeActions, 600); // Initialize swipe gestures
+    setTimeout(loadDraft, 700); // Restore draft if available
+    requestNotificationPermission(); // Request browser notification permission
 
     // Background sync groups (after 5 seconds to let WhatsApp load chats)
     setTimeout(backgroundSyncGroups, 5000);
@@ -1389,6 +1659,126 @@ function filterSchedules() {
     renderSchedules();
 }
 
+// ===== CALENDAR VIEW =====
+let currentScheduleView = 'list';
+let currentCalendarMonth = new Date();
+
+function switchScheduleView(view) {
+    currentScheduleView = view;
+
+    // Update buttons
+    document.getElementById('viewListBtn')?.classList.toggle('active', view === 'list');
+    document.getElementById('viewCalendarBtn')?.classList.toggle('active', view === 'calendar');
+
+    // Toggle views
+    const listEl = document.getElementById('scheduleList');
+    const calendarEl = document.getElementById('scheduleCalendar');
+
+    if (view === 'calendar') {
+        listEl?.classList.add('hidden');
+        calendarEl?.classList.remove('hidden');
+        renderCalendar();
+    } else {
+        listEl?.classList.remove('hidden');
+        calendarEl?.classList.add('hidden');
+    }
+}
+
+function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    const titleEl = document.getElementById('calendarMonthTitle');
+    if (!grid || !titleEl) return;
+
+    const year = currentCalendarMonth.getFullYear();
+    const month = currentCalendarMonth.getMonth();
+
+    // Update title
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+    titleEl.textContent = `${monthNames[month]} ${year}`;
+
+    // Get first day of month and total days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    // Today for comparison
+    const today = new Date();
+    const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+    const todayDate = today.getDate();
+
+    // Group schedules by date
+    const schedulesByDate = {};
+    schedules.forEach(s => {
+        const date = new Date(s.scheduledTime);
+        if (date.getMonth() === month && date.getFullYear() === year) {
+            const day = date.getDate();
+            if (!schedulesByDate[day]) schedulesByDate[day] = [];
+            schedulesByDate[day].push(s);
+        }
+    });
+
+    let html = '';
+
+    // Previous month days
+    for (let i = firstDay - 1; i >= 0; i--) {
+        const day = daysInPrevMonth - i;
+        html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+        const isToday = isCurrentMonth && day === todayDate;
+        const daySchedules = schedulesByDate[day] || [];
+
+        html += `<div class="calendar-day ${isToday ? 'today' : ''}" onclick="showDaySchedules(${year}, ${month}, ${day})">
+            <div class="calendar-day-number">${day}</div>
+            <div class="calendar-day-schedules">
+                ${daySchedules.slice(0, 3).map(s =>
+            `<div class="calendar-schedule-dot ${s.status === 'sent' ? 'sent' : ''}" title="${escapeAttr(s.name || s.message?.substring(0, 30) || 'Schedule')}"></div>`
+        ).join('')}
+                ${daySchedules.length > 3 ? `<div class="calendar-day-more">+${daySchedules.length - 3} more</div>` : ''}
+            </div>
+        </div>`;
+    }
+
+    // Next month days
+    const totalCells = firstDay + daysInMonth;
+    const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let day = 1; day <= remaining; day++) {
+        html += `<div class="calendar-day other-month"><div class="calendar-day-number">${day}</div></div>`;
+    }
+
+    grid.innerHTML = html;
+}
+
+function navigateCalendar(direction) {
+    currentCalendarMonth.setMonth(currentCalendarMonth.getMonth() + direction);
+    renderCalendar();
+}
+
+function showDaySchedules(year, month, day) {
+    const daySchedules = schedules.filter(s => {
+        const date = new Date(s.scheduledTime);
+        return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day;
+    });
+
+    if (daySchedules.length === 0) {
+        // Open add schedule modal with date pre-filled
+        showAddSchedule();
+        const selectedDate = new Date(year, month, day, 12, 0, 0);
+        const localISOTime = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('scheduleTime').value = localISOTime;
+        toast(`Schedule for ${day}/${month + 1}/${year}`, 'info');
+        return;
+    }
+
+    // Switch to list view and filter (simplified approach)
+    toast(`${daySchedules.length} schedule(s) on ${day}/${month + 1}/${year}`, 'info');
+    switchScheduleView('list');
+}
+
+
 function showAddSchedule() {
     document.getElementById('scheduleName').value = '';
     document.getElementById('scheduleMessage').value = '';
@@ -1414,6 +1804,62 @@ function showAddSchedule() {
     }
     updateScheduleSelectedCount();
     showModal('addScheduleModal');
+}
+
+// Quick Schedule - pre-fill schedule modal from broadcast panel
+function quickSchedule() {
+    // Get current message from broadcast panel
+    const message = document.getElementById('quickMessage')?.value || '';
+
+    // Get selected groups from broadcast panel
+    const selectedGroups = [...document.querySelectorAll('.group-select-item.selected')].map(el => el.dataset.id);
+
+    // Check if we have content to schedule
+    if (!message && !selectedImage) {
+        toast('Please enter a message or add an image first', 'error');
+        return;
+    }
+
+    if (selectedGroups.length === 0) {
+        toast('Please select at least one group first', 'error');
+        return;
+    }
+
+    // Open schedule modal
+    showAddSchedule();
+
+    // Pre-fill the message
+    document.getElementById('scheduleMessage').value = message;
+
+    // Pre-fill the image if available
+    if (selectedImage) {
+        scheduleImage = selectedImage;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const preview = document.getElementById('scheduleImagePreview');
+            preview.src = e.target.result;
+            preview.classList.remove('hidden');
+            document.getElementById('scheduleUploadText').textContent = '📷 Image selected';
+        };
+        reader.readAsDataURL(selectedImage);
+    }
+
+    // Pre-select the groups
+    setTimeout(() => {
+        document.querySelectorAll('.schedule-group-checkbox').forEach(cb => {
+            cb.checked = selectedGroups.includes(cb.value);
+        });
+        updateScheduleSelectedCount();
+    }, 100);
+
+    // Set default time to 1 hour from now
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    now.setMinutes(0, 0, 0);
+    const localISOTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('scheduleTime').value = localISOTime;
+
+    toast('Schedule your broadcast!', 'info');
 }
 
 function toggleScheduleSelectAll() {
@@ -1515,6 +1961,7 @@ function renderTemplates() {
             <div class="template-card-header">
                 <span class="template-card-name">${escapeHtml(t.name)}</span>
                 <div class="template-card-actions">
+                    <button class="btn btn-sm btn-primary btn-icon" onclick="event.stopPropagation(); scheduleFromTemplate(${templates.indexOf(t)})" title="Schedule">📅</button>
                     <button class="btn btn-sm btn-secondary btn-icon" onclick="event.stopPropagation(); editTemplate('${t.id}')" title="Edit">✏️</button>
                     <button class="btn btn-sm btn-danger btn-icon" onclick="event.stopPropagation(); deleteTemplate('${t.id}')" title="Delete">🗑️</button>
                 </div>

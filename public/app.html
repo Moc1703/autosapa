@@ -264,7 +264,9 @@
                                 </div>
                                 <div class="form-group mb-2">
                                     <textarea class="form-input" id="quickMessage" rows="5"
-                                        placeholder="Type your message here..."></textarea>
+                                        placeholder="Type your message here..."
+                                        oninput="saveDraftDebounced()"></textarea>
+                                    <small class="draft-indicator hidden" id="draftIndicator">💾 Draft saved</small>
                                 </div>
                                 <!-- Message Preview -->
                                 <div id="messagePreview" class="hidden mb-2"></div>
@@ -496,9 +498,15 @@
                                 </div>
                             </div>
 
-                            <button class="btn btn-primary btn-block btn-lg" onclick="sendBroadcast()" id="sendBtn">
-                                📤 Send Broadcast
-                            </button>
+                            <div class="broadcast-actions">
+                                <button class="btn btn-primary btn-lg flex-1" onclick="sendBroadcast()" id="sendBtn">
+                                    📤 Send Now
+                                </button>
+                                <button class="btn btn-secondary btn-lg" onclick="quickSchedule()" id="scheduleBtn"
+                                    title="Schedule for later">
+                                    📅
+                                </button>
+                            </div>
                             <p class="keyboard-hint text-center">Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to send,
                                 <kbd>Ctrl</kbd>+<kbd>S</kbd> to save draft
                             </p>
@@ -741,8 +749,24 @@
                                 <button class="filter-btn" onclick="filterScheduleStatus('pending')">Pending</button>
                                 <button class="filter-btn" onclick="filterScheduleStatus('sent')">Sent</button>
                             </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-sm btn-secondary" onclick="exportSchedules()"
+                                    title="Export">📤</button>
+                                <button class="btn btn-sm btn-secondary"
+                                    onclick="document.getElementById('importScheduleFile').click()"
+                                    title="Import">📥</button>
+                                <input type="file" id="importScheduleFile" accept=".json" style="display:none"
+                                    onchange="importSchedules(event)">
+                            </div>
+                            <div class="view-toggle">
+                                <button class="view-btn active" onclick="switchScheduleView('list')" id="viewListBtn"
+                                    title="List View">📋</button>
+                                <button class="view-btn" onclick="switchScheduleView('calendar')" id="viewCalendarBtn"
+                                    title="Calendar View">📅</button>
+                            </div>
                         </div>
 
+                        <!-- List View -->
                         <div class="schedule-list" id="scheduleList">
                             <div class="empty-state">
                                 <div class="empty-icon">📅</div>
@@ -752,546 +776,565 @@
                                     Schedule</button>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Templates Panel -->
-                    <div class="schedule-panel" id="panelTemplates">
-                        <div class="schedule-toolbar">
-                            <div class="search-box" style="flex:1; margin-bottom:0;">
-                                <input type="text" class="form-input" id="searchTemplates"
-                                    placeholder="Search templates..." oninput="filterTemplates()">
+                        <!-- Calendar View -->
+                        <div class="schedule-calendar hidden" id="scheduleCalendar">
+                            <div class="calendar-header">
+                                <button class="btn btn-sm btn-secondary" onclick="navigateCalendar(-1)">←</button>
+                                <span class="calendar-month-title" id="calendarMonthTitle">December 2025</span>
+                                <button class="btn btn-sm btn-secondary" onclick="navigateCalendar(1)">→</button>
                             </div>
-                            <button class="btn btn-primary" onclick="showAddTemplate()">+ New Template</button>
-                        </div>
-
-                        <div class="template-grid" id="templatesList">
-                            <div class="empty-state">
-                                <div class="empty-icon">📝</div>
-                                <div class="empty-title">No templates yet</div>
-                                <p class="empty-text">Save message templates for quick reuse</p>
-                                <button class="btn btn-primary mt-4" onclick="showAddTemplate()">+ Create
-                                    Template</button>
+                            <div class="calendar-weekdays">
+                                <div>Sun</div>
+                                <div>Mon</div>
+                                <div>Tue</div>
+                                <div>Wed</div>
+                                <div>Thu</div>
+                                <div>Fri</div>
+                                <div>Sat</div>
                             </div>
+                            <div class="calendar-grid" id="calendarGrid"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab: History -->
-                <div class="tab-panel" id="tab-history">
-                    <div class="page-header">
-                        <h1 class="page-title">📊 Statistics</h1>
+                <!-- Templates Panel -->
+                <div class="schedule-panel" id="panelTemplates">
+                    <div class="schedule-toolbar">
+                        <div class="search-box" style="flex:1; margin-bottom:0;">
+                            <input type="text" class="form-input" id="searchTemplates" placeholder="Search templates..."
+                                oninput="filterTemplates()">
+                        </div>
+                        <button class="btn btn-primary" onclick="showAddTemplate()">+ New Template</button>
                     </div>
 
-                    <div class="stats-grid stats-grid-4">
-                        <div class="stat-card">
-                            <div class="stat-value" id="statTotal">0</div>
-                            <div class="stat-label">Total Sent</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="statSuccess">0%</div>
-                            <div class="stat-label">Success Rate</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="statGroups">0</div>
-                            <div class="stat-label">Groups</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="statReplies">0</div>
-                            <div class="stat-label">Auto Replies</div>
+                    <div class="template-grid" id="templatesList">
+                        <div class="empty-state">
+                            <div class="empty-icon">📝</div>
+                            <div class="empty-title">No templates yet</div>
+                            <p class="empty-text">Save message templates for quick reuse</p>
+                            <button class="btn btn-primary mt-4" onclick="showAddTemplate()">+ Create
+                                Template</button>
                         </div>
                     </div>
+                </div>
+        </div>
 
-                    <!-- Analytics Chart -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h3 class="card-title">📈 Weekly Activity</h3>
-                            <button class="btn btn-sm btn-secondary" onclick="loadAnalytics()">🔄 Refresh</button>
+        <!-- Tab: History -->
+        <div class="tab-panel" id="tab-history">
+            <div class="page-header">
+                <h1 class="page-title">📊 Statistics</h1>
+            </div>
+
+            <div class="stats-grid stats-grid-4">
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">Total Sent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statSuccess">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statGroups">0</div>
+                    <div class="stat-label">Groups</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statReplies">0</div>
+                    <div class="stat-label">Auto Replies</div>
+                </div>
+            </div>
+
+            <!-- Analytics Chart -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title">📈 Weekly Activity</h3>
+                    <button class="btn btn-sm btn-secondary" onclick="loadAnalytics()">🔄 Refresh</button>
+                </div>
+                <div class="analytics-chart" id="analyticsChart">
+                    <p class="text-muted text-center">Loading chart...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Recent Activity</h3>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
+                        <button class="btn btn-sm btn-danger" onclick="clearHistory()">🗑️ Clear</button>
+                    </div>
+                </div>
+                <div class="list" id="historyList">
+                    <div class="empty-state">
+                        <p class="text-muted">No broadcast history yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Settings -->
+        <div class="tab-panel" id="tab-settings">
+            <div class="page-header">
+                <h1 class="page-title">⚙️ Settings</h1>
+            </div>
+
+            <div class="desktop-grid">
+                <div class="desktop-col">
+                    <div class="card">
+                        <h3 class="card-title mb-4">General</h3>
+
+                        <div class="toggle-row">
+                            <div>
+                                <span class="toggle-label">Anti-Ban Queue</span>
+                                <p class="form-hint mb-0">Add delay between messages</p>
+                            </div>
+                            <div class="toggle" id="queueToggle" onclick="toggleSetting('queue')"></div>
                         </div>
-                        <div class="analytics-chart" id="analyticsChart">
-                            <p class="text-muted text-center">Loading chart...</p>
+
+                        <div class="toggle-row">
+                            <div>
+                                <span class="toggle-label">Typing Indicator</span>
+                                <p class="form-hint mb-0">Show typing... before sending</p>
+                            </div>
+                            <div class="toggle" id="typingToggle" onclick="toggleSetting('typing')"></div>
+                        </div>
+
+
+                        <div class="toggle-row">
+                            <div>
+                                <span class="toggle-label">Login Protection</span>
+                                <p class="form-hint mb-0">Require password to access</p>
+                            </div>
+                            <div class="toggle" id="authToggle" onclick="toggleSetting('auth')"></div>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Recent Activity</h3>
-                            <div class="flex gap-2">
-                                <button class="btn btn-sm btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
-                                <button class="btn btn-sm btn-danger" onclick="clearHistory()">🗑️ Clear</button>
-                            </div>
+                            <h3 class="card-title">🚫 Blacklist</h3>
+                            <button class="btn btn-sm btn-secondary" onclick="showBlacklist()">Manage</button>
                         </div>
-                        <div class="list" id="historyList">
-                            <div class="empty-state">
-                                <p class="text-muted">No broadcast history yet</p>
-                            </div>
+                        <div class="form-group mb-2">
+                            <input type="text" class="form-input" id="blacklistInput"
+                                placeholder="Enter number to block (62812xxx)">
                         </div>
+                        <button class="btn btn-danger btn-block" onclick="addBlacklist()">🚫 Block
+                            Number</button>
                     </div>
                 </div>
 
-                <!-- Tab: Settings -->
-                <div class="tab-panel" id="tab-settings">
-                    <div class="page-header">
-                        <h1 class="page-title">⚙️ Settings</h1>
-                    </div>
-
-                    <div class="desktop-grid">
-                        <div class="desktop-col">
-                            <div class="card">
-                                <h3 class="card-title mb-4">General</h3>
-
-                                <div class="toggle-row">
-                                    <div>
-                                        <span class="toggle-label">Anti-Ban Queue</span>
-                                        <p class="form-hint mb-0">Add delay between messages</p>
-                                    </div>
-                                    <div class="toggle" id="queueToggle" onclick="toggleSetting('queue')"></div>
-                                </div>
-
-                                <div class="toggle-row">
-                                    <div>
-                                        <span class="toggle-label">Typing Indicator</span>
-                                        <p class="form-hint mb-0">Show typing... before sending</p>
-                                    </div>
-                                    <div class="toggle" id="typingToggle" onclick="toggleSetting('typing')"></div>
-                                </div>
-
-
-                                <div class="toggle-row">
-                                    <div>
-                                        <span class="toggle-label">Login Protection</span>
-                                        <p class="form-hint mb-0">Require password to access</p>
-                                    </div>
-                                    <div class="toggle" id="authToggle" onclick="toggleSetting('auth')"></div>
-                                </div>
-                            </div>
-
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">🚫 Blacklist</h3>
-                                    <button class="btn btn-sm btn-secondary" onclick="showBlacklist()">Manage</button>
-                                </div>
-                                <div class="form-group mb-2">
-                                    <input type="text" class="form-input" id="blacklistInput"
-                                        placeholder="Enter number to block (62812xxx)">
-                                </div>
-                                <button class="btn btn-danger btn-block" onclick="addBlacklist()">🚫 Block
-                                    Number</button>
-                            </div>
-                        </div>
-
-                        <div class="desktop-col">
-                            <div class="card">
-                                <h3 class="card-title mb-4">💾 Backup & Data</h3>
-                                <p class="text-muted mb-4">Download or restore all your data</p>
-                                <div class="btn-row">
-                                    <button class="btn btn-secondary" onclick="downloadBackup()">📥 Backup</button>
-                                    <button class="btn btn-secondary"
-                                        onclick="document.getElementById('restoreFile').click()">📤 Restore</button>
-                                    <input type="file" id="restoreFile" accept=".json" style="display:none"
-                                        onchange="restoreBackup(event)">
-                                </div>
-                            </div>
-
-                            <div class="card">
-                                <h3 class="card-title mb-4">📋 Message Logs</h3>
-                                <button class="btn btn-secondary btn-block" onclick="viewLogs()">View Incoming
-                                    Messages</button>
-                            </div>
-
-                            <div class="card">
-                                <h3 class="card-title mb-4">📱 WhatsApp</h3>
-                                <p class="text-muted mb-4">Disconnect dan link ke akun WhatsApp lain</p>
-                                <button class="btn btn-warning btn-block mb-2" onclick="switchWhatsApp()">🔄 Ganti Akun
-                                    WhatsApp</button>
-                            </div>
-
-                            <div class="card">
-                                <h3 class="card-title mb-4">🚪 Session</h3>
-                                <button class="btn btn-danger btn-block" onclick="logout()">Logout</button>
-                            </div>
+                <div class="desktop-col">
+                    <div class="card">
+                        <h3 class="card-title mb-4">💾 Backup & Data</h3>
+                        <p class="text-muted mb-4">Download or restore all your data</p>
+                        <div class="btn-row">
+                            <button class="btn btn-secondary" onclick="downloadBackup()">📥 Backup</button>
+                            <button class="btn btn-secondary"
+                                onclick="document.getElementById('restoreFile').click()">📤 Restore</button>
+                            <input type="file" id="restoreFile" accept=".json" style="display:none"
+                                onchange="restoreBackup(event)">
                         </div>
                     </div>
-                </div>
 
-                <!-- Tab: Changelog -->
-                <div class="tab-panel" id="tab-changelog">
-                    <div class="page-header">
-                        <h1 class="page-title">🎉 Changelog</h1>
-                        <p class="text-muted">What's new in AutoSapa</p>
+                    <div class="card">
+                        <h3 class="card-title mb-4">📋 Message Logs</h3>
+                        <button class="btn btn-secondary btn-block" onclick="viewLogs()">View Incoming
+                            Messages</button>
                     </div>
 
-                    <div class="changelog-container">
-                        <div class="changelog-version">
-                            <div class="changelog-header">
-                                <div class="changelog-version-badge">v1.5.0</div>
-                                <span class="badge badge-active">Latest</span>
-                            </div>
-                            <div class="changelog-content">
-                                <ul class="changelog-list">
-                                    <li>🔒 Peningkatan keamanan & proteksi akun</li>
-                                    <li>📱 Tampilan mobile lebih optimal</li>
-                                    <li>👮 Admin panel lebih lengkap</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="changelog-version">
-                            <div class="changelog-header">
-                                <div class="changelog-version-badge">v1.4.0</div>
-                            </div>
-                            <div class="changelog-content">
-                                <ul class="changelog-list">
-                                    <li>🛡️ Safe Mode broadcast (anti-ban)</li>
-                                    <li>🎲 Spintax untuk variasi pesan</li>
-                                    <li>😴 Sleep Mode otomatis</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="changelog-version">
-                            <div class="changelog-header">
-                                <div class="changelog-version-badge">v1.3.0</div>
-                            </div>
-                            <div class="changelog-content">
-                                <ul class="changelog-list">
-                                    <li>📅 Fitur scheduling lebih lengkap</li>
-                                    <li>🔍 Pencarian schedule & template</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="changelog-version">
-                            <div class="changelog-header">
-                                <div class="changelog-version-badge">v1.2.0</div>
-                            </div>
-                            <div class="changelog-content">
-                                <ul class="changelog-list">
-                                    <li>👥 Multi-user support</li>
-                                    <li>🔐 Sistem login & autentikasi</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="changelog-version">
-                            <div class="changelog-header">
-                                <div class="changelog-version-badge">v1.1.0</div>
-                            </div>
-                            <div class="changelog-content">
-                                <ul class="changelog-list">
-                                    <li>⚡ Quick Actions & Templates</li>
-                                    <li>🖼️ Media Library</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="changelog-version">
-                            <div class="changelog-header">
-                                <div class="changelog-version-badge">v1.0.0</div>
-                            </div>
-                            <div class="changelog-content">
-                                <ul class="changelog-list">
-                                    <li>🚀 Rilis perdana AutoSapa</li>
-                                </ul>
-                            </div>
-                        </div>
+                    <div class="card">
+                        <h3 class="card-title mb-4">📱 WhatsApp</h3>
+                        <p class="text-muted mb-4">Disconnect dan link ke akun WhatsApp lain</p>
+                        <button class="btn btn-warning btn-block mb-2" onclick="switchWhatsApp()">🔄 Ganti Akun
+                            WhatsApp</button>
                     </div>
-                </div>
-            </main>
-        </div>
-        <!-- All Modals -->
-        <div class="modal hidden" id="addGroupModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Add Group Manually</h3>
-                    <button class="modal-close" onclick="closeModal('addGroupModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Group Name</label>
-                    <input type="text" class="form-input" id="groupNameInput" placeholder="My Group">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Group ID</label>
-                    <input type="text" class="form-input" id="groupIdInput" placeholder="6281234567890-1234567890@g.us">
-                </div>
-                <div class="info-box"
-                    style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px; margin-bottom:16px;">
-                    <p style="font-weight:600; color:#0369a1; margin-bottom:8px;">📋 How to get Group ID:</p>
-                    <ol style="font-size:13px; color:#0c4a6e; padding-left:20px; margin:0;">
-                        <li style="margin-bottom:4px;">Open WhatsApp Web on your browser</li>
-                        <li style="margin-bottom:4px;">Open the group chat you want to add</li>
-                        <li style="margin-bottom:4px;">Click the group name at top → Scroll down</li>
-                        <li style="margin-bottom:4px;">Look for the group link or use our <strong>Discover
-                                Groups</strong> button</li>
-                    </ol>
-                    <p style="font-size:12px; color:#64748b; margin-top:8px; margin-bottom:0;">
-                        💡 Tip: Use "Sync Groups" to auto-import all your groups
-                    </p>
-                </div>
-                <button class="btn btn-primary btn-block" onclick="saveGroup()">Save Group</button>
-            </div>
-        </div>
 
-        <div class="modal hidden" id="addContactModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Add Contact</h3>
-                    <button class="modal-close" onclick="closeModal('addContactModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Name</label>
-                    <input type="text" class="form-input" id="contactName" placeholder="John Doe">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Phone Number</label>
-                    <input type="text" class="form-input" id="contactNumber" placeholder="628123456789">
-                </div>
-                <button class="btn btn-primary btn-block" onclick="saveContact()">Save Contact</button>
-            </div>
-        </div>
-
-        <div class="modal hidden" id="addReplyModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Add Auto Reply</h3>
-                    <button class="modal-close" onclick="closeModal('addReplyModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Keyword</label>
-                    <input type="text" class="form-input" id="replyKeyword" placeholder="e.g., info, help">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Match Type</label>
-                    <select class="form-input" id="replyMatchType">
-                        <option value="contains">Contains (phrase in order)</option>
-                        <option value="exact">Exact Match</option>
-                        <option value="startswith">Starts With</option>
-                        <option value="words">All Words (any order)</option>
-                        <option value="anyword">Any Word (at least one)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Response</label>
-                    <textarea class="form-input" id="replyResponse" placeholder="Your automatic response..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Image (optional)</label>
-                    <div class="upload-area" onclick="document.getElementById('replyImageInput').click()">
-                        <input type="file" id="replyImageInput" accept="image/*" style="display:none"
-                            onchange="previewReplyImage(event)">
-                        <span id="replyUploadText">📷 Click to add image</span>
-                    </div>
-                    <img id="replyImagePreview" class="image-preview hidden">
-                </div>
-                <button class="btn btn-primary btn-block" onclick="saveAutoReply()">Save Auto Reply</button>
-            </div>
-        </div>
-
-        <div class="modal hidden" id="addScheduleModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Schedule Broadcast</h3>
-                    <button class="modal-close" onclick="closeModal('addScheduleModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Schedule Name</label>
-                    <input type="text" class="form-input" id="scheduleName"
-                        placeholder="e.g., Morning Greeting, Weekly Promo">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Select Groups</label>
-                    <div class="schedule-groups-container"
-                        style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--bg);">
-                        <label class="checkbox-row"
-                            style="padding: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
-                            <input type="checkbox" id="scheduleSelectAll" onchange="toggleScheduleSelectAll()">
-                            <span style="font-weight: 600; color: var(--text);">Select All</span>
-                        </label>
-                        <div id="scheduleGroupList"></div>
-                    </div>
-                    <small class="text-muted" id="scheduleSelectedCount">0 groups selected</small>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Message</label>
-                    <textarea class="form-input" id="scheduleMessage"
-                        placeholder="Your scheduled message..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Image (optional)</label>
-                    <div class="upload-area" onclick="document.getElementById('scheduleImageInput').click()">
-                        <input type="file" id="scheduleImageInput" accept="image/*" style="display:none"
-                            onchange="previewScheduleImage(event)">
-                        <span id="scheduleUploadText">📷 Click to add image</span>
-                    </div>
-                    <img id="scheduleImagePreview" class="image-preview hidden">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Date & Time</label>
-                    <input type="datetime-local" class="form-input" id="scheduleTime">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Repeat</label>
-                    <select class="form-input" id="scheduleRepeat">
-                        <option value="">One time only</option>
-                        <option value="daily">Every day</option>
-                        <option value="weekly">Every week</option>
-                        <option value="monthly">Every month</option>
-                    </select>
-                </div>
-                <button class="btn btn-primary btn-block" onclick="saveSchedule()">Schedule</button>
-            </div>
-        </div>
-
-        <div class="modal hidden" id="addTemplateModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Save Template</h3>
-                    <button class="modal-close" onclick="closeModal('addTemplateModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Template Name</label>
-                    <input type="text" class="form-input" id="templateName" placeholder="e.g., Job Vacancy">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Message</label>
-                    <textarea class="form-input" id="templateMessage" rows="6"
-                        placeholder="Your template message..."></textarea>
-                </div>
-                <p class="form-hint mb-4">Variables: {date}, {time}, {day}, {month}, {year}</p>
-                <button class="btn btn-primary btn-block" onclick="saveTemplate()">Save Template</button>
-            </div>
-        </div>
-
-        <div class="modal hidden" id="addCommandModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Add Command</h3>
-                    <button class="modal-close" onclick="closeModal('addCommandModal')">×</button>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Command</label>
-                    <input type="text" class="form-input" id="commandName" placeholder="!help">
-                    <p class="form-hint">Must start with !</p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Response</label>
-                    <textarea class="form-input" id="commandResponse"
-                        placeholder="Response when command is called..."></textarea>
-                </div>
-                <button class="btn btn-primary btn-block" onclick="saveCommand()">Save Command</button>
-            </div>
-        </div>
-
-        <div class="modal hidden" id="discoverModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Discovered Groups</h3>
-                    <button class="modal-close" onclick="closeModal('discoverModal')">×</button>
-                </div>
-                <div id="discoveredList">
-                    <div class="loading">
-                        <div class="spinner"></div>
+                    <div class="card">
+                        <h3 class="card-title mb-4">🚪 Session</h3>
+                        <button class="btn btn-danger btn-block" onclick="logout()">Logout</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="modal hidden" id="logsModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Message Logs</h3>
-                    <button class="modal-close" onclick="closeModal('logsModal')">×</button>
-                </div>
-                <div id="logsContent" style="max-height: 400px; overflow-y: auto;">
-                    <div class="loading">
-                        <div class="spinner"></div>
+        <!-- Tab: Changelog -->
+        <div class="tab-panel" id="tab-changelog">
+            <div class="page-header">
+                <h1 class="page-title">🎉 Changelog</h1>
+                <p class="text-muted">What's new in AutoSapa</p>
+            </div>
+
+            <div class="changelog-container">
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.5.0</div>
+                        <span class="badge badge-active">Latest</span>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>🔒 Peningkatan keamanan & proteksi akun</li>
+                            <li>📱 Tampilan mobile lebih optimal</li>
+                            <li>👮 Admin panel lebih lengkap</li>
+                        </ul>
                     </div>
                 </div>
-                <button class="btn btn-danger btn-block mt-4" onclick="clearMessageLogs()">🗑️ Clear All Logs</button>
-            </div>
-        </div>
 
-        <div class="modal hidden" id="loginModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">🔐 Login Required</h3>
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.4.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>🛡️ Safe Mode broadcast (anti-ban)</li>
+                            <li>🎲 Spintax untuk variasi pesan</li>
+                            <li>😴 Sleep Mode otomatis</li>
+                        </ul>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input type="text" class="form-input" id="loginUsername" placeholder="admin">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
-                </div>
-                <button class="btn btn-primary btn-block" onclick="login()">Login</button>
-            </div>
-        </div>
 
-        <div class="modal hidden" id="blacklistModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Blocked Numbers</h3>
-                    <button class="modal-close" onclick="closeModal('blacklistModal')">×</button>
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.3.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>📅 Fitur scheduling lebih lengkap</li>
+                            <li>🔍 Pencarian schedule & template</li>
+                        </ul>
+                    </div>
                 </div>
-                <div id="blacklistContent" style="max-height: 400px; overflow-y: auto;">
-                    <div class="loading">
-                        <div class="spinner"></div>
+
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.2.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>👥 Multi-user support</li>
+                            <li>🔐 Sistem login & autentikasi</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.1.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>⚡ Quick Actions & Templates</li>
+                            <li>🖼️ Media Library</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.0.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>🚀 Rilis perdana AutoSapa</li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </div>
+        </main>
+    </div>
+    <!-- All Modals -->
+    <div class="modal hidden" id="addGroupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Group Manually</h3>
+                <button class="modal-close" onclick="closeModal('addGroupModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Group Name</label>
+                <input type="text" class="form-input" id="groupNameInput" placeholder="My Group">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Group ID</label>
+                <input type="text" class="form-input" id="groupIdInput" placeholder="6281234567890-1234567890@g.us">
+            </div>
+            <div class="info-box"
+                style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px; margin-bottom:16px;">
+                <p style="font-weight:600; color:#0369a1; margin-bottom:8px;">📋 How to get Group ID:</p>
+                <ol style="font-size:13px; color:#0c4a6e; padding-left:20px; margin:0;">
+                    <li style="margin-bottom:4px;">Open WhatsApp Web on your browser</li>
+                    <li style="margin-bottom:4px;">Open the group chat you want to add</li>
+                    <li style="margin-bottom:4px;">Click the group name at top → Scroll down</li>
+                    <li style="margin-bottom:4px;">Look for the group link or use our <strong>Discover
+                            Groups</strong> button</li>
+                </ol>
+                <p style="font-size:12px; color:#64748b; margin-top:8px; margin-bottom:0;">
+                    💡 Tip: Use "Sync Groups" to auto-import all your groups
+                </p>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveGroup()">Save Group</button>
+        </div>
+    </div>
 
-        <div class="modal hidden" id="templateSelectModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Select Template</h3>
-                    <button class="modal-close" onclick="closeModal('templateSelectModal')">×</button>
+    <div class="modal hidden" id="addContactModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Contact</h3>
+                <button class="modal-close" onclick="closeModal('addContactModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="contactName" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="text" class="form-input" id="contactNumber" placeholder="628123456789">
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveContact()">Save Contact</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addReplyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Auto Reply</h3>
+                <button class="modal-close" onclick="closeModal('addReplyModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Keyword</label>
+                <input type="text" class="form-input" id="replyKeyword" placeholder="e.g., info, help">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Match Type</label>
+                <select class="form-input" id="replyMatchType">
+                    <option value="contains">Contains (phrase in order)</option>
+                    <option value="exact">Exact Match</option>
+                    <option value="startswith">Starts With</option>
+                    <option value="words">All Words (any order)</option>
+                    <option value="anyword">Any Word (at least one)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Response</label>
+                <textarea class="form-input" id="replyResponse" placeholder="Your automatic response..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Image (optional)</label>
+                <div class="upload-area" onclick="document.getElementById('replyImageInput').click()">
+                    <input type="file" id="replyImageInput" accept="image/*" style="display:none"
+                        onchange="previewReplyImage(event)">
+                    <span id="replyUploadText">📷 Click to add image</span>
                 </div>
-                <div id="templateSelectList" style="max-height: 400px; overflow-y: auto;">
-                    <div class="empty-state">
-                        <p class="text-muted">No templates saved yet</p>
-                    </div>
+                <img id="replyImagePreview" class="image-preview hidden">
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveAutoReply()">Save Auto Reply</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addScheduleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Schedule Broadcast</h3>
+                <button class="modal-close" onclick="closeModal('addScheduleModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Schedule Name</label>
+                <input type="text" class="form-input" id="scheduleName"
+                    placeholder="e.g., Morning Greeting, Weekly Promo">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Select Groups</label>
+                <div class="schedule-groups-container"
+                    style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--bg);">
+                    <label class="checkbox-row"
+                        style="padding: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+                        <input type="checkbox" id="scheduleSelectAll" onchange="toggleScheduleSelectAll()">
+                        <span style="font-weight: 600; color: var(--text);">Select All</span>
+                    </label>
+                    <div id="scheduleGroupList"></div>
+                </div>
+                <small class="text-muted" id="scheduleSelectedCount">0 groups selected</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-input" id="scheduleMessage" placeholder="Your scheduled message..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Image (optional)</label>
+                <div class="upload-area" onclick="document.getElementById('scheduleImageInput').click()">
+                    <input type="file" id="scheduleImageInput" accept="image/*" style="display:none"
+                        onchange="previewScheduleImage(event)">
+                    <span id="scheduleUploadText">📷 Click to add image</span>
+                </div>
+                <img id="scheduleImagePreview" class="image-preview hidden">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Date & Time</label>
+                <input type="datetime-local" class="form-input" id="scheduleTime">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Repeat</label>
+                <select class="form-input" id="scheduleRepeat">
+                    <option value="">One time only</option>
+                    <option value="daily">Every day</option>
+                    <option value="weekly">Every week</option>
+                    <option value="monthly">Every month</option>
+                </select>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveSchedule()">Schedule</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addTemplateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Save Template</h3>
+                <button class="modal-close" onclick="closeModal('addTemplateModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Template Name</label>
+                <input type="text" class="form-input" id="templateName" placeholder="e.g., Job Vacancy">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-input" id="templateMessage" rows="6"
+                    placeholder="Your template message..."></textarea>
+            </div>
+            <p class="form-hint mb-4">Variables: {date}, {time}, {day}, {month}, {year}</p>
+            <button class="btn btn-primary btn-block" onclick="saveTemplate()">Save Template</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addCommandModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Command</h3>
+                <button class="modal-close" onclick="closeModal('addCommandModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Command</label>
+                <input type="text" class="form-input" id="commandName" placeholder="!help">
+                <p class="form-hint">Must start with !</p>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Response</label>
+                <textarea class="form-input" id="commandResponse"
+                    placeholder="Response when command is called..."></textarea>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveCommand()">Save Command</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="discoverModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Discovered Groups</h3>
+                <button class="modal-close" onclick="closeModal('discoverModal')">×</button>
+            </div>
+            <div id="discoveredList">
+                <div class="loading">
+                    <div class="spinner"></div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="modal hidden" id="membersModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Group Members</h3>
-                    <button class="modal-close" onclick="closeModal('membersModal')">×</button>
+    <div class="modal hidden" id="logsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Message Logs</h3>
+                <button class="modal-close" onclick="closeModal('logsModal')">×</button>
+            </div>
+            <div id="logsContent" style="max-height: 400px; overflow-y: auto;">
+                <div class="loading">
+                    <div class="spinner"></div>
                 </div>
-                <div id="membersList" style="max-height: 400px; overflow-y: auto;">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                    </div>
+            </div>
+            <button class="btn btn-danger btn-block mt-4" onclick="clearMessageLogs()">🗑️ Clear All Logs</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🔐 Login Required</h3>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-input" id="loginUsername" placeholder="admin">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary btn-block" onclick="login()">Login</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="blacklistModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Blocked Numbers</h3>
+                <button class="modal-close" onclick="closeModal('blacklistModal')">×</button>
+            </div>
+            <div id="blacklistContent" style="max-height: 400px; overflow-y: auto;">
+                <div class="loading">
+                    <div class="spinner"></div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="modal hidden" id="addQuickActionModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Add Quick Action</h3>
-                    <button class="modal-close" onclick="closeModal('addQuickActionModal')">×</button>
+    <div class="modal hidden" id="templateSelectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Select Template</h3>
+                <button class="modal-close" onclick="closeModal('templateSelectModal')">×</button>
+            </div>
+            <div id="templateSelectList" style="max-height: 400px; overflow-y: auto;">
+                <div class="empty-state">
+                    <p class="text-muted">No templates saved yet</p>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Action Name</label>
-                    <input type="text" class="form-input" id="quickActionName" placeholder="e.g., Morning Greeting">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Icon (emoji)</label>
-                    <input type="text" class="form-input" id="quickActionIcon" placeholder="⚡" maxlength="2">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Message</label>
-                    <textarea class="form-input" id="quickActionMessage" rows="4"
-                        placeholder="Message to send..."></textarea>
-                </div>
-                <p class="form-hint mb-4">Uses groups selected in Broadcast tab</p>
-                <button class="btn btn-primary btn-block" onclick="saveQuickAction()">Save Quick Action</button>
             </div>
         </div>
+    </div>
+
+    <div class="modal hidden" id="membersModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Group Members</h3>
+                <button class="modal-close" onclick="closeModal('membersModal')">×</button>
+            </div>
+            <div id="membersList" style="max-height: 400px; overflow-y: auto;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addQuickActionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Quick Action</h3>
+                <button class="modal-close" onclick="closeModal('addQuickActionModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Action Name</label>
+                <input type="text" class="form-input" id="quickActionName" placeholder="e.g., Morning Greeting">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Icon (emoji)</label>
+                <input type="text" class="form-input" id="quickActionIcon" placeholder="⚡" maxlength="2">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-input" id="quickActionMessage" rows="4"
+                    placeholder="Message to send..."></textarea>
+            </div>
+            <p class="form-hint mb-4">Uses groups selected in Broadcast tab</p>
+            <button class="btn btn-primary btn-block" onclick="saveQuickAction()">Save Quick Action</button>
+        </div>
+    </div>
     </div>
 
     <!-- Confirm Modal -->
