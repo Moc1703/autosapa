@@ -845,28 +845,36 @@
                 </div>
             </div>
 
-            <!-- Analytics Chart -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="card-title">📈 Weekly Activity</h3>
-                    <button class="btn btn-sm btn-secondary" onclick="loadAnalytics()">🔄 Refresh</button>
-                </div>
-                <div class="analytics-chart" id="analyticsChart">
-                    <p class="text-muted text-center">Loading chart...</p>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Recent Activity</h3>
-                    <div class="flex gap-2">
-                        <button class="btn btn-sm btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
-                        <button class="btn btn-sm btn-danger" onclick="clearHistory()">🗑️ Clear</button>
+            <!-- Desktop Grid Layout -->
+            <div class="desktop-grid">
+                <!-- Left Column: Chart -->
+                <div class="desktop-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📈 Weekly Activity</h3>
+                            <button class="btn btn-sm btn-secondary" onclick="loadAnalytics()">🔄 Refresh</button>
+                        </div>
+                        <div class="analytics-chart" id="analyticsChart">
+                            <p class="text-muted text-center">Loading chart...</p>
+                        </div>
                     </div>
                 </div>
-                <div class="list" id="historyList">
-                    <div class="empty-state">
-                        <p class="text-muted">No broadcast history yet</p>
+
+                <!-- Right Column: Recent Activity -->
+                <div class="desktop-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Activity</h3>
+                            <div class="flex gap-2">
+                                <button class="btn btn-sm btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
+                                <button class="btn btn-sm btn-danger" onclick="clearHistory()">🗑️ Clear</button>
+                            </div>
+                        </div>
+                        <div class="list" id="historyList">
+                            <div class="empty-state">
+                                <p class="text-muted">No broadcast history yet</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

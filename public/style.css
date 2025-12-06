@@ -154,18 +154,16 @@ body {
     padding: 16px;
 }
 
-/* Override for desktop - centered content with max-width */
+/* Override for desktop - full width content */
 @media (min-width: 769px) {
     .app-main {
-        max-width: 1400px;
-        margin: 0 auto;
+        max-width: 100%;
+        margin: 0;
         padding: 24px;
     }
 
     .tab-panel {
         width: 100%;
-        max-width: 1400px;
-        margin: 0 auto;
         padding: 0;
     }
 }
