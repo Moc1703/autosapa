@@ -5,3 +5,4 @@ data/
 uploads/
 .env
 *.log
+public/preview-app.html

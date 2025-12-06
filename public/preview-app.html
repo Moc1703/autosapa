@@ -1,14 +1,24 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preview - AutoSapa</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AutoSapa</title>
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="app-wrapper">
-        <!-- Desktop Sidebar (hidden on mobile) -->
+        <!-- Desktop Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -16,6 +26,7 @@
                     <span>AutoSapa</span>
                 </div>
             </div>
+
             <nav class="sidebar-nav">
                 <button class="sidebar-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
                     <span class="sidebar-icon">🏠</span>
@@ -25,7 +36,38 @@
                     <span class="sidebar-icon">📢</span>
                     <span class="sidebar-text">Broadcast</span>
                 </button>
+                <button class="sidebar-item" onclick="switchTab('groups')" data-tab="groups">
+                    <span class="sidebar-icon">👥</span>
+                    <span class="sidebar-text">Groups</span>
+                </button>
+                <button class="sidebar-item" onclick="switchTab('auto')" data-tab="auto">
+                    <span class="sidebar-icon">🤖</span>
+                    <span class="sidebar-text">Auto Reply</span>
+                </button>
+                <button class="sidebar-item" onclick="switchTab('schedule')" data-tab="schedule">
+                    <span class="sidebar-icon">📅</span>
+                    <span class="sidebar-text">Schedule</span>
+                </button>
+                <button class="sidebar-item" onclick="switchTab('history')" data-tab="history">
+                    <span class="sidebar-icon">📊</span>
+                    <span class="sidebar-text">Statistics</span>
+                </button>
+                <button class="sidebar-item" onclick="switchTab('settings')" data-tab="settings">
+                    <span class="sidebar-icon">⚙️</span>
+                    <span class="sidebar-text">Settings</span>
+                </button>
+                <button class="sidebar-item" onclick="switchTab('changelog')" data-tab="changelog">
+                    <span class="sidebar-icon">🎉</span>
+                    <span class="sidebar-text">Changelog</span>
+                </button>
             </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-badge disconnected" id="statusBadgeDesktop">
+                    <span class="status-dot"></span>
+                    <span id="statusTextDesktop">Connecting...</span>
+                </div>
+            </div>
         </aside>
 
         <!-- Main Container -->
@@ -42,9 +84,9 @@
                         <div class="logo-icon">📡</div>
                         <span>AutoSapa</span>
                     </div>
-                    <div class="status-badge connected">
+                    <div class="status-badge disconnected" id="statusBadge">
                         <span class="status-dot"></span>
-                        <span>Connected</span>
+                        <span id="statusText">Connecting...</span>
                     </div>
                 </div>
             </header>
@@ -60,87 +102,1373 @@
                     <button class="mobile-menu-close" onclick="toggleMobileMenu()">×</button>
                 </div>
                 <div class="mobile-menu-items">
-                    <button class="mobile-menu-item active" onclick="switchTab('dashboard'); toggleMobileMenu()">
+                    <button class="mobile-menu-item active" onclick="switchTab('dashboard'); toggleMobileMenu()"
+                        data-tab="dashboard">
                         <span class="mobile-menu-icon">🏠</span>
                         <span>Dashboard</span>
                     </button>
-                    <button class="mobile-menu-item" onclick="switchTab('broadcast'); toggleMobileMenu()">
+                    <button class="mobile-menu-item" onclick="switchTab('broadcast'); toggleMobileMenu()"
+                        data-tab="broadcast">
                         <span class="mobile-menu-icon">📢</span>
                         <span>Broadcast</span>
                     </button>
-                    <button class="mobile-menu-item" onclick="switchTab('groups'); toggleMobileMenu()">
+                    <button class="mobile-menu-item" onclick="switchTab('groups'); toggleMobileMenu()"
+                        data-tab="groups">
                         <span class="mobile-menu-icon">👥</span>
                         <span>Groups</span>
                     </button>
+                    <button class="mobile-menu-item" onclick="switchTab('auto'); toggleMobileMenu()" data-tab="auto">
+                        <span class="mobile-menu-icon">🤖</span>
+                        <span>Auto Reply</span>
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTab('schedule'); toggleMobileMenu()"
+                        data-tab="schedule">
+                        <span class="mobile-menu-icon">📅</span>
+                        <span>Schedule</span>
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTab('history'); toggleMobileMenu()"
+                        data-tab="history">
+                        <span class="mobile-menu-icon">📊</span>
+                        <span>Statistics</span>
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTab('settings'); toggleMobileMenu()"
+                        data-tab="settings">
+                        <span class="mobile-menu-icon">⚙️</span>
+                        <span>Settings</span>
+                    </button>
+                    <button class="mobile-menu-item" onclick="switchTab('changelog'); toggleMobileMenu()"
+                        data-tab="changelog">
+                        <span class="mobile-menu-icon">🎉</span>
+                        <span>Changelog</span>
+                    </button>
+                </div>
+                <div class="mobile-menu-footer">
+                    <div class="status-badge disconnected" id="statusBadgeMobile">
+                        <span class="status-dot"></span>
+                        <span id="statusTextMobile">Connecting...</span>
+                    </div>
                 </div>
             </nav>
 
             <!-- Main Content -->
             <main class="app-main">
+                <!-- Tab: Dashboard (NEW) -->
                 <div class="tab-panel active" id="tab-dashboard">
-                    <div class="page-header">
-                        <h1 class="page-title">🏠 Dashboard</h1>
-                        <p class="text-muted">Preview Mode - Test Hamburger Menu</p>
+                    <!-- Welcome Header -->
+                    <div class="dashboard-header">
+                        <div class="dashboard-greeting">
+                            <h1 class="dashboard-title">Dashboard</h1>
+                            <p class="dashboard-subtitle" id="currentDate"></p>
+                        </div>
                     </div>
-                    
-                    <div class="card">
-                        <div class="card-body">
-                            <h3>✅ Hamburger Menu Test</h3>
-                            <p style="margin-top: 12px; color: var(--text-secondary);">
-                                Resize browser ke < 768px atau buka di mobile untuk test hamburger menu.
-                            </p>
-                            <p style="margin-top: 8px; color: var(--text-secondary);">
-                                Klik ☰ di kiri atas untuk buka menu.
-                            </p>
+
+                    <!-- Stats Grid -->
+                    <div class="dashboard-stats">
+                        <div class="dash-stat-card">
+                            <div class="dash-stat-icon">👥</div>
+                            <div class="dash-stat-info">
+                                <span class="dash-stat-value" id="dashTotalGroups">0</span>
+                                <span class="dash-stat-label">Groups</span>
+                            </div>
+                        </div>
+                        <div class="dash-stat-card">
+                            <div class="dash-stat-icon">📨</div>
+                            <div class="dash-stat-info">
+                                <span class="dash-stat-value" id="dashTotalSent">0</span>
+                                <span class="dash-stat-label">Sent Today</span>
+                            </div>
+                        </div>
+                        <div class="dash-stat-card">
+                            <div class="dash-stat-icon">📅</div>
+                            <div class="dash-stat-info">
+                                <span class="dash-stat-value" id="dashScheduled">0</span>
+                                <span class="dash-stat-label">Scheduled</span>
+                            </div>
+                        </div>
+                        <div class="dash-stat-card">
+                            <div class="dash-stat-icon">🤖</div>
+                            <div class="dash-stat-info">
+                                <span class="dash-stat-value" id="dashAutoReplies">0</span>
+                                <span class="dash-stat-label">Auto Replies</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="dashboard-section">
+                        <h2 class="dashboard-section-title">Quick Actions</h2>
+                        <div class="quick-actions">
+                            <button class="quick-action-btn" onclick="switchTab('broadcast')">
+                                <span class="quick-action-icon">📢</span>
+                                <span class="quick-action-text">Broadcast</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="switchTab('groups'); showAddGroup()">
+                                <span class="quick-action-icon">👥</span>
+                                <span class="quick-action-text">Add Group</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="switchTab('schedule'); showAddSchedule()">
+                                <span class="quick-action-icon">📅</span>
+                                <span class="quick-action-text">Schedule</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="switchTab('auto'); showAddReply()">
+                                <span class="quick-action-icon">🤖</span>
+                                <span class="quick-action-text">Auto Reply</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="dashboard-section">
+                        <div class="dashboard-section-header">
+                            <h2 class="dashboard-section-title">Recent Activity</h2>
+                            <button class="btn btn-sm btn-secondary" onclick="switchTab('history')">View All</button>
+                        </div>
+                        <div class="activity-list" id="dashboardHistoryList">
+                            <div class="empty-state">
+                                <p class="text-muted">No recent activity</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
+
+                <!-- Tab: Broadcast (Renamed from Home) -->
                 <div class="tab-panel" id="tab-broadcast">
                     <div class="page-header">
-                        <h1 class="page-title">📢 Broadcast</h1>
+                        <h1 class="page-title">📢 Broadcast Message</h1>
                     </div>
-                    <div class="card"><div class="card-body">Broadcast content here</div></div>
+
+                    <!-- Quick Actions Grid (Existing) -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3 class="card-title">⚡ Saved Quick Actions</h3>
+                            <button class="btn btn-sm btn-primary" onclick="showAddQuickAction()">+ Add</button>
+                        </div>
+                        <div class="quick-actions-grid" id="quickActionsGrid">
+                            <p class="text-muted text-center">No quick actions yet</p>
+                        </div>
+                    </div>
+
+                    <!-- Desktop: Two Column Layout -->
+                    <div class="desktop-grid">
+                        <!-- Left Column: Message & Image -->
+                        <div class="desktop-col">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Message</h3>
+                                </div>
+                                <div class="message-tools">
+                                    <button class="btn btn-sm btn-secondary" onclick="loadDraft()">📂 Load</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="saveDraft()">💾 Save</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="showTemplateSelect()">📝
+                                        Templates</button>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <textarea class="form-input" id="quickMessage" rows="5"
+                                        placeholder="Type your message here..."
+                                        oninput="saveDraftDebounced()"></textarea>
+                                    <small class="draft-indicator hidden" id="draftIndicator">💾 Draft saved</small>
+                                </div>
+                                <!-- Message Preview -->
+                                <div id="messagePreview" class="hidden mb-2"></div>
+                                <button class="btn btn-sm btn-secondary mb-2" onclick="previewMessage()">👁️
+                                    Preview</button>
+
+                                <!-- Spintax Tutorial -->
+                                <div class="spintax-tutorial mb-3"
+                                    style="background: linear-gradient(135deg, rgba(37,211,102,0.1), rgba(18,140,126,0.05)); border: 1px solid rgba(37,211,102,0.3); border-radius: 12px; padding: 12px;">
+                                    <div onclick="toggleSpintaxTutorial()"
+                                        style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                                        <span style="font-weight:600; color:#25D366; font-size:13px;">🎲 Tutorial
+                                            Spintax (Variasi Pesan)</span>
+                                        <span id="spintaxToggleIcon"
+                                            style="color:#8696a0; transition:transform 0.2s;">▼</span>
+                                    </div>
+                                    <div id="spintaxContent" class="hidden"
+                                        style="margin-top:12px; font-size:12px; color:#e9edef;">
+                                        <p style="margin-bottom:8px; color:#8696a0;">Gunakan spintax untuk membuat
+                                            variasi pesan otomatis agar tidak terdeteksi spam.</p>
+
+                                        <div
+                                            style="background:#182229; border-radius:8px; padding:10px; margin-bottom:10px;">
+                                            <p
+                                                style="margin-bottom:6px; color:#25D366; font-weight:600; font-size:11px;">
+                                                📝 FORMAT DASAR</p>
+                                            <code
+                                                style="color:#fbbf24; background:#0b141a; padding:2px 6px; border-radius:4px; font-size:11px;">{opsi1|opsi2|opsi3}</code>
+                                        </div>
+
+                                        <div
+                                            style="background:#182229; border-radius:8px; padding:10px; margin-bottom:10px;">
+                                            <p
+                                                style="margin-bottom:6px; color:#3b82f6; font-weight:600; font-size:11px;">
+                                                💡 CONTOH PENGGUNAAN</p>
+                                            <div style="font-size:11px; line-height:1.6;">
+                                                <p style="margin:4px 0;"><strong style="color:#8696a0;">Sapaan:</strong>
+                                                    <code style="color:#fbbf24;">{Halo|Hai|Hello|Hi}</code> semuanya!
+                                                </p>
+                                                <p style="margin:4px 0;"><strong style="color:#8696a0;">Emoji:</strong>
+                                                    Info terbaru! <code style="color:#fbbf24;">{🔥|⭐|🎉|💫}</code></p>
+                                                <p style="margin:4px 0;"><strong
+                                                        style="color:#8696a0;">Kalimat:</strong> <code
+                                                        style="color:#fbbf24;">{Cek sekarang|Lihat segera|Jangan lewatkan}</code>!
+                                                </p>
+                                                <p style="margin:4px 0;"><strong
+                                                        style="color:#8696a0;">Kombinasi:</strong> <code
+                                                        style="color:#fbbf24;">{Halo|Hai}</code> <code
+                                                        style="color:#fbbf24;">{kak|bro|sis}</code>! <code
+                                                        style="color:#fbbf24;">{🎉|🔥}</code></p>
+                                            </div>
+                                        </div>
+
+                                        <div style="background:#182229; border-radius:8px; padding:10px;">
+                                            <p
+                                                style="margin-bottom:6px; color:#10b981; font-weight:600; font-size:11px;">
+                                                ✨ CONTOH PESAN LENGKAP</p>
+                                            <div
+                                                style="background:#0b141a; padding:8px; border-radius:6px; font-family:monospace; font-size:10px; color:#d1d5db; white-space:pre-wrap; line-height:1.5;">
+                                                {Halo|Hai|Hello} {kak|bro|sis}! {🎉|🔥|⭐}
+
+                                                {Ada info menarik|Kabar gembira|Update terbaru} nih!
+                                                {Yuk cek|Langsung lihat|Buruan liat} sekarang.
+
+                                                {Terima kasih|Makasih|Thanks} {🙏|😊|✨}</div>
+                                        </div>
+
+                                        <p style="margin-top:10px; color:#8696a0; font-size:10px; text-align:center;">
+                                            💡 Setiap penerima akan mendapat pesan dengan variasi yang berbeda
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="upload-area" id="uploadArea"
+                                    onclick="document.getElementById('imageInput').click()">
+                                    <input type="file" id="imageInput" accept="image/*" style="display:none"
+                                        onchange="previewImage(event)">
+                                    <span id="uploadText">📷 Click to add image (optional)</span>
+                                </div>
+                                <img id="imagePreview" class="image-preview hidden">
+                                <button id="removeImageBtn" class="btn btn-sm btn-danger mt-2 hidden"
+                                    onclick="removeImage()">🗑️ Remove Image</button>
+                            </div>
+
+                            <!-- Media Library -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">🖼️ Media Library</h3>
+                                    <button class="btn btn-sm btn-secondary" onclick="loadMedia()">🔄 Refresh</button>
+                                </div>
+                                <div class="media-grid" id="mediaGrid">
+                                    <p class="text-muted text-center">No images uploaded</p>
+                                </div>
+                            </div>
+
+                            <!-- Quick Stats - Desktop -->
+                            <div class="stats-row desktop-only">
+                                <div class="stat-mini">
+                                    <span class="stat-mini-value" id="totalGroupsDesktop">0</span>
+                                    <span class="stat-mini-label">Groups</span>
+                                </div>
+                                <div class="stat-mini">
+                                    <span class="stat-mini-value" id="totalSentDesktop">0</span>
+                                    <span class="stat-mini-label">Sent Today</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Group Selection -->
+                        <div class="desktop-col">
+                            <!-- Target Selection Tabs -->
+                            <div class="card">
+                                <div class="card-header pb-0" style="border-bottom:none; display:block">
+                                    <div class="flex justify-between align-center mb-2">
+                                        <h3 class="card-title">Target Recipients</h3>
+                                        <span class="selected-count" id="selectedCount">0 selected</span>
+                                    </div>
+                                    <div class="tabs">
+                                        <button class="tab-btn active" onclick="switchTargetTab('groups')"
+                                            id="tabBtn-groups">👥 Groups</button>
+                                        <button class="tab-btn" onclick="switchTargetTab('manual')"
+                                            id="tabBtn-manual">📝 Manual Input</button>
+                                    </div>
+                                </div>
+
+                                <!-- Group Selection Panel -->
+                                <div id="targetPanel-groups" class="p-3">
+                                    <div class="select-all-bar">
+                                        <label class="checkbox-row mb-0">
+                                            <input type="checkbox" id="selectAllGroups" onchange="toggleSelectAll()">
+                                            <span>Select All</span>
+                                        </label>
+                                    </div>
+                                    <div class="group-select-list" id="groupSelectList">
+                                        <div class="empty-state">
+                                            <p class="text-muted">No groups yet. Add groups first.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Manual Input Panel -->
+                                <div id="targetPanel-manual" class="hidden p-3 pt-0">
+                                    <div class="form-group mb-0">
+                                        <textarea class="form-input" id="manualNumbers"
+                                            placeholder="Paste WhatsApp numbers here... e.g.:&#10;08123456789&#10;628123456789&#10;+62 812-3456-789"
+                                            style="min-height:200px; font-family:monospace"></textarea>
+                                        <p class="form-hint">
+                                            Auto-formatted to Indonesia (+62). Separate with Enter or Comma.
+                                            <span id="manualCount" class="badge badge-info float-right">0 numbers</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anti-Ban Settings -->
+                            <div class="card mb-4">
+                                <div class="card-header" onclick="toggleAntiBanSettings()" style="cursor: pointer;">
+                                    <h3 class="card-title">🛡️ Anti-Ban Settings</h3>
+                                    <span id="antiBanIndicator" class="badge badge-active">Safe Mode ON</span>
+                                </div>
+
+                                <div id="antiBanSettings" class="hidden"
+                                    style="margin-top: 16px; border-top: 1px solid #2a3942; padding-top: 16px;">
+                                    <!-- Safe Mode Toggle -->
+                                    <div class="toggle-row mb-4">
+                                        <div>
+                                            <span class="toggle-label">
+                                                🔒 Safe Mode
+                                                <div class="tooltip">❓
+                                                    <span class="tooltip-text">Recommended. Automatically uses random
+                                                        delay (5-15s) and typing simulation to mimic human
+                                                        behavior.</span>
+                                                </div>
+                                            </span>
+                                            <p class="form-hint mb-0">Recommended to prevent number banning.</p>
+                                        </div>
+                                        <div class="toggle active" id="safeModeToggle" onclick="toggleSafeMode()"></div>
+                                    </div>
+
+                                    <!-- Custom Settings (Hidden when Safe Mode is ON) -->
+                                    <div id="customAntiBanSettings" class="hidden">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                Random Delay (seconds)
+                                                <div class="tooltip">❓
+                                                    <span class="tooltip-text">Random pause between each message
+                                                        sent.</span>
+                                                </div>
+                                            </label>
+                                            <div class="flex gap-2">
+                                                <input type="number" class="form-input" id="delayMin" placeholder="Min"
+                                                    value="5">
+                                                <span style="align-self:center">-</span>
+                                                <input type="number" class="form-input" id="delayMax" placeholder="Max"
+                                                    value="15">
+                                            </div>
+                                            <p class="form-hint">Randomizer will pick a delay between these values.</p>
+                                        </div>
+
+                                        <div class="toggle-row mb-2">
+                                            <div>
+                                                <span class="toggle-label">
+                                                    😴 Sleep Mode
+                                                    <div class="tooltip">❓
+                                                        <span class="tooltip-text">Takes a long break after sending a
+                                                            batch of messages to cool down account activity.</span>
+                                                    </div>
+                                                </span>
+                                                <p class="form-hint mb-0">Pause after sending X messages</p>
+                                            </div>
+                                            <div class="toggle" id="sleepModeToggle" onclick="toggleSleepMode()"></div>
+                                        </div>
+
+                                        <div id="sleepSettings" class="hidden">
+                                            <div class="form-group">
+                                                <label class="form-label">Sleep rules</label>
+                                                <div class="flex gap-2 align-center">
+                                                    <span>After</span>
+                                                    <input type="number" class="form-input" id="sleepAfter" value="50"
+                                                        style="width: 80px">
+                                                    <span>msgs, sleep for</span>
+                                                    <input type="number" class="form-input" id="sleepDuration" value="5"
+                                                        style="width: 80px">
+                                                    <span>mins</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="broadcast-actions">
+                                <button class="btn btn-primary btn-lg flex-1" onclick="sendBroadcast()" id="sendBtn">
+                                    📤 Send Now
+                                </button>
+                                <button class="btn btn-secondary btn-lg" onclick="quickSchedule()" id="scheduleBtn"
+                                    title="Schedule for later">
+                                    📅
+                                </button>
+                            </div>
+                            <p class="keyboard-hint text-center">Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to send,
+                                <kbd>Ctrl</kbd>+<kbd>S</kbd> to save draft
+                            </p>
+
+                            <!-- Result -->
+                            <div class="hidden mt-4" id="resultSection">
+                                <div class="result-card success" id="resultCard">
+                                    <div class="result-icon">✅</div>
+                                    <div class="result-title" id="resultTitle">Broadcast Sent!</div>
+                                    <div class="result-stats">
+                                        <div class="result-stat">
+                                            <div class="result-stat-value text-success" id="resultSuccess">0</div>
+                                            <div class="result-stat-label">Success</div>
+                                        </div>
+                                        <div class="result-stat">
+                                            <div class="result-stat-value text-danger" id="resultFailed">0</div>
+                                            <div class="result-stat-label">Failed</div>
+                                        </div>
+                                    </div>
+                                    <div id="broadcastProgress" class="hidden text-center mt-2">
+                                        <p class="text-muted" id="progressText">Sending...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mobile: Stats -->
+                    <div class="stats-grid mobile-only">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalGroups">0</div>
+                            <div class="stat-label">Groups</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalSent">0</div>
+                            <div class="stat-label">Sent Today</div>
+                        </div>
+                    </div>
                 </div>
-                
+
+                <!-- Tab: Groups -->
                 <div class="tab-panel" id="tab-groups">
                     <div class="page-header">
-                        <h1 class="page-title">👥 Groups</h1>
+                        <h1 class="page-title">👥 Groups & Contacts</h1>
                     </div>
-                    <div class="card"><div class="card-body">Groups content here</div></div>
+
+                    <div class="desktop-grid">
+                        <div class="desktop-col">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">My Groups</h3>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-sm btn-secondary" onclick="toggleBulkMode()">☑️
+                                            Bulk</button>
+                                        <button class="btn btn-sm btn-primary" onclick="showAddGroup()">+ Add</button>
+                                    </div>
+                                </div>
+
+                                <!-- Bulk Actions Bar -->
+                                <div id="bulkActions" class="bulk-actions-bar hidden">
+                                    <span id="bulkCount">0 selected</span>
+                                    <button class="btn btn-sm btn-danger" onclick="bulkDeleteGroups()">🗑️ Delete
+                                        Selected</button>
+                                </div>
+
+                                <!-- Category Filter Chips -->
+                                <div class="category-chips" id="categoryChips">
+                                    <button class="category-chip active" onclick="filterByCategory('all')">📋
+                                        All</button>
+                                </div>
+
+                                <div class="search-box mb-3">
+                                    <input type="text" class="form-input" id="searchGroups"
+                                        placeholder="Search groups..." oninput="filterGroups()">
+                                </div>
+                                <div class="action-buttons-row">
+                                    <button class="btn btn-secondary" onclick="discoverGroups()">🔍 Discover</button>
+                                    <button class="btn btn-secondary" id="syncBtn" onclick="syncGroups()">🔄
+                                        Sync</button>
+                                    <button class="btn btn-secondary" onclick="exportGroups()"
+                                        title="Export">📤</button>
+                                    <button class="btn btn-secondary"
+                                        onclick="document.getElementById('importGroupsFile').click()"
+                                        title="Import">📥</button>
+                                    <input type="file" id="importGroupsFile" accept=".json" style="display:none"
+                                        onchange="importGroups(event)">
+                                </div>
+                                <div class="list" id="groupsList">
+                                    <div class="empty-state" id="groupsEmptyState">
+                                        <div class="empty-icon">👥</div>
+                                        <div class="empty-title">No groups yet</div>
+                                        <p class="empty-text">Choose how to add your WhatsApp groups:</p>
+                                        <div
+                                            style="display:flex; flex-direction:column; gap:8px; margin-top:16px; width:100%; max-width:280px;">
+                                            <button class="btn btn-primary" onclick="syncGroups()" id="emptySyncBtn">
+                                                🔄 Sync All Groups
+                                                <small
+                                                    style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Auto-import
+                                                    from WhatsApp (recommended)</small>
+                                            </button>
+                                            <button class="btn btn-secondary" onclick="discoverGroups()">
+                                                🔍 Discover Groups
+                                                <small
+                                                    style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Browse
+                                                    & pick specific groups</small>
+                                            </button>
+                                            <button class="btn btn-secondary" onclick="showAddGroup()">
+                                                ✏️ Add Manually
+                                                <small
+                                                    style="display:block; font-weight:normal; opacity:0.8; font-size:11px;">Enter
+                                                    group ID yourself</small>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="desktop-col">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">📇 Contacts</h3>
+                                    <button class="btn btn-sm btn-primary" onclick="showAddContact()">+ Add</button>
+                                </div>
+                                <div class="search-box mb-3">
+                                    <input type="text" class="form-input" id="searchContacts"
+                                        placeholder="Search contacts..." oninput="filterContacts()">
+                                </div>
+                                <div class="list" id="contactsList">
+                                    <div class="empty-state">
+                                        <p class="text-muted">Save contacts for quick access</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </main>
+
+                <!-- Tab: Auto Reply -->
+                <div class="tab-panel" id="tab-auto">
+                    <div class="page-header">
+                        <h1 class="page-title">🤖 Automation</h1>
+                    </div>
+
+                    <!-- Auto Reply Stats -->
+                    <div class="stats-row mb-4" id="autoReplyStats">
+                        <div class="stat-mini">
+                            <span class="stat-mini-value">0</span>
+                            <span class="stat-mini-label">Total Triggers</span>
+                        </div>
+                        <div class="stat-mini">
+                            <span class="stat-mini-value">0</span>
+                            <span class="stat-mini-label">Today</span>
+                        </div>
+                    </div>
+
+                    <div class="desktop-grid">
+                        <div class="desktop-col">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Auto Reply</h3>
+                                    <button class="btn btn-sm btn-primary" onclick="showAddReply()">+ Add</button>
+                                </div>
+                                <div class="list" id="autoReplyList">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">🤖</div>
+                                        <div class="empty-title">No auto replies</div>
+                                        <p class="empty-text">Create automatic responses to keywords</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="desktop-col">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">⚡ Commands</h3>
+                                    <button class="btn btn-sm btn-primary" onclick="showAddCommand()">+ Add</button>
+                                </div>
+                                <div class="search-box mb-3">
+                                    <input type="text" class="form-input" id="searchCommands"
+                                        placeholder="Search commands..." oninput="filterCommands()">
+                                </div>
+                                <div class="list" id="commandsList">
+                                    <div class="empty-state">
+                                        <p class="text-muted">Create !help, !menu, etc.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Schedule -->
+                <div class="tab-panel" id="tab-schedule">
+                    <!-- Header -->
+                    <div class="schedule-header">
+                        <div>
+                            <h1 class="page-title">Schedule</h1>
+                            <p class="page-subtitle">Manage scheduled broadcasts and templates</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="showAddSchedule()">+ New Schedule</button>
+                    </div>
+
+                    <!-- Stats Row -->
+                    <div class="schedule-stats">
+                        <div class="schedule-stat-card">
+                            <span class="schedule-stat-value" id="schedPending">0</span>
+                            <span class="schedule-stat-label">Pending</span>
+                        </div>
+                        <div class="schedule-stat-card">
+                            <span class="schedule-stat-value" id="schedSentToday">0</span>
+                            <span class="schedule-stat-label">Sent Today</span>
+                        </div>
+                        <div class="schedule-stat-card">
+                            <span class="schedule-stat-value" id="schedTotal">0</span>
+                            <span class="schedule-stat-label">Total</span>
+                        </div>
+                    </div>
+
+                    <!-- Tabs: Schedules / Templates -->
+                    <div class="schedule-tabs">
+                        <button class="schedule-tab active" onclick="switchScheduleTab('schedules')" id="tabSchedules">
+                            Schedules
+                        </button>
+                        <button class="schedule-tab" onclick="switchScheduleTab('templates')" id="tabTemplates">
+                            Templates
+                        </button>
+                    </div>
+
+                    <!-- Schedules Panel -->
+                    <div class="schedule-panel active" id="panelSchedules">
+                        <div class="schedule-toolbar">
+                            <div class="search-box" style="flex:1; margin-bottom:0;">
+                                <input type="text" class="form-input" id="searchSchedules"
+                                    placeholder="Search schedules..." oninput="filterSchedules()">
+                            </div>
+                            <div class="schedule-filter">
+                                <button class="filter-btn active" onclick="filterScheduleStatus('all')">All</button>
+                                <button class="filter-btn" onclick="filterScheduleStatus('pending')">Pending</button>
+                                <button class="filter-btn" onclick="filterScheduleStatus('sent')">Sent</button>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-sm btn-secondary" onclick="exportSchedules()"
+                                    title="Export">📤</button>
+                                <button class="btn btn-sm btn-secondary"
+                                    onclick="document.getElementById('importScheduleFile').click()"
+                                    title="Import">📥</button>
+                                <input type="file" id="importScheduleFile" accept=".json" style="display:none"
+                                    onchange="importSchedules(event)">
+                            </div>
+                            <div class="view-toggle">
+                                <button class="view-btn active" onclick="switchScheduleView('list')" id="viewListBtn"
+                                    title="List View">📋</button>
+                                <button class="view-btn" onclick="switchScheduleView('calendar')" id="viewCalendarBtn"
+                                    title="Calendar View">📅</button>
+                            </div>
+                        </div>
+
+                        <!-- List View -->
+                        <div class="schedule-list" id="scheduleList">
+                            <div class="empty-state">
+                                <div class="empty-icon">📅</div>
+                                <div class="empty-title">No schedules yet</div>
+                                <p class="empty-text">Create your first scheduled broadcast</p>
+                                <button class="btn btn-primary mt-4" onclick="showAddSchedule()">+ Create
+                                    Schedule</button>
+                            </div>
+                        </div>
+
+                        <!-- Calendar View -->
+                        <div class="schedule-calendar hidden" id="scheduleCalendar">
+                            <div class="calendar-header">
+                                <button class="btn btn-sm btn-secondary" onclick="navigateCalendar(-1)">←</button>
+                                <span class="calendar-month-title" id="calendarMonthTitle">December 2025</span>
+                                <button class="btn btn-sm btn-secondary" onclick="navigateCalendar(1)">→</button>
+                            </div>
+                            <div class="calendar-weekdays">
+                                <div>Sun</div>
+                                <div>Mon</div>
+                                <div>Tue</div>
+                                <div>Wed</div>
+                                <div>Thu</div>
+                                <div>Fri</div>
+                                <div>Sat</div>
+                            </div>
+                            <div class="calendar-grid" id="calendarGrid"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Templates Panel -->
+                <div class="schedule-panel" id="panelTemplates">
+                    <div class="schedule-toolbar">
+                        <div class="search-box" style="flex:1; margin-bottom:0;">
+                            <input type="text" class="form-input" id="searchTemplates" placeholder="Search templates..."
+                                oninput="filterTemplates()">
+                        </div>
+                        <button class="btn btn-primary" onclick="showAddTemplate()">+ New Template</button>
+                    </div>
+
+                    <div class="template-grid" id="templatesList">
+                        <div class="empty-state">
+                            <div class="empty-icon">📝</div>
+                            <div class="empty-title">No templates yet</div>
+                            <p class="empty-text">Save message templates for quick reuse</p>
+                            <button class="btn btn-primary mt-4" onclick="showAddTemplate()">+ Create
+                                Template</button>
+                        </div>
+                    </div>
+                </div>
+        </div>
+
+        <!-- Tab: History -->
+        <div class="tab-panel" id="tab-history">
+            <div class="page-header">
+                <h1 class="page-title">📊 Statistics</h1>
+            </div>
+
+            <div class="stats-grid stats-grid-4">
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">Total Sent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statSuccess">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statGroups">0</div>
+                    <div class="stat-label">Groups</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statReplies">0</div>
+                    <div class="stat-label">Auto Replies</div>
+                </div>
+            </div>
+
+            <!-- Analytics Chart -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title">📈 Weekly Activity</h3>
+                    <button class="btn btn-sm btn-secondary" onclick="loadAnalytics()">🔄 Refresh</button>
+                </div>
+                <div class="analytics-chart" id="analyticsChart">
+                    <p class="text-muted text-center">Loading chart...</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Recent Activity</h3>
+                    <div class="flex gap-2">
+                        <button class="btn btn-sm btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
+                        <button class="btn btn-sm btn-danger" onclick="clearHistory()">🗑️ Clear</button>
+                    </div>
+                </div>
+                <div class="list" id="historyList">
+                    <div class="empty-state">
+                        <p class="text-muted">No broadcast history yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Settings -->
+        <div class="tab-panel" id="tab-settings">
+            <div class="page-header">
+                <h1 class="page-title">⚙️ Settings</h1>
+            </div>
+
+            <div class="desktop-grid">
+                <div class="desktop-col">
+                    <div class="card">
+                        <h3 class="card-title mb-4">General</h3>
+
+                        <div class="toggle-row">
+                            <div>
+                                <span class="toggle-label">Anti-Ban Queue</span>
+                                <p class="form-hint mb-0">Add delay between messages</p>
+                            </div>
+                            <div class="toggle" id="queueToggle" onclick="toggleSetting('queue')"></div>
+                        </div>
+
+                        <div class="toggle-row">
+                            <div>
+                                <span class="toggle-label">Typing Indicator</span>
+                                <p class="form-hint mb-0">Show typing... before sending</p>
+                            </div>
+                            <div class="toggle" id="typingToggle" onclick="toggleSetting('typing')"></div>
+                        </div>
+
+
+                        <div class="toggle-row">
+                            <div>
+                                <span class="toggle-label">Login Protection</span>
+                                <p class="form-hint mb-0">Require password to access</p>
+                            </div>
+                            <div class="toggle" id="authToggle" onclick="toggleSetting('auth')"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🚫 Blacklist</h3>
+                            <button class="btn btn-sm btn-secondary" onclick="showBlacklist()">Manage</button>
+                        </div>
+                        <div class="form-group mb-2">
+                            <input type="text" class="form-input" id="blacklistInput"
+                                placeholder="Enter number to block (62812xxx)">
+                        </div>
+                        <button class="btn btn-danger btn-block" onclick="addBlacklist()">🚫 Block
+                            Number</button>
+                    </div>
+                </div>
+
+                <div class="desktop-col">
+                    <div class="card">
+                        <h3 class="card-title mb-4">💾 Backup & Data</h3>
+                        <p class="text-muted mb-4">Download or restore all your data</p>
+                        <div class="btn-row">
+                            <button class="btn btn-secondary" onclick="downloadBackup()">📥 Backup</button>
+                            <button class="btn btn-secondary"
+                                onclick="document.getElementById('restoreFile').click()">📤 Restore</button>
+                            <input type="file" id="restoreFile" accept=".json" style="display:none"
+                                onchange="restoreBackup(event)">
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title mb-4">📋 Message Logs</h3>
+                        <button class="btn btn-secondary btn-block" onclick="viewLogs()">View Incoming
+                            Messages</button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title mb-4">📱 WhatsApp</h3>
+                        <p class="text-muted mb-4">Disconnect dan link ke akun WhatsApp lain</p>
+                        <button class="btn btn-warning btn-block mb-2" onclick="switchWhatsApp()">🔄 Ganti Akun
+                            WhatsApp</button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title mb-4">🚪 Session</h3>
+                        <button class="btn btn-danger btn-block" onclick="logout()">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Changelog -->
+        <div class="tab-panel" id="tab-changelog">
+            <div class="page-header">
+                <h1 class="page-title">🎉 Changelog</h1>
+                <p class="text-muted">What's new in AutoSapa</p>
+            </div>
+
+            <div class="changelog-container">
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.5.0</div>
+                        <span class="badge badge-active">Latest</span>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>🔒 Peningkatan keamanan & proteksi akun</li>
+                            <li>📱 Tampilan mobile lebih optimal</li>
+                            <li>👮 Admin panel lebih lengkap</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.4.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>🛡️ Safe Mode broadcast (anti-ban)</li>
+                            <li>🎲 Spintax untuk variasi pesan</li>
+                            <li>😴 Sleep Mode otomatis</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.3.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>📅 Fitur scheduling lebih lengkap</li>
+                            <li>🔍 Pencarian schedule & template</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.2.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>👥 Multi-user support</li>
+                            <li>🔐 Sistem login & autentikasi</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.1.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>⚡ Quick Actions & Templates</li>
+                            <li>🖼️ Media Library</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="changelog-version">
+                    <div class="changelog-header">
+                        <div class="changelog-version-badge">v1.0.0</div>
+                    </div>
+                    <div class="changelog-content">
+                        <ul class="changelog-list">
+                            <li>🚀 Rilis perdana AutoSapa</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </main>
+    </div>
+    <!-- All Modals -->
+    <div class="modal hidden" id="addGroupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Group Manually</h3>
+                <button class="modal-close" onclick="closeModal('addGroupModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Group Name</label>
+                <input type="text" class="form-input" id="groupNameInput" placeholder="My Group">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Group ID</label>
+                <input type="text" class="form-input" id="groupIdInput" placeholder="6281234567890-1234567890@g.us">
+            </div>
+            <div class="info-box"
+                style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px; margin-bottom:16px;">
+                <p style="font-weight:600; color:#0369a1; margin-bottom:8px;">📋 How to get Group ID:</p>
+                <ol style="font-size:13px; color:#0c4a6e; padding-left:20px; margin:0;">
+                    <li style="margin-bottom:4px;">Open WhatsApp Web on your browser</li>
+                    <li style="margin-bottom:4px;">Open the group chat you want to add</li>
+                    <li style="margin-bottom:4px;">Click the group name at top → Scroll down</li>
+                    <li style="margin-bottom:4px;">Look for the group link or use our <strong>Discover
+                            Groups</strong> button</li>
+                </ol>
+                <p style="font-size:12px; color:#64748b; margin-top:8px; margin-bottom:0;">
+                    💡 Tip: Use "Sync Groups" to auto-import all your groups
+                </p>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveGroup()">Save Group</button>
         </div>
     </div>
 
+    <div class="modal hidden" id="addContactModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Contact</h3>
+                <button class="modal-close" onclick="closeModal('addContactModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" id="contactName" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="text" class="form-input" id="contactNumber" placeholder="628123456789">
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveContact()">Save Contact</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addReplyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Auto Reply</h3>
+                <button class="modal-close" onclick="closeModal('addReplyModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Keyword</label>
+                <input type="text" class="form-input" id="replyKeyword" placeholder="e.g., info, help">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Match Type</label>
+                <select class="form-input" id="replyMatchType">
+                    <option value="contains">Contains (phrase in order)</option>
+                    <option value="exact">Exact Match</option>
+                    <option value="startswith">Starts With</option>
+                    <option value="words">All Words (any order)</option>
+                    <option value="anyword">Any Word (at least one)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Response</label>
+                <textarea class="form-input" id="replyResponse" placeholder="Your automatic response..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Image (optional)</label>
+                <div class="upload-area" onclick="document.getElementById('replyImageInput').click()">
+                    <input type="file" id="replyImageInput" accept="image/*" style="display:none"
+                        onchange="previewReplyImage(event)">
+                    <span id="replyUploadText">📷 Click to add image</span>
+                </div>
+                <img id="replyImagePreview" class="image-preview hidden">
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveAutoReply()">Save Auto Reply</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addScheduleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Schedule Broadcast</h3>
+                <button class="modal-close" onclick="closeModal('addScheduleModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Schedule Name</label>
+                <input type="text" class="form-input" id="scheduleName"
+                    placeholder="e.g., Morning Greeting, Weekly Promo">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Select Groups</label>
+                <div class="schedule-groups-container"
+                    style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--bg);">
+                    <label class="checkbox-row"
+                        style="padding: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+                        <input type="checkbox" id="scheduleSelectAll" onchange="toggleScheduleSelectAll()">
+                        <span style="font-weight: 600; color: var(--text);">Select All</span>
+                    </label>
+                    <div id="scheduleGroupList"></div>
+                </div>
+                <small class="text-muted" id="scheduleSelectedCount">0 groups selected</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-input" id="scheduleMessage" placeholder="Your scheduled message..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Image (optional)</label>
+                <div class="upload-area" onclick="document.getElementById('scheduleImageInput').click()">
+                    <input type="file" id="scheduleImageInput" accept="image/*" style="display:none"
+                        onchange="previewScheduleImage(event)">
+                    <span id="scheduleUploadText">📷 Click to add image</span>
+                </div>
+                <img id="scheduleImagePreview" class="image-preview hidden">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Date & Time</label>
+                <input type="datetime-local" class="form-input" id="scheduleTime">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Repeat</label>
+                <select class="form-input" id="scheduleRepeat">
+                    <option value="">One time only</option>
+                    <option value="daily">Every day</option>
+                    <option value="weekly">Every week</option>
+                    <option value="monthly">Every month</option>
+                </select>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveSchedule()">Schedule</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addTemplateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Save Template</h3>
+                <button class="modal-close" onclick="closeModal('addTemplateModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Template Name</label>
+                <input type="text" class="form-input" id="templateName" placeholder="e.g., Job Vacancy">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-input" id="templateMessage" rows="6"
+                    placeholder="Your template message..."></textarea>
+            </div>
+            <p class="form-hint mb-4">Variables: {date}, {time}, {day}, {month}, {year}</p>
+            <button class="btn btn-primary btn-block" onclick="saveTemplate()">Save Template</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addCommandModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Command</h3>
+                <button class="modal-close" onclick="closeModal('addCommandModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Command</label>
+                <input type="text" class="form-input" id="commandName" placeholder="!help">
+                <p class="form-hint">Must start with !</p>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Response</label>
+                <textarea class="form-input" id="commandResponse"
+                    placeholder="Response when command is called..."></textarea>
+            </div>
+            <button class="btn btn-primary btn-block" onclick="saveCommand()">Save Command</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="discoverModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Discovered Groups</h3>
+                <button class="modal-close" onclick="closeModal('discoverModal')">×</button>
+            </div>
+            <div id="discoveredList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="logsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Message Logs</h3>
+                <button class="modal-close" onclick="closeModal('logsModal')">×</button>
+            </div>
+            <div id="logsContent" style="max-height: 400px; overflow-y: auto;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            <button class="btn btn-danger btn-block mt-4" onclick="clearMessageLogs()">🗑️ Clear All Logs</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🔐 Login Required</h3>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-input" id="loginUsername" placeholder="admin">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="loginPassword" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary btn-block" onclick="login()">Login</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="blacklistModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Blocked Numbers</h3>
+                <button class="modal-close" onclick="closeModal('blacklistModal')">×</button>
+            </div>
+            <div id="blacklistContent" style="max-height: 400px; overflow-y: auto;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="templateSelectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Select Template</h3>
+                <button class="modal-close" onclick="closeModal('templateSelectModal')">×</button>
+            </div>
+            <div id="templateSelectList" style="max-height: 400px; overflow-y: auto;">
+                <div class="empty-state">
+                    <p class="text-muted">No templates saved yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="membersModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Group Members</h3>
+                <button class="modal-close" onclick="closeModal('membersModal')">×</button>
+            </div>
+            <div id="membersList" style="max-height: 400px; overflow-y: auto;">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="addQuickActionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Quick Action</h3>
+                <button class="modal-close" onclick="closeModal('addQuickActionModal')">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Action Name</label>
+                <input type="text" class="form-input" id="quickActionName" placeholder="e.g., Morning Greeting">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Icon (emoji)</label>
+                <input type="text" class="form-input" id="quickActionIcon" placeholder="⚡" maxlength="2">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-input" id="quickActionMessage" rows="4"
+                    placeholder="Message to send..."></textarea>
+            </div>
+            <p class="form-hint mb-4">Uses groups selected in Broadcast tab</p>
+            <button class="btn btn-primary btn-block" onclick="saveQuickAction()">Save Quick Action</button>
+        </div>
+    </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal hidden" id="confirmModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm</h3>
+            </div>
+            <p id="confirmMessage" style="margin-bottom: 20px; color: var(--text-secondary);"></p>
+            <div class="btn-row">
+                <button class="btn btn-secondary" id="confirmNo">Cancel</button>
+                <button class="btn btn-danger" id="confirmYes">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-items">
+            <button class="bottom-nav-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
+                <span class="bottom-nav-icon">🏠</span>
+                <span>Home</span>
+            </button>
+            <button class="bottom-nav-item" onclick="switchTab('broadcast')" data-tab="broadcast">
+                <span class="bottom-nav-icon">📢</span>
+                <span>Broadcast</span>
+            </button>
+            <button class="bottom-nav-item" onclick="switchTab('groups')" data-tab="groups">
+                <span class="bottom-nav-icon">👥</span>
+                <span>Groups</span>
+            </button>
+            <button class="bottom-nav-item" onclick="switchTab('auto')" data-tab="auto">
+                <span class="bottom-nav-icon">🤖</span>
+                <span>Auto</span>
+            </button>
+            <button class="bottom-nav-item" onclick="toggleMobileMenu()">
+                <span class="bottom-nav-icon">☰</span>
+                <span>More</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Offline Indicator -->
+    <div id="offlineIndicator" class="offline-indicator hidden">
+        <span>📡 You are offline</span>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <script>
-        // Mobile Menu Toggle
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            const overlay = document.getElementById('mobileMenuOverlay');
-            const hamburger = document.getElementById('hamburgerBtn');
-            
-            console.log('Toggle mobile menu called');
-            console.log('Menu:', menu);
-            console.log('Overlay:', overlay);
-            
-            if (menu && overlay) {
-                menu.classList.toggle('active');
-                overlay.classList.toggle('active');
-                if (hamburger) hamburger.classList.toggle('active');
-                console.log('Menu active:', menu.classList.contains('active'));
-            }
-        }
+        // PREVIEW MODE - No auth required
+        console.log('Preview Mode Active');
+
+        // Mock data
+        const groups = [
+            { groupId: '1', name: 'Group Test 1', participants: 50 },
+            { groupId: '2', name: 'Group Test 2', participants: 25 },
+            { groupId: '3', name: 'Group Test 3', participants: 100 }
+        ];
+        let schedules = [];
+        let templates = [];
+        let autoReplies = [];
+        let settings = { queue: true, typing: true };
 
         // Tab switching
         function switchTab(tab) {
             document.querySelectorAll('.tab-panel').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.mobile-menu-item').forEach(m => m.classList.remove('active'));
-            
+            document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+
             document.getElementById('tab-' + tab)?.classList.add('active');
-            document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
+            document.querySelector(`.sidebar-item[data-tab="${tab}"]`)?.classList.add('active');
+            document.querySelector(`.mobile-menu-item[data-tab="${tab}"]`)?.classList.add('active');
+            document.querySelector(`.bottom-nav-item[data-tab="${tab}"]`)?.classList.add('active');
         }
+
+        // Mobile menu
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu')?.classList.toggle('active');
+            document.getElementById('mobileMenuOverlay')?.classList.toggle('active');
+            document.getElementById('hamburgerBtn')?.classList.toggle('active');
+        }
+
+        // Toast
+        function toast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = 'toast toast-' + type;
+            t.textContent = msg;
+            container?.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        // Mock functions for testing UI
+        function showModal(id) { document.getElementById(id)?.classList.add('active'); }
+        function closeModal(id) { document.getElementById(id)?.classList.remove('active'); }
+        function showAddSchedule() { showModal('addScheduleModal'); }
+        function showAddTemplate() { showModal('addTemplateModal'); }
+        function showAddAutoReply() { showModal('addAutoReplyModal'); }
+        function toggleSetting(key) { toast('Setting toggled: ' + key); }
+        function previewMessage() { toast('Preview clicked'); }
+        function toggleSpintaxTutorial() {
+            document.getElementById('spintaxContent')?.classList.toggle('hidden');
+        }
+
+        // Render mock groups
+        function renderGroups() {
+            const list = document.getElementById('groupList');
+            if (list) {
+                list.innerHTML = groups.map(g => `
+                    <div class="card-list-item group-select-item" data-id="${g.groupId}">
+                        <div class="card-list-avatar">👥</div>
+                        <div class="card-list-content">
+                            <div class="card-list-title">${g.name}</div>
+                            <div class="card-list-subtitle">${g.participants} members</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderGroups();
+            // Set status as connected
+            document.querySelectorAll('.status-badge').forEach(b => {
+                b.classList.remove('disconnected');
+                b.classList.add('connected');
+            });
+            document.querySelectorAll('[id*="statusText"]').forEach(t => t.textContent = 'Preview Mode');
+        });
     </script>
 </body>
+
 </html>

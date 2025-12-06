@@ -129,10 +129,43 @@ body {
     padding-bottom: 80px;
 }
 
+/* ===== DESKTOP LAYOUT ===== */
+@media (min-width: 769px) {
+    .sidebar {
+        display: flex;
+    }
+
+    .app-container {
+        margin-left: var(--sidebar-width);
+    }
+
+    .app-header {
+        display: none;
+    }
+
+    .bottom-nav {
+        display: none;
+    }
+}
+
 .app-main {
     max-width: 1200px;
     margin: 0 auto;
     padding: 16px;
+}
+
+/* Override for desktop - full width content */
+@media (min-width: 769px) {
+    .app-main {
+        max-width: 100%;
+        margin: 0;
+        padding: 24px;
+    }
+
+    .tab-panel {
+        width: 100%;
+        padding: 0;
+    }
 }
 
 /* ===== HEADER (Mobile Only) ===== */
@@ -2056,6 +2089,64 @@ kbd {
     text-align: right;
 }
 
+/* ===== DESKTOP GRID LAYOUT ===== */
+.desktop-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.desktop-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Changelog container */
+.changelog-container {
+    max-width: 100%;
+}
+
+.changelog-version {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.changelog-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.changelog-version-badge {
+    background: var(--primary);
+    color: var(--bg);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.changelog-list {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.changelog-list li {
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .desktop-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 
 /* ===== HELPERS ===== */
 .hidden {
@@ -2239,7 +2330,7 @@ kbd {
    =============================================== */
 @media (min-width: 1200px) {
     .app-main {
-        max-width: 1400px;
+        max-width: 100%;
         padding: 40px;
     }
 
