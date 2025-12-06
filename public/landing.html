@@ -1,22 +1,57 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoSapa - WhatsApp Broadcast & Automation</title>
-    <meta name="description" content="Platform broadcast WhatsApp untuk bisnis. Kelola banyak grup, auto-reply, dan scheduling dalam satu dashboard.">
+    <title>AutoSapa - Aplikasi Broadcast WhatsApp & Auto Reply Aman (Anti-Banned)</title>
+    <meta name="description"
+        content="Kelola ribuan chat, broadcast grup otomatis, dan auto-reply WhatsApp dengan fitur keamanan canggih (Spintax & Sleep Mode). Solusi CRM terbaik untuk UMKM & Komunitas.">
+    <meta name="keywords"
+        content="Broadcast WhatsApp aman, Tools WA Blast, Auto Reply WhatsApp, Manajemen Grup WhatsApp, Aplikasi Kirim Pesan Massal, WhatsApp Automation Indonesia">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://autosapa.com">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="AutoSapa - Broadcast WhatsApp & Auto Reply Aman">
+    <meta property="og:description" content="Otomatisasi WhatsApp paling manusiawi untuk Bisnis & Komunitas">
+    <meta property="og:type" content="website">
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #25D366;
+            --primary-dark: #128C7E;
+            --bg: #0b141a;
+            --bg-card: #1f2c34;
+            --bg-dark: #0a0e12;
+            --border: #2a3942;
+            --text: #e9edef;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0b141a;
-            color: #e9edef;
-            line-height: 1.6;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
         }
-        
-        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
-        
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
         /* Navbar */
         nav {
             padding: 16px 0;
@@ -29,282 +64,987 @@
             z-index: 100;
             border-bottom: 1px solid rgba(51, 65, 85, 0.5);
         }
+
         nav .container {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+
         .logo {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
             color: #fff;
+            text-decoration: none;
         }
-        .logo span { color: #25D366; }
-        .nav-buttons { display: flex; gap: 10px; }
-        
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
         /* Buttons */
         .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 12px 24px;
+            border-radius: 10px;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             transition: all 0.2s;
             border: none;
             font-size: 14px;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
+
         .btn-ghost {
             background: transparent;
-            color: #94a3b8;
+            color: var(--text-muted);
         }
-        .btn-ghost:hover { color: #fff; }
+
+        .btn-ghost:hover {
+            color: #fff;
+        }
+
         .btn-primary {
-            background: #25D366;
-            color: #0b141a;
+            background: var(--primary);
+            color: var(--bg);
         }
-        .btn-primary:hover { background: #1da851; }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
         .btn-outline {
             background: transparent;
             border: 1px solid #475569;
             color: #f1f5f9;
         }
-        .btn-outline:hover { border-color: #25D366; color: #25D366; }
-        .btn-lg { padding: 14px 28px; font-size: 16px; }
-        
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-lg {
+            padding: 16px 32px;
+            font-size: 16px;
+        }
+
+        .btn-white {
+            background: #fff;
+            color: var(--primary-dark);
+        }
+
+        .btn-white:hover {
+            background: #f0f0f0;
+        }
+
         /* Hero */
         .hero {
-            padding: 140px 0 80px;
+            padding: 160px 0 100px;
             text-align: center;
+            background: radial-gradient(ellipse at top, rgba(37, 211, 102, 0.08) 0%, transparent 60%);
         }
-        .badge {
+
+        .hero-badge {
             display: inline-block;
             background: rgba(37, 211, 102, 0.15);
-            color: #25D366;
-            padding: 6px 14px;
+            color: var(--primary);
+            padding: 8px 18px;
             border-radius: 100px;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+            border: 1px solid rgba(37, 211, 102, 0.3);
         }
+
         .hero h1 {
-            font-size: 44px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            line-height: 1.2;
-            letter-spacing: -0.5px;
+            font-size: 52px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            line-height: 1.15;
+            letter-spacing: -1px;
         }
-        .hero h1 span { 
-            background: linear-gradient(135deg, #25D366, #128C7E);
+
+        .hero h1 .gradient {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .hero p {
-            font-size: 18px;
-            color: #94a3b8;
-            max-width: 520px;
-            margin: 0 auto 32px;
+
+        .hero-subtitle {
+            font-size: 19px;
+            color: var(--text-muted);
+            max-width: 640px;
+            margin: 0 auto 36px;
+            line-height: 1.7;
         }
-        .hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-        
-        /* Stats */
-        .stats {
+
+        .hero-buttons {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .trust-badges {
             display: flex;
             justify-content: center;
-            gap: 48px;
-            margin-top: 60px;
-            padding-top: 40px;
-            border-top: 1px solid #1e293b;
+            gap: 32px;
+            margin-top: 48px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
         }
-        .stat { text-align: center; }
-        .stat-value { font-size: 32px; font-weight: 700; color: #25D366; }
-        .stat-label { font-size: 14px; color: #64748b; margin-top: 4px; }
-        
-        /* Features */
-        .features {
-            padding: 80px 0;
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 13px;
         }
+
+        .trust-badge .icon {
+            color: var(--primary);
+            font-size: 16px;
+        }
+
+        /* Section Styles */
+        section {
+            padding: 100px 0;
+        }
+
         .section-label {
             text-align: center;
-            color: #25D366;
+            color: var(--primary);
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
+            letter-spacing: 2px;
+            margin-bottom: 14px;
         }
+
         .section-title {
             text-align: center;
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 700;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
+            letter-spacing: -0.5px;
         }
+
         .section-desc {
             text-align: center;
-            color: #94a3b8;
-            max-width: 500px;
-            margin: 0 auto 48px;
+            color: var(--text-muted);
+            max-width: 560px;
+            margin: 0 auto 56px;
+            font-size: 17px;
         }
+
+        /* Problem Section */
+        .problem {
+            background: var(--bg-dark);
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .problem-list {
+            list-style: none;
+        }
+
+        .problem-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: rgba(239, 68, 68, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .problem-item .icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .problem-item h4 {
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: var(--danger);
+        }
+
+        .problem-item p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .solution-box {
+            background: linear-gradient(135deg, rgba(37, 211, 102, 0.1), rgba(18, 140, 126, 0.05));
+            border: 1px solid rgba(37, 211, 102, 0.3);
+            border-radius: 16px;
+            padding: 32px;
+        }
+
+        .solution-box h3 {
+            color: var(--primary);
+            margin-bottom: 16px;
+            font-size: 22px;
+        }
+
+        .solution-box p {
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        /* Features */
+        .features-section {
+            background: var(--bg);
+        }
+
+        .feature-category {
+            margin-bottom: 80px;
+        }
+
+        .feature-category:last-child {
+            margin-bottom: 0;
+        }
+
+        .feature-category-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .feature-category-header h3 {
+            font-size: 26px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .feature-category-header h3 .num {
+            background: var(--primary);
+            color: var(--bg);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .feature-category-header p {
+            color: var(--text-muted);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
         .features-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
         }
+
         .feature-card {
-            background: #1f2c34;
-            border-radius: 12px;
+            background: var(--bg-card);
+            border-radius: 14px;
             padding: 28px;
-            border: 1px solid #2a3942;
-            transition: all 0.2s;
+            border: 1px solid var(--border);
+            transition: all 0.25s;
         }
+
         .feature-card:hover {
-            border-color: #475569;
-            transform: translateY(-2px);
+            border-color: rgba(37, 211, 102, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
         }
+
         .feature-icon {
-            width: 44px;
-            height: 44px;
+            width: 52px;
+            height: 52px;
             background: rgba(37, 211, 102, 0.15);
-            border-radius: 10px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            margin-bottom: 16px;
+            font-size: 26px;
+            margin-bottom: 18px;
         }
-        .feature-card h3 {
+
+        .feature-card h4 {
             font-size: 17px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 600;
         }
-        .feature-card p { 
-            color: #94a3b8; 
+
+        .feature-card p {
+            color: var(--text-muted);
             font-size: 14px;
-            line-height: 1.6;
+            line-height: 1.7;
         }
-        
-        /* Pricing */
-        .pricing {
-            padding: 80px 0;
-            background: #0a0e12;
+
+        /* Target Users */
+        .target-users {
+            background: var(--bg-dark);
         }
-        .pricing-grid {
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .user-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 28px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.25s;
+        }
+
+        .user-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+
+        .user-icon {
+            font-size: 42px;
+            margin-bottom: 16px;
+        }
+
+        .user-card h4 {
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+
+        .user-card p {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Security */
+        .security {
+            background: var(--bg);
+        }
+
+        .security-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
+            gap: 20px;
+        }
+
+        .security-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 28px;
+            border: 1px solid var(--border);
+            display: flex;
+            gap: 20px;
+        }
+
+        .security-card .icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .security-card h4 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .security-card p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Pricing */
+        .pricing {
+            background: var(--bg-dark);
+        }
+
+        .pricing-box {
+            max-width: 600px;
+            margin: 0 auto;
+            background: linear-gradient(180deg, var(--bg-card) 0%, #162420 100%);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 48px;
+            text-align: center;
+            position: relative;
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: var(--bg);
+            padding: 8px 20px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .pricing-box h3 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .pricing-subtitle {
+            color: var(--text-dim);
+            margin-bottom: 24px;
+        }
+
+        .pricing-features {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 32px;
+        }
+
+        .pricing-features li {
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 15px;
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features .check {
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        /* FAQ */
+        .faq {
+            background: var(--bg);
+        }
+
+        .faq-list {
             max-width: 700px;
             margin: 0 auto;
         }
-        .pricing-card {
-            background: #1e293b;
-            border-radius: 16px;
-            padding: 32px;
-            border: 1px solid #2a3942;
-            position: relative;
+
+        .faq-item {
+            background: var(--bg-card);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
         }
-        .pricing-card.featured {
-            border-color: #25D366;
-            background: linear-gradient(180deg, #1f2c34 0%, #162420 100%);
-        }
-        .pricing-badge {
-            position: absolute;
-            top: -10px;
-            right: 20px;
-            background: #25D366;
-            color: #0b141a;
-            padding: 4px 12px;
-            border-radius: 100px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-        .pricing-card h3 {
-            font-size: 18px;
-            margin-bottom: 4px;
-        }
-        .pricing-subtitle {
-            color: #64748b;
-            font-size: 13px;
-            margin-bottom: 20px;
-        }
-        .pricing-card .price {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .pricing-card .price-period { 
-            font-size: 14px; 
-            color: #64748b; 
-            margin-bottom: 24px;
-        }
-        .pricing-card ul {
-            list-style: none;
-            margin-bottom: 24px;
-        }
-        .pricing-card li {
-            padding: 8px 0;
-            color: #94a3b8;
-            font-size: 14px;
+
+        .faq-question {
+            padding: 20px 24px;
+            cursor: pointer;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            font-weight: 600;
+            font-size: 15px;
         }
-        .pricing-card li .check {
-            color: #25D366;
-            font-weight: bold;
+
+        .faq-question:hover {
+            background: rgba(255, 255, 255, 0.02);
         }
-        .pricing-card .btn { width: 100%; text-align: center; }
-        
+
+        .faq-toggle {
+            font-size: 20px;
+            color: var(--primary);
+            transition: transform 0.2s;
+        }
+
+        .faq-answer {
+            padding: 0 24px 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.8;
+            display: none;
+        }
+
+        .faq-item.active .faq-answer {
+            display: block;
+        }
+
+        .faq-item.active .faq-toggle {
+            transform: rotate(45deg);
+        }
+
         /* CTA */
         .cta {
-            padding: 80px 0;
+            padding: 100px 0;
             text-align: center;
+            background: var(--bg-dark);
         }
+
         .cta-box {
-            background: linear-gradient(135deg, #25D366, #128C7E);
-            border-radius: 20px;
-            padding: 60px 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 24px;
+            padding: 72px 48px;
         }
+
         .cta h2 {
-            font-size: 28px;
-            margin-bottom: 12px;
+            font-size: 32px;
+            margin-bottom: 16px;
         }
+
         .cta p {
-            color: rgba(255,255,255,0.8);
-            margin-bottom: 28px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 32px;
+            font-size: 17px;
         }
-        .cta .btn {
-            background: #fff;
-            color: #128C7E;
-        }
-        .cta .btn:hover { background: #e9edef; }
-        
+
         /* Footer */
         footer {
-            padding: 32px 0;
+            padding: 40px 0;
             text-align: center;
-            color: #475569;
-            font-size: 13px;
-            border-top: 1px solid #1e293b;
+            border-top: 1px solid var(--border);
         }
-        
-        /* Mobile */
+
+        .disclaimer {
+            max-width: 700px;
+            margin: 0 auto 24px;
+            padding: 20px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        .disclaimer strong {
+            color: var(--warning);
+        }
+
+        .copyright {
+            color: var(--text-dim);
+            font-size: 13px;
+        }
+
+        /* Mobile Responsive - Comprehensive */
         @media (max-width: 768px) {
-            .hero { padding: 120px 0 60px; }
-            .hero h1 { font-size: 28px; }
-            .hero p { font-size: 15px; }
-            .stats { flex-direction: column; gap: 24px; }
-            .section-title { font-size: 24px; }
-            .features-grid { grid-template-columns: 1fr; }
-            .pricing-grid { grid-template-columns: 1fr; }
-            .cta-box { padding: 40px 24px; }
+            .container {
+                padding: 0 16px;
+            }
+
+            /* Navigation */
+            nav {
+                padding: 12px 0;
+            }
+
+            nav .container {
+                padding: 0 16px;
+            }
+
+            .logo {
+                font-size: 20px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .nav-buttons .btn-ghost {
+                display: none;
+            }
+
+            .nav-buttons .btn-primary {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+
+            /* Hero */
+            .hero {
+                padding: 110px 0 60px;
+            }
+
+            .hero-badge {
+                font-size: 12px;
+                padding: 6px 14px;
+                margin-bottom: 20px;
+            }
+
+            .hero h1 {
+                font-size: 28px;
+                line-height: 1.25;
+                margin-bottom: 18px;
+            }
+
+            .hero h1 br {
+                display: none;
+            }
+
+            .hero-subtitle {
+                font-size: 15px;
+                line-height: 1.6;
+                margin-bottom: 28px;
+                padding: 0 8px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                gap: 12px;
+                padding: 0 16px;
+            }
+
+            .hero-buttons .btn {
+                width: 100%;
+                justify-content: center;
+                padding: 14px 24px;
+            }
+
+            .trust-badges {
+                flex-direction: column;
+                gap: 12px;
+                margin-top: 36px;
+                padding-top: 24px;
+            }
+
+            .trust-badge {
+                font-size: 12px;
+                justify-content: center;
+            }
+
+            /* Sections */
+            section {
+                padding: 60px 0;
+            }
+
+            .section-label {
+                font-size: 11px;
+                letter-spacing: 1.5px;
+            }
+
+            .section-title {
+                font-size: 24px;
+                padding: 0 8px;
+                margin-bottom: 12px;
+            }
+
+            .section-desc {
+                font-size: 14px;
+                margin-bottom: 36px;
+                padding: 0 8px;
+            }
+
+            /* Problem Section */
+            .problem-grid {
+                grid-template-columns: 1fr;
+                gap: 28px;
+            }
+
+            .problem-item {
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+
+            .problem-item .icon {
+                font-size: 20px;
+            }
+
+            .problem-item h4 {
+                font-size: 15px;
+            }
+
+            .problem-item p {
+                font-size: 13px;
+            }
+
+            .solution-box {
+                padding: 24px;
+            }
+
+            .solution-box h3 {
+                font-size: 18px;
+            }
+
+            .solution-box p {
+                font-size: 14px;
+            }
+
+            /* Features */
+            .feature-category {
+                margin-bottom: 48px;
+            }
+
+            .feature-category-header {
+                margin-bottom: 24px;
+            }
+
+            .feature-category-header h3 {
+                font-size: 20px;
+                flex-wrap: wrap;
+            }
+
+            .feature-category-header h3 .num {
+                width: 28px;
+                height: 28px;
+                font-size: 13px;
+            }
+
+            .feature-category-header p {
+                font-size: 13px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .feature-card {
+                padding: 20px;
+            }
+
+            .feature-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 22px;
+                margin-bottom: 14px;
+            }
+
+            .feature-card h4 {
+                font-size: 15px;
+            }
+
+            .feature-card p {
+                font-size: 13px;
+            }
+
+            /* Target Users */
+            .users-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .user-card {
+                padding: 20px 14px;
+            }
+
+            .user-icon {
+                font-size: 32px;
+                margin-bottom: 12px;
+            }
+
+            .user-card h4 {
+                font-size: 13px;
+                line-height: 1.3;
+            }
+
+            .user-card p {
+                font-size: 11px;
+                display: none;
+            }
+
+            /* Security */
+            .security-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .security-card {
+                padding: 20px;
+                gap: 16px;
+            }
+
+            .security-card .icon {
+                font-size: 28px;
+            }
+
+            .security-card h4 {
+                font-size: 15px;
+            }
+
+            .security-card p {
+                font-size: 13px;
+            }
+
+            /* Pricing */
+            .pricing-box {
+                padding: 32px 20px;
+                margin: 0 8px;
+            }
+
+            .pricing-badge {
+                font-size: 10px;
+                padding: 6px 14px;
+                top: -12px;
+            }
+
+            .pricing-box h3 {
+                font-size: 20px;
+            }
+
+            .pricing-features li {
+                font-size: 14px;
+                padding: 12px 0;
+            }
+
+            .pricing-features .check {
+                font-size: 16px;
+            }
+
+            /* FAQ */
+            .faq-list {
+                margin: 0 -8px;
+            }
+
+            .faq-item {
+                border-radius: 10px;
+                margin-bottom: 10px;
+            }
+
+            .faq-question {
+                padding: 16px 18px;
+                font-size: 14px;
+                gap: 12px;
+            }
+
+            .faq-toggle {
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+
+            .faq-answer {
+                padding: 0 18px 16px;
+                font-size: 13px;
+            }
+
+            /* CTA */
+            .cta {
+                padding: 60px 0;
+            }
+
+            .cta-box {
+                padding: 40px 20px;
+                border-radius: 16px;
+                margin: 0 8px;
+            }
+
+            .cta h2 {
+                font-size: 22px;
+                margin-bottom: 12px;
+            }
+
+            .cta p {
+                font-size: 14px;
+                margin-bottom: 24px;
+            }
+
+            .cta .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Footer */
+            footer {
+                padding: 32px 0;
+            }
+
+            .disclaimer {
+                padding: 16px;
+                font-size: 11px;
+                margin: 0 8px 20px;
+            }
+
+            .copyright {
+                font-size: 12px;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 380px) {
+            .hero h1 {
+                font-size: 24px;
+            }
+
+            .section-title {
+                font-size: 22px;
+            }
+
+            .users-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .user-card p {
+                display: block;
+            }
+
+            .feature-category-header h3 {
+                font-size: 18px;
+            }
+        }
+
+        /* Tablet */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .hero h1 {
+                font-size: 40px;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .users-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
+
 <body>
     <!-- Navbar -->
     <nav>
         <div class="container">
-            <div class="logo">Auto<span>Sapa</span></div>
+            <a href="/" class="logo">Auto<span>Sapa</span></a>
+            <div class="nav-links">
+                <a href="#features">Fitur</a>
+                <a href="#security">Keamanan</a>
+                <a href="#pricing">Harga</a>
+                <a href="#faq">FAQ</a>
+            </div>
             <div class="nav-buttons">
                 <a href="/login" class="btn btn-ghost">Masuk</a>
                 <a href="/register" class="btn btn-primary">Daftar Gratis</a>
@@ -315,68 +1055,224 @@
     <!-- Hero -->
     <section class="hero">
         <div class="container">
-            <div class="badge">✨ 10 Hari Trial Gratis</div>
-            <h1>Kelola Semua Grup WhatsApp<br>dari <span>Satu Dashboard</span></h1>
-            <p>Platform broadcast dan automation WhatsApp untuk bisnis, komunitas, dan UMKM. Hemat waktu, tingkatkan produktivitas.</p>
+            <div class="hero-badge">🔥 Safe Mode & Smart Spintax</div>
+            <h1>Otomatisasi WhatsApp Paling<br>"<span class="gradient">Manusiawi</span>" untuk Bisnis & Komunitas</h1>
+            <p class="hero-subtitle">Tinggalkan cara manual. Kirim broadcast ke ribuan kontak atau grup, jadwalkan
+                pesan, dan balas otomatis 24/7 tanpa takut blokir berkat teknologi Safe-Mode & Smart Spintax.</p>
             <div class="hero-buttons">
-                <a href="/register" class="btn btn-primary btn-lg">Mulai Gratis</a>
-                <a href="#pricing" class="btn btn-outline btn-lg">Lihat Harga</a>
+                <a href="/register" class="btn btn-primary btn-lg">🔥 Coba Gratis Sekarang</a>
+                <a href="#features" class="btn btn-outline btn-lg">Lihat Fitur Lengkap</a>
             </div>
-            
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-value">500+</div>
-                    <div class="stat-label">Grup Terhubung</div>
+
+            <div class="trust-badges">
+                <div class="trust-badge"><span class="icon">✅</span> Data Terenkripsi (End-to-End)</div>
+                <div class="trust-badge"><span class="icon">✅</span> Support Multi-Device</div>
+                <div class="trust-badge"><span class="icon">✅</span> Tanpa Install Aplikasi Tambahan</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem & Solution -->
+    <section class="problem">
+        <div class="container">
+            <div class="section-label">Masalah & Solusi</div>
+            <h2 class="section-title">Mengelola Ratusan Chat Manual Itu Melelahkan & Berisiko</h2>
+            <p class="section-desc">Apakah Anda sering mengalami ini?</p>
+
+            <div class="problem-grid">
+                <div>
+                    <ul class="problem-list">
+                        <li class="problem-item">
+                            <span class="icon">❌</span>
+                            <div>
+                                <h4>Jempol Keriting</h4>
+                                <p>Copy-paste pesan ke ratusan grup komunitas satu per satu.</p>
+                            </div>
+                        </li>
+                        <li class="problem-item">
+                            <span class="icon">❌</span>
+                            <div>
+                                <h4>Lupa Follow-up</h4>
+                                <p>Calon pembeli hilang karena Anda telat membalas chat.</p>
+                            </div>
+                        </li>
+                        <li class="problem-item">
+                            <span class="icon">❌</span>
+                            <div>
+                                <h4>Nomor Terblokir</h4>
+                                <p>Kena ban WhatsApp karena broadcast terlalu bar-bar tanpa jeda.</p>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
-                <div class="stat">
-                    <div class="stat-value">10K+</div>
-                    <div class="stat-label">Pesan Terkirim</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value">99%</div>
-                    <div class="stat-label">Uptime</div>
+                <div class="solution-box">
+                    <h3>💡 Solusi Kami</h3>
+                    <p>AutoSapa hadir bukan sekadar sebagai bot, tapi sebagai <strong>Asisten Virtual Cerdas</strong>
+                        yang bekerja otomatis di latar belakang, membiarkan Anda fokus pada strategi bisnis, bukan
+                        teknis mengetik.</p>
+                    <br>
+                    <a href="/register" class="btn btn-primary">Mulai Sekarang →</a>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Features -->
-    <section class="features" id="features">
+    <section class="features-section" id="features">
         <div class="container">
-            <div class="section-label">Fitur</div>
-            <h2 class="section-title">Semua yang Anda Butuhkan</h2>
-            <p class="section-desc">Tools lengkap untuk mengelola komunikasi WhatsApp bisnis Anda</p>
-            
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">📢</div>
-                    <h3>Multi-Group Broadcast</h3>
-                    <p>Kirim pesan ke banyak grup sekaligus. Support teks, gambar, dan dokumen.</p>
+            <div class="section-label">Fitur Unggulan</div>
+            <h2 class="section-title">Semua Tools yang Anda Butuhkan</h2>
+            <p class="section-desc">Fitur lengkap untuk mengelola komunikasi WhatsApp bisnis Anda dengan aman</p>
+
+            <!-- Feature 1: Broadcast -->
+            <div class="feature-category">
+                <div class="feature-category-header">
+                    <h3><span class="num">1</span> Broadcast Pintar & Aman (Anti-Cemas)</h3>
+                    <p>Kirim info promo atau update komunitas dengan fitur keamanan tingkat tinggi</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🤖</div>
-                    <h3>Auto Reply</h3>
-                    <p>Balas pesan otomatis berdasarkan keyword. Response time lebih cepat.</p>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎲</div>
+                        <h4>Spintax Support</h4>
+                        <p>Variasi pesan otomatis (contoh: {Halo|Hai|Pagi}) agar tidak terdeteksi sebagai spam oleh
+                            WhatsApp.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🤖</div>
+                        <h4>Human Simulation</h4>
+                        <p>Dilengkapi Random Delay & Typing Simulation agar terlihat natural seperti manusia.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">😴</div>
+                        <h4>Sleep Mode</h4>
+                        <p>Sistem otomatis "istirahat" sejenak setelah mengirim sejumlah pesan untuk menjaga kesehatan
+                            akun.</p>
+                    </div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📅</div>
-                    <h3>Scheduling</h3>
-                    <p>Jadwalkan broadcast untuk waktu tertentu. Bisa daily, weekly, atau monthly.</p>
+            </div>
+
+            <!-- Feature 2: Group Management -->
+            <div class="feature-category">
+                <div class="feature-category-header">
+                    <h3><span class="num">2</span> Manajemen Grup Otomatis (Community Power)</h3>
+                    <p>Fitur wajib bagi Admin Grup dan Community Manager</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Quick Actions</h3>
-                    <p>Simpan template pesan favorit. Kirim pesan berulang dalam 1 klik.</p>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h4>Auto Sync Group</h4>
+                        <p>Tarik data ribuan grup WA Anda dalam sekali klik. Tidak perlu input manual satu per satu.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📢</div>
+                        <h4>Group Broadcast</h4>
+                        <p>Kirim pesan ke 50+ grup sekaligus tanpa perlu forward manual satu per satu.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🏷️</div>
+                        <h4>Kategorisasi</h4>
+                        <p>Pisahkan grup "VIP", "Reseller", atau "Umum" agar pesan lebih relevan dan tertarget.</p>
+                    </div>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Analytics</h3>
-                    <p>Pantau statistik pengiriman dan histori broadcast. Export ke CSV.</p>
+            </div>
+
+            <!-- Feature 3: Auto Reply & Scheduling -->
+            <div class="feature-category">
+                <div class="feature-category-header">
+                    <h3><span class="num">3</span> Auto-Reply & Penjadwalan (24/7 Service)</h3>
+                    <p>Layanan pelanggan yang tidak pernah tidur</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Anti-Ban System</h3>
-                    <p>Queue delay dan rate limiting. Akun WhatsApp Anda tetap aman.</p>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">💬</div>
+                        <h4>Smart Reply</h4>
+                        <p>Balas chat otomatis berdasarkan keyword, regex, atau bahkan kirim gambar produk secara
+                            instan.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📅</div>
+                        <h4>Scheduled Message</h4>
+                        <p>Siapkan pesan hari ini, kirim minggu depan. Cocok untuk reminder tagihan, event, atau ucapan
+                            ultah.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h4>Analytics</h4>
+                        <p>Pantau performa broadcast Anda dengan data Success Rate dan laporan mingguan yang rapi.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Target Users -->
+    <section class="target-users">
+        <div class="container">
+            <div class="section-label">Untuk Siapa</div>
+            <h2 class="section-title">Siapa yang Wajib Pakai AutoSapa?</h2>
+            <p class="section-desc">Platform ini cocok untuk berbagai kebutuhan bisnis dan komunitas</p>
+
+            <div class="users-grid">
+                <div class="user-card">
+                    <div class="user-icon">🏢</div>
+                    <h4>UMKM & Online Shop</h4>
+                    <p>Follow up customer & broadcast promo tanpa spamming.</p>
+                </div>
+                <div class="user-card">
+                    <div class="user-icon">🗣️</div>
+                    <h4>Community Manager</h4>
+                    <p>Sebar info event ke puluhan grup komunitas dalam 1 klik.</p>
+                </div>
+                <div class="user-card">
+                    <div class="user-icon">💻</div>
+                    <h4>Digital Agency</h4>
+                    <p>Kelola notifikasi klien dengan laporan Analytics yang rapi.</p>
+                </div>
+                <div class="user-card">
+                    <div class="user-icon">📞</div>
+                    <h4>Tim CS</h4>
+                    <p>Auto-reply pertanyaan FAQ, biarkan CS fokus ke masalah kompleks.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security -->
+    <section class="security" id="security">
+        <div class="container">
+            <div class="section-label">Keamanan</div>
+            <h2 class="section-title">Keamanan Data & Akun Adalah Prioritas Kami</h2>
+            <p class="section-desc">Kami membangun AutoSapa dengan standar keamanan industri modern</p>
+
+            <div class="security-grid">
+                <div class="security-card">
+                    <div class="icon">🔒</div>
+                    <div>
+                        <h4>Isolated User Data</h4>
+                        <p>Database Anda terisolasi per user, tidak bercampur dengan data pengguna lain.</p>
+                    </div>
+                </div>
+                <div class="security-card">
+                    <div class="icon">🛡️</div>
+                    <div>
+                        <h4>Spam Prevention System</h4>
+                        <p>Deteksi otomatis memblokir penggunaan ilegal (judi/penipuan) demi menjaga reputasi server.
+                        </p>
+                    </div>
+                </div>
+                <div class="security-card">
+                    <div class="icon">🔐</div>
+                    <div>
+                        <h4>High-Level Encryption</h4>
+                        <p>Login aman dengan otentikasi JWT & bcrypt hashing untuk password protection.</p>
+                    </div>
+                </div>
+                <div class="security-card">
+                    <div class="icon">🌐</div>
+                    <div>
+                        <h4>Secure Connection</h4>
+                        <p>Didukung HTTP Security Headers untuk mencegah serangan XSS dan data breach.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -386,38 +1282,79 @@
     <section class="pricing" id="pricing">
         <div class="container">
             <div class="section-label">Harga</div>
-            <h2 class="section-title">Pilih Paket Anda</h2>
-            <p class="section-desc">Mulai gratis, upgrade kapan saja</p>
-            
-            <div class="pricing-grid">
-                <div class="pricing-card">
-                    <h3>Trial</h3>
-                    <div class="pricing-subtitle">Untuk mencoba fitur</div>
-                    <div class="price">Gratis</div>
-                    <div class="price-period">10 Hari</div>
-                    <ul>
-                        <li><span class="check">✓</span> Maksimal 3 grup</li>
-                        <li><span class="check">✓</span> 50 broadcast/hari</li>
-                        <li><span class="check">✓</span> Auto reply</li>
-                        <li><span class="check">✓</span> Scheduling</li>
-                        <li><span class="check">✓</span> Basic analytics</li>
-                    </ul>
-                    <a href="/register" class="btn btn-outline">Mulai Trial</a>
+            <h2 class="section-title">Investasi Kecil untuk Efisiensi Besar</h2>
+            <p class="section-desc">Paket Early Adopter - Harga Spesial untuk Pengguna Awal</p>
+
+            <div class="pricing-box">
+                <div class="pricing-badge">⭐ EARLY ADOPTER</div>
+                <h3>Paket Pro</h3>
+                <p class="pricing-subtitle">Akses semua fitur premium</p>
+
+                <ul class="pricing-features">
+                    <li><span class="check">✓</span> Unlimited Broadcast (Fair usage policy)</li>
+                    <li><span class="check">✓</span> Akses Semua Fitur (Reply, Schedule, Group)</li>
+                    <li><span class="check">✓</span> Analytics Dashboard & Export CSV</li>
+                    <li><span class="check">✓</span> Priority Support</li>
+                    <li><span class="check">✓</span> Akses Update Fitur Masa Depan</li>
+                </ul>
+
+                <a href="/register" class="btn btn-primary btn-lg" style="width: 100%;">Daftar & Amankan Harga
+                    Sekarang</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq" id="faq">
+        <div class="container">
+            <div class="section-label">FAQ</div>
+            <h2 class="section-title">Pertanyaan yang Sering Ditanyakan</h2>
+            <p class="section-desc">Temukan jawaban untuk berbagai pertanyaan umum tentang AutoSapa</p>
+
+            <div class="faq-list">
+                <div class="faq-item active">
+                    <div class="faq-question">
+                        Apakah AutoSapa aman dari Banned WhatsApp?
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Kami menggunakan fitur <strong>Safe Mode</strong> (Delay acak, simulasi mengetik, dan limit
+                        harian) untuk meminimalisir risiko deteksi bot. Namun, kami selalu menyarankan untuk tidak
+                        mengirim spam ke nomor yang tidak dikenal. Gunakan tool ini untuk manajemen database yang sudah
+                        Anda miliki (retention).
+                    </div>
                 </div>
-                <div class="pricing-card featured">
-                    <div class="pricing-badge">RECOMMENDED</div>
-                    <h3>Pro</h3>
-                    <div class="pricing-subtitle">Untuk bisnis serius</div>
-                    <div class="price">Rp 50.000</div>
-                    <div class="price-period">per bulan</div>
-                    <ul>
-                        <li><span class="check">✓</span> Unlimited grup</li>
-                        <li><span class="check">✓</span> 500 broadcast/hari</li>
-                        <li><span class="check">✓</span> Semua fitur trial</li>
-                        <li><span class="check">✓</span> Priority support</li>
-                        <li><span class="check">✓</span> Advanced analytics</li>
-                    </ul>
-                    <a href="/register" class="btn btn-primary">Daftar Sekarang</a>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        Apakah harus menyalakan komputer terus menerus?
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Tidak. Jika Anda menggunakan versi Cloud kami, server akan tetap berjalan 24 jam meskipun
+                        komputer Anda mati. Session WhatsApp Anda disimpan dengan aman di server kami.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        Bisakah kirim gambar dan file?
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Tentu saja! AutoSapa mendukung pengiriman gambar, video, audio, dan dokumen (PDF/Doc) baik untuk
+                        broadcast maupun auto-reply. Anda juga bisa menyimpan media di Media Library untuk penggunaan
+                        berulang.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        Berapa limit pesan per hari?
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        Sistem kami menyarankan maksimal <strong>100-500 pesan per hari</strong> (bertahap) untuk nomor
+                        baru demi keamanan. Namun, limit teknis bisa disesuaikan dengan kebutuhan & "umur" nomor
+                        WhatsApp Anda. Semakin lama nomor digunakan, semakin tinggi limit yang bisa diterapkan.
+                    </div>
                 </div>
             </div>
         </div>
@@ -427,9 +1364,10 @@
     <section class="cta">
         <div class="container">
             <div class="cta-box">
-                <h2>Siap Meningkatkan Produktivitas?</h2>
-                <p>Daftar sekarang dan mulai kelola grup WhatsApp dengan lebih efisien.</p>
-                <a href="/register" class="btn btn-lg">Daftar Gratis →</a>
+                <h2>Siap Meningkatkan Produktivitas Anda?</h2>
+                <p>Daftar sekarang dan mulai kelola grup WhatsApp dengan lebih efisien. Hemat waktu, tingkatkan omzet.
+                </p>
+                <a href="/register" class="btn btn-white btn-lg">Daftar Gratis Sekarang →</a>
             </div>
         </div>
     </section>
@@ -437,43 +1375,63 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <p>© 2024 AutoSapa. All rights reserved.</p>
+            <div class="disclaimer">
+                <strong>⚠️ Disclaimer:</strong> AutoSapa adalah tool pihak ketiga (unofficial) dan tidak terafiliasi
+                dengan WhatsApp Inc. Pengguna bertanggung jawab penuh atas konten pesan yang dikirim. Kami menindak
+                tegas dan akan memblokir akun yang menggunakan platform ini untuk SPAM, penipuan, atau konten ilegal.
+            </div>
+            <p class="copyright">© 2025 AutoSapa v1.5.0 - Hemat Waktu, Tingkatkan Omzet.</p>
         </div>
     </footer>
 
     <script>
+        // FAQ Toggle
+        document.querySelectorAll('.faq-question').forEach(q => {
+            q.addEventListener('click', () => {
+                const item = q.parentElement;
+                const wasActive = item.classList.contains('active');
+
+                // Close all
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+
+                // Open clicked if not already open
+                if (!wasActive) item.classList.add('active');
+            });
+        });
+
         // Check if user is logged in
         const token = localStorage.getItem('token');
-        
+
         if (token) {
-            // User is logged in - update buttons
             const navButtons = document.querySelector('.nav-buttons');
             navButtons.innerHTML = '<a href="/dashboard" class="btn btn-primary">Dashboard</a>';
-            
-            // Hide trial badge
-            const badge = document.querySelector('.badge');
-            if (badge) badge.style.display = 'none';
-            
-            // Update hero buttons
+
+            const badge = document.querySelector('.hero-badge');
+            if (badge) badge.textContent = '✨ Selamat datang kembali!';
+
             const heroButtons = document.querySelector('.hero-buttons');
             heroButtons.innerHTML = '<a href="/dashboard" class="btn btn-primary btn-lg">Buka Dashboard →</a>';
-            
-            // Hide CTA section
+
             const cta = document.querySelector('.cta');
             if (cta) cta.style.display = 'none';
-            
-            // Hide "Daftar Gratis" buttons in pricing
-            const registerButtons = document.querySelectorAll('a[href="/register"]');
-            registerButtons.forEach(btn => {
-                if (btn.classList.contains('btn-primary')) {
-                    btn.textContent = 'Buka Dashboard';
-                    btn.href = '/dashboard';
-                } else if (btn.classList.contains('btn-outline')) {
-                    btn.textContent = 'Lihat Dashboard';
-                    btn.href = '/dashboard';
-                }
+
+            document.querySelectorAll('a[href="/register"]').forEach(btn => {
+                btn.textContent = 'Buka Dashboard';
+                btn.href = '/dashboard';
             });
         }
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
     </script>
 </body>
+
 </html>

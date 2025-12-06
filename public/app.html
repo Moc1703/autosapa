@@ -270,6 +270,74 @@
                                 <div id="messagePreview" class="hidden mb-2"></div>
                                 <button class="btn btn-sm btn-secondary mb-2" onclick="previewMessage()">👁️
                                     Preview</button>
+
+                                <!-- Spintax Tutorial -->
+                                <div class="spintax-tutorial mb-3"
+                                    style="background: linear-gradient(135deg, rgba(37,211,102,0.1), rgba(18,140,126,0.05)); border: 1px solid rgba(37,211,102,0.3); border-radius: 12px; padding: 12px;">
+                                    <div onclick="toggleSpintaxTutorial()"
+                                        style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+                                        <span style="font-weight:600; color:#25D366; font-size:13px;">🎲 Tutorial
+                                            Spintax (Variasi Pesan)</span>
+                                        <span id="spintaxToggleIcon"
+                                            style="color:#8696a0; transition:transform 0.2s;">▼</span>
+                                    </div>
+                                    <div id="spintaxContent" class="hidden"
+                                        style="margin-top:12px; font-size:12px; color:#e9edef;">
+                                        <p style="margin-bottom:8px; color:#8696a0;">Gunakan spintax untuk membuat
+                                            variasi pesan otomatis agar tidak terdeteksi spam.</p>
+
+                                        <div
+                                            style="background:#182229; border-radius:8px; padding:10px; margin-bottom:10px;">
+                                            <p
+                                                style="margin-bottom:6px; color:#25D366; font-weight:600; font-size:11px;">
+                                                📝 FORMAT DASAR</p>
+                                            <code
+                                                style="color:#fbbf24; background:#0b141a; padding:2px 6px; border-radius:4px; font-size:11px;">{opsi1|opsi2|opsi3}</code>
+                                        </div>
+
+                                        <div
+                                            style="background:#182229; border-radius:8px; padding:10px; margin-bottom:10px;">
+                                            <p
+                                                style="margin-bottom:6px; color:#3b82f6; font-weight:600; font-size:11px;">
+                                                💡 CONTOH PENGGUNAAN</p>
+                                            <div style="font-size:11px; line-height:1.6;">
+                                                <p style="margin:4px 0;"><strong style="color:#8696a0;">Sapaan:</strong>
+                                                    <code style="color:#fbbf24;">{Halo|Hai|Hello|Hi}</code> semuanya!
+                                                </p>
+                                                <p style="margin:4px 0;"><strong style="color:#8696a0;">Emoji:</strong>
+                                                    Info terbaru! <code style="color:#fbbf24;">{🔥|⭐|🎉|💫}</code></p>
+                                                <p style="margin:4px 0;"><strong
+                                                        style="color:#8696a0;">Kalimat:</strong> <code
+                                                        style="color:#fbbf24;">{Cek sekarang|Lihat segera|Jangan lewatkan}</code>!
+                                                </p>
+                                                <p style="margin:4px 0;"><strong
+                                                        style="color:#8696a0;">Kombinasi:</strong> <code
+                                                        style="color:#fbbf24;">{Halo|Hai}</code> <code
+                                                        style="color:#fbbf24;">{kak|bro|sis}</code>! <code
+                                                        style="color:#fbbf24;">{🎉|🔥}</code></p>
+                                            </div>
+                                        </div>
+
+                                        <div style="background:#182229; border-radius:8px; padding:10px;">
+                                            <p
+                                                style="margin-bottom:6px; color:#10b981; font-weight:600; font-size:11px;">
+                                                ✨ CONTOH PESAN LENGKAP</p>
+                                            <div
+                                                style="background:#0b141a; padding:8px; border-radius:6px; font-family:monospace; font-size:10px; color:#d1d5db; white-space:pre-wrap; line-height:1.5;">
+                                                {Halo|Hai|Hello} {kak|bro|sis}! {🎉|🔥|⭐}
+
+                                                {Ada info menarik|Kabar gembira|Update terbaru} nih!
+                                                {Yuk cek|Langsung lihat|Buruan liat} sekarang.
+
+                                                {Terima kasih|Makasih|Thanks} {🙏|😊|✨}</div>
+                                        </div>
+
+                                        <p style="margin-top:10px; color:#8696a0; font-size:10px; text-align:center;">
+                                            💡 Setiap penerima akan mendapat pesan dengan variasi yang berbeda
+                                        </p>
+                                    </div>
+                                </div>
+
                                 <div class="upload-area" id="uploadArea"
                                     onclick="document.getElementById('imageInput').click()">
                                     <input type="file" id="imageInput" accept="image/*" style="display:none"
@@ -853,156 +921,77 @@
                     </div>
 
                     <div class="changelog-container">
-                        <!-- Version 1.5.0 - Latest -->
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.5.0</div>
-                                <span class="changelog-date">5 Dec 2024</span>
                                 <span class="badge badge-active">Latest</span>
                             </div>
                             <div class="changelog-content">
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">🔒 Security Updates</div>
-                                    <ul class="changelog-list">
-                                        <li><strong>Admin Rate Limiting:</strong> Proteksi brute-force dengan limit 5
-                                            attempt/15 menit</li>
-                                        <li><strong>Security Headers:</strong> X-Frame-Options, HSTS, XSS-Protection
-                                        </li>
-                                        <li><strong>MIME Validation:</strong> Upload hanya untuk file yang diizinkan
-                                        </li>
-                                        <li><strong>Path Traversal Protection:</strong> Validasi user ID di file uploads
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">📱 Mobile UX</div>
-                                    <ul class="changelog-list">
-                                        <li><strong>Bottom Navigation:</strong> Quick access Home, Broadcast, Groups,
-                                            Auto di mobile</li>
-                                        <li><strong>Compact Header:</strong> Lebih banyak ruang konten di mobile</li>
-                                        <li><strong>Smooth Animations:</strong> Transisi halus saat pindah tab</li>
-                                        <li><strong>Button Ripple Effects:</strong> Feedback visual premium</li>
-                                    </ul>
-                                </div>
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">👮 Admin Panel</div>
-                                    <ul class="changelog-list">
-                                        <li><strong>Activity Logs:</strong> Monitor semua aktivitas user</li>
-                                        <li><strong>Suspicious Detection:</strong> Deteksi otomatis spam & kata
-                                            terlarang</li>
-                                        <li><strong>User Moderation:</strong> Suspend/unsuspend user langsung</li>
-                                    </ul>
-                                </div>
+                                <ul class="changelog-list">
+                                    <li>🔒 Peningkatan keamanan & proteksi akun</li>
+                                    <li>📱 Tampilan mobile lebih optimal</li>
+                                    <li>👮 Admin panel lebih lengkap</li>
+                                </ul>
                             </div>
                         </div>
 
-                        <!-- Version 1.4.0 -->
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.4.0</div>
-                                <span class="changelog-date">Nov 2024</span>
                             </div>
                             <div class="changelog-content">
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">✨ New Features</div>
-                                    <ul class="changelog-list">
-                                        <li><strong>Safe Broadcast:</strong> Anti-Ban dengan Random Delay & Smart Typing
-                                        </li>
-                                        <li><strong>Spintax Support:</strong> Variasi pesan otomatis {Halo|Hai}</li>
-                                        <li><strong>Sleep Mode:</strong> Bot istirahat setelah X pesan terkirim</li>
-                                        <li><strong>Manual Input:</strong> Kirim ke list nomor tanpa save kontak</li>
-                                    </ul>
-                                </div>
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">🐛 Bug Fixes</div>
-                                    <ul class="changelog-list">
-                                        <li>Fixed Puppeteer SingletonLock issue</li>
-                                        <li>Improved broadcast error handling</li>
-                                    </ul>
-                                </div>
+                                <ul class="changelog-list">
+                                    <li>🛡️ Safe Mode broadcast (anti-ban)</li>
+                                    <li>🎲 Spintax untuk variasi pesan</li>
+                                    <li>😴 Sleep Mode otomatis</li>
+                                </ul>
                             </div>
                         </div>
 
-                        <!-- Version 1.3.0 -->
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.3.0</div>
-                                <span class="changelog-date">Oct 2024</span>
                             </div>
                             <div class="changelog-content">
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">✨ New Features</div>
-                                    <ul class="changelog-list">
-                                        <li><strong>Schedule Names:</strong> Beri nama schedule untuk identifikasi</li>
-                                        <li><strong>Search Schedules:</strong> Cari berdasarkan nama atau pesan</li>
-                                        <li><strong>Archive System:</strong> Schedule terkirim pindah ke Archive</li>
-                                    </ul>
-                                </div>
+                                <ul class="changelog-list">
+                                    <li>📅 Fitur scheduling lebih lengkap</li>
+                                    <li>🔍 Pencarian schedule & template</li>
+                                </ul>
                             </div>
                         </div>
 
-                        <!-- Version 1.2.0 -->
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.2.0</div>
-                                <span class="changelog-date">Sep 2024</span>
                             </div>
                             <div class="changelog-content">
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">✨ New Features</div>
-                                    <ul class="changelog-list">
-                                        <li><strong>Multi-User Support:</strong> Setiap user data terpisah</li>
-                                        <li><strong>JWT Authentication:</strong> Login aman dengan token</li>
-                                        <li><strong>User Dashboard:</strong> Panel kelola subscription</li>
-                                    </ul>
-                                </div>
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">🔧 Improvements</div>
-                                    <ul class="changelog-list">
-                                        <li>Database migrasi ke SQLite</li>
-                                        <li>Session management lebih stabil</li>
-                                    </ul>
-                                </div>
+                                <ul class="changelog-list">
+                                    <li>👥 Multi-user support</li>
+                                    <li>🔐 Sistem login & autentikasi</li>
+                                </ul>
                             </div>
                         </div>
 
-                        <!-- Version 1.1.0 -->
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.1.0</div>
-                                <span class="changelog-date">Aug 2024</span>
                             </div>
                             <div class="changelog-content">
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">✨ New Features</div>
-                                    <ul class="changelog-list">
-                                        <li><strong>Quick Actions:</strong> Shortcut broadcast cepat</li>
-                                        <li><strong>Media Library:</strong> Upload & manage gambar</li>
-                                        <li><strong>Templates:</strong> Simpan message template</li>
-                                        <li><strong>Commands:</strong> Custom !commands</li>
-                                    </ul>
-                                </div>
+                                <ul class="changelog-list">
+                                    <li>⚡ Quick Actions & Templates</li>
+                                    <li>🖼️ Media Library</li>
+                                </ul>
                             </div>
                         </div>
 
-                        <!-- Version 1.0.0 -->
                         <div class="changelog-version">
                             <div class="changelog-header">
                                 <div class="changelog-version-badge">v1.0.0</div>
-                                <span class="changelog-date">Jul 2024</span>
                             </div>
                             <div class="changelog-content">
-                                <div class="changelog-section">
-                                    <div class="changelog-section-title">🎊 Initial Release</div>
-                                    <ul class="changelog-list">
-                                        <li>Group broadcast dengan anti-ban queue</li>
-                                        <li>Auto Reply dengan multiple match types</li>
-                                        <li>Schedule broadcast recurring</li>
-                                        <li>Statistics & history tracking</li>
-                                        <li>Blacklist management</li>
-                                        <li>Dark mode support</li>
-                                    </ul>
-                                </div>
+                                <ul class="changelog-list">
+                                    <li>🚀 Rilis perdana AutoSapa</li>
+                                </ul>
                             </div>
                         </div>
                     </div>

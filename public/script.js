@@ -2711,3 +2711,56 @@ async function loadDashboardStats() {
         }
     }
 }
+
+// ===== SPINTAX TUTORIAL =====
+function toggleSpintaxTutorial() {
+    const content = document.getElementById('spintaxContent');
+    const icon = document.getElementById('spintaxToggleIcon');
+
+    if (content && icon) {
+        content.classList.toggle('hidden');
+        icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+}
+
+// ===== ANTI-BAN SETTINGS TOGGLE =====
+function toggleAntiBanSettings() {
+    const settings = document.getElementById('antiBanSettings');
+    if (settings) {
+        settings.classList.toggle('hidden');
+    }
+}
+
+function toggleSafeMode() {
+    const toggle = document.getElementById('safeModeToggle');
+    const customSettings = document.getElementById('customAntiBanSettings');
+    const indicator = document.getElementById('antiBanIndicator');
+
+    if (toggle) {
+        toggle.classList.toggle('active');
+        const isActive = toggle.classList.contains('active');
+
+        if (customSettings) {
+            customSettings.classList.toggle('hidden', isActive);
+        }
+
+        if (indicator) {
+            indicator.textContent = isActive ? 'Safe Mode ON' : 'Custom Settings';
+            indicator.className = isActive ? 'badge badge-active' : 'badge badge-warning';
+        }
+    }
+}
+
+function toggleSleepMode() {
+    const toggle = document.getElementById('sleepModeToggle');
+    const settings = document.getElementById('sleepSettings');
+
+    if (toggle) {
+        toggle.classList.toggle('active');
+        const isActive = toggle.classList.contains('active');
+
+        if (settings) {
+            settings.classList.toggle('hidden', !isActive);
+        }
+    }
+}
