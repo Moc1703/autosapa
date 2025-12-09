@@ -592,7 +592,81 @@ input:checked + .slider:before { transform: translateX(20px); box-shadow: 0 0 5p
 }
 
 /* =========================================
-   10. RESPONSIVE STATS GRID
+   10. ACTIVITY ITEMS (History)
+   ========================================= */
+.activity-item {
+    background: var(--glass-1);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+}
+.activity-item:hover {
+    background: var(--glass-2);
+    border-color: rgba(255,255,255,0.15);
+}
+
+.activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    background: rgba(0,255,136,0.1);
+}
+
+.activity-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.activity-title {
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.activity-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.activity-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.activity-stat.success { color: var(--primary); }
+.activity-stat.failed { color: #ff4757; }
+
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--glass-border);
+}
+.pagination-info {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* =========================================
+   11. RESPONSIVE
    ========================================= */
 @media (max-width: 768px) {
     .stats-grid-4 { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -600,4 +674,5 @@ input:checked + .slider:before { transform: translateX(20px); box-shadow: 0 0 5p
     .stat-value { font-size: 24px; }
     .schedule-card { flex-direction: column; }
     .schedule-card-actions { margin-top: 12px; }
+    .activity-item { flex-direction: column; }
 }
