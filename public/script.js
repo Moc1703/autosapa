@@ -724,15 +724,18 @@ async function checkStatus() {
         });
         const data = await res.json();
 
-        let className, statusText;
+        let className, statusText, pillClass;
         if (data.status === 'connected') {
             className = 'status-badge connected';
+            pillClass = 'dash-status-pill connected';
             statusText = 'Connected';
         } else if (data.status === 'qr') {
             className = 'status-badge disconnected';
+            pillClass = 'dash-status-pill disconnected';
             statusText = 'Scan QR';
         } else {
             className = 'status-badge disconnected';
+            pillClass = 'dash-status-pill disconnected';
             statusText = 'Disconnected';
         }
 
@@ -740,10 +743,32 @@ async function checkStatus() {
         updateStatusBadge('statusBadge', 'statusText', className, statusText);
         updateStatusBadge('statusBadgeDesktop', 'statusTextDesktop', className, statusText);
         updateStatusBadge('statusBadgeMobile', 'statusTextMobile', className, statusText);
+        
+        // Update dashboard status pill (new UI)
+        const dashPill = document.getElementById('dashStatusPill');
+        const dashText = document.getElementById('dashStatusText');
+        if (dashPill) dashPill.className = pillClass;
+        if (dashText) dashText.textContent = statusText;
+        
+        // Update sidebar status text
+        const sidebarStatus = document.getElementById('statusTextDesktop');
+        if (sidebarStatus) sidebarStatus.textContent = statusText;
+        
+        // Update mobile header badge color
+        const mobileBadge = document.getElementById('statusBadge');
+        if (mobileBadge) {
+            mobileBadge.style.background = data.status === 'connected' ? '#00ff88' : '#ff4757';
+        }
     } catch (e) {
         updateStatusBadge('statusBadge', 'statusText', 'status-badge disconnected', 'Offline');
         updateStatusBadge('statusBadgeDesktop', 'statusTextDesktop', 'status-badge disconnected', 'Offline');
         updateStatusBadge('statusBadgeMobile', 'statusTextMobile', 'status-badge disconnected', 'Offline');
+        
+        // Update dashboard pill on error
+        const dashPill = document.getElementById('dashStatusPill');
+        const dashText = document.getElementById('dashStatusText');
+        if (dashPill) dashPill.className = 'dash-status-pill disconnected';
+        if (dashText) dashText.textContent = 'Offline';
     }
 }
 
