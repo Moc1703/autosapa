@@ -24,6 +24,8 @@ app.use((req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block')
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+  // Content Security Policy - restrict script sources
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' ws: wss:;")
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   }
@@ -679,13 +681,28 @@ const writeBlacklist = (userId, data) =>
 const readHistory = (userId) => readUserData(userId, "history.json", [])
 const writeHistory = (userId, data) =>
   writeUserData(userId, "history.json", data)
-const readSettings = (userId) =>
-  readUserData(userId, "settings.json", {
-    auth: { enabled: false, username: "admin", password: "admin123" },
+const readSettings = (userId) => {
+  // Security: Generate unique secrets for each user on first access
+  const defaultSettings = {
+    auth: { enabled: false, username: "admin", password: crypto.randomBytes(8).toString('hex') },
     queue: { enabled: true, delayMs: 2000 },
     typing: { enabled: true, durationMs: 1500 },
-    webhook: { secret: "webhook-secret-key" },
-  })
+    webhook: { secret: crypto.randomBytes(16).toString('hex') },
+  }
+  const settings = readUserData(userId, "settings.json", defaultSettings)
+  // Migrate old users with weak defaults (security patch)
+  if (settings.auth?.password === 'admin123' || settings.webhook?.secret === 'webhook-secret-key') {
+    if (settings.auth?.password === 'admin123') {
+      settings.auth.password = crypto.randomBytes(8).toString('hex')
+    }
+    if (settings.webhook?.secret === 'webhook-secret-key') {
+      settings.webhook.secret = crypto.randomBytes(16).toString('hex')
+    }
+    writeUserData(userId, "settings.json", settings)
+    console.log(`🔐 Security: Migrated weak credentials for user ${userId}`)
+  }
+  return settings
+}
 const writeSettings = (userId, data) =>
   writeUserData(userId, "settings.json", data)
 const readQuickActions = (userId) =>

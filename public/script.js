@@ -769,7 +769,25 @@ function toggleMobileMenu() {
 }
 
 // ===== TAB SWITCHING =====
+// Mobile Sidebar Toggle
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('open');
+    
+    // Create/Toggle Overlay
+    let overlay = document.querySelector('.sidebar-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.classList.add('sidebar-overlay');
+        overlay.onclick = toggleSidebar;
+        document.body.appendChild(overlay);
+    }
+}
+
+// Close sidebar on tab switch (mobile)
 function switchTab(tab) {
+    document.querySelector('.sidebar').classList.remove('open');
+
     // Hide all panels
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
 
