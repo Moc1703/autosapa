@@ -152,80 +152,85 @@
 
             <!-- Main Content -->
             <main class="app-main">
-                <!-- Tab: Dashboard (NEW) -->
+                <!-- Tab: Dashboard (REDESIGNED) -->
                 <div class="tab-panel active" id="tab-dashboard">
-                    <!-- Welcome Header -->
-                    <div class="dashboard-header">
-                        <div class="dashboard-greeting">
-                            <h1 class="dashboard-title">Dashboard</h1>
-                            <p class="dashboard-subtitle" id="currentDate"></p>
+                    <!-- Premium Welcome Header -->
+                    <div class="dash-welcome">
+                        <div class="dash-welcome-content">
+                            <h1 class="dash-welcome-title">Welcome back! 👋</h1>
+                            <p class="dash-welcome-subtitle" id="currentDate"></p>
+                        </div>
+                        <div class="dash-status-pill connected" id="dashStatusPill">
+                            <span class="dash-status-dot"></span>
+                            <span id="dashStatusText">Connected</span>
                         </div>
                     </div>
 
-                    <!-- Stats Grid -->
-                    <div class="dashboard-stats">
-                        <div class="dash-stat-card">
-                            <div class="dash-stat-icon">👥</div>
-                            <div class="dash-stat-info">
+                    <!-- Premium Stats Grid -->
+                    <div class="dash-stats-grid">
+                        <div class="dash-stat-card dash-stat-groups">
+                            <div class="dash-stat-icon-wrap">👥</div>
+                            <div class="dash-stat-data">
                                 <span class="dash-stat-value" id="dashTotalGroups">0</span>
                                 <span class="dash-stat-label">Groups</span>
                             </div>
                         </div>
-                        <div class="dash-stat-card">
-                            <div class="dash-stat-icon">📨</div>
-                            <div class="dash-stat-info">
+                        <div class="dash-stat-card dash-stat-sent">
+                            <div class="dash-stat-icon-wrap">📨</div>
+                            <div class="dash-stat-data">
                                 <span class="dash-stat-value" id="dashTotalSent">0</span>
                                 <span class="dash-stat-label">Sent Today</span>
                             </div>
                         </div>
-                        <div class="dash-stat-card">
-                            <div class="dash-stat-icon">📅</div>
-                            <div class="dash-stat-info">
+                        <div class="dash-stat-card dash-stat-scheduled">
+                            <div class="dash-stat-icon-wrap">📅</div>
+                            <div class="dash-stat-data">
                                 <span class="dash-stat-value" id="dashScheduled">0</span>
                                 <span class="dash-stat-label">Scheduled</span>
                             </div>
                         </div>
-                        <div class="dash-stat-card">
-                            <div class="dash-stat-icon">🤖</div>
-                            <div class="dash-stat-info">
+                        <div class="dash-stat-card dash-stat-replies">
+                            <div class="dash-stat-icon-wrap">🤖</div>
+                            <div class="dash-stat-data">
                                 <span class="dash-stat-value" id="dashAutoReplies">0</span>
                                 <span class="dash-stat-label">Auto Replies</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Quick Actions -->
-                    <div class="dashboard-section">
-                        <h2 class="dashboard-section-title">Quick Actions</h2>
-                        <div class="quick-actions">
-                            <button class="quick-action-btn" onclick="switchTab('broadcast')">
-                                <span class="quick-action-icon">📢</span>
-                                <span class="quick-action-text">Broadcast</span>
+                    <!-- Quick Actions Section -->
+                    <div class="dash-section">
+                        <h2 class="dash-section-title">Quick Actions</h2>
+                        <div class="dash-quick-grid">
+                            <button class="dash-quick-btn dash-quick-broadcast" onclick="switchTab('broadcast')">
+                                <span class="dash-quick-icon">📢</span>
+                                <span class="dash-quick-text">Broadcast</span>
                             </button>
-                            <button class="quick-action-btn" onclick="switchTab('groups'); showAddGroup()">
-                                <span class="quick-action-icon">👥</span>
-                                <span class="quick-action-text">Add Group</span>
+                            <button class="dash-quick-btn dash-quick-group" onclick="switchTab('groups'); showAddGroup()">
+                                <span class="dash-quick-icon">👥</span>
+                                <span class="dash-quick-text">Add Group</span>
                             </button>
-                            <button class="quick-action-btn" onclick="switchTab('schedule'); showAddSchedule()">
-                                <span class="quick-action-icon">📅</span>
-                                <span class="quick-action-text">Schedule</span>
+                            <button class="dash-quick-btn dash-quick-schedule" onclick="switchTab('schedule'); showAddSchedule()">
+                                <span class="dash-quick-icon">📅</span>
+                                <span class="dash-quick-text">Schedule</span>
                             </button>
-                            <button class="quick-action-btn" onclick="switchTab('auto'); showAddReply()">
-                                <span class="quick-action-icon">🤖</span>
-                                <span class="quick-action-text">Auto Reply</span>
+                            <button class="dash-quick-btn dash-quick-reply" onclick="switchTab('auto'); showAddReply()">
+                                <span class="dash-quick-icon">🤖</span>
+                                <span class="dash-quick-text">Auto Reply</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Recent Activity -->
-                    <div class="dashboard-section">
-                        <div class="dashboard-section-header">
-                            <h2 class="dashboard-section-title">Recent Activity</h2>
-                            <button class="btn btn-sm btn-secondary" onclick="switchTab('history')">View All</button>
+                    <!-- Recent Activity Section -->
+                    <div class="dash-section">
+                        <div class="dash-section-header">
+                            <h2 class="dash-section-title">Recent Activity</h2>
+                            <button class="btn btn-sm btn-ghost" onclick="switchTab('history')">View All →</button>
                         </div>
-                        <div class="activity-list" id="dashboardHistoryList">
-                            <div class="empty-state">
-                                <p class="text-muted">No recent activity</p>
+                        <div class="dash-activity-list" id="dashboardHistoryList">
+                            <div class="dash-empty-state">
+                                <div class="dash-empty-icon">📭</div>
+                                <p class="dash-empty-text">No recent activity</p>
                             </div>
                         </div>
                     </div>
