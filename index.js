@@ -779,6 +779,43 @@ function isLikelyBot(messageBody) {
   return botPatterns.some((p) => p.test(messageBody))
 }
 
+// ===== CHROMIUM SINGLETON LOCK CLEANUP =====
+// Clean up stale SingletonLock files that prevent browser launch
+function cleanupChromiumLocks() {
+  const lockPaths = [
+    '/root/snap/chromium/common/chromium/SingletonLock',
+    '/root/.config/chromium/SingletonLock',
+    '/tmp/.org.chromium.Chromium*/SingletonLock'
+  ]
+  
+  for (const lockPath of lockPaths) {
+    try {
+      // Handle glob patterns
+      if (lockPath.includes('*')) {
+        const glob = require('path')
+        const baseDir = lockPath.split('*')[0]
+        if (fs.existsSync(baseDir.slice(0, -1))) {
+          // Just try to clean common tmp directories
+          const tmpDirs = fs.readdirSync('/tmp').filter(d => d.startsWith('.org.chromium.Chromium'))
+          for (const dir of tmpDirs) {
+            const singletonPath = path.join('/tmp', dir, 'SingletonLock')
+            if (fs.existsSync(singletonPath)) {
+              fs.unlinkSync(singletonPath)
+              console.log(`🧹 Cleaned up SingletonLock: ${singletonPath}`)
+            }
+          }
+        }
+      } else if (fs.existsSync(lockPath)) {
+        fs.unlinkSync(lockPath)
+        console.log(`🧹 Cleaned up SingletonLock: ${lockPath}`)
+      }
+    } catch (err) {
+      // Ignore errors - file might be in use or we don't have permissions
+      console.log(`⚠️ Could not clean SingletonLock at ${lockPath}: ${err.message}`)
+    }
+  }
+}
+
 // ===== SESSION INITIALIZATION =====
 async function initSession(userId, forceRestart = false, clearAuth = false) {
   // If clearAuth requested, always clear auth data first (for switching WA accounts)
@@ -844,6 +881,15 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
   console.log(`🔄 Initializing session for user: ${userId}`)
   sessionStatuses.set(userId, "initializing")
 
+  // Clean up stale Chromium lock files before launching
+  cleanupChromiumLocks()
+
+  // Create unique user data directory for this session to avoid SingletonLock conflicts
+  const userDataDir = path.join(__dirname, '.chromium_data', userId)
+  if (!fs.existsSync(userDataDir)) {
+    fs.mkdirSync(userDataDir, { recursive: true })
+  }
+
   try {
     const client = new Client({
       authStrategy: new LocalAuth({
@@ -880,6 +926,7 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
           "--disable-hang-monitor",
           "--memory-pressure-off",
           "--max-old-space-size=256",
+          `--user-data-dir=${userDataDir}`,
         ],
       },
     })
