@@ -784,24 +784,36 @@ function isLikelyBot(messageBody) {
 function cleanupChromiumLocks() {
   const lockPaths = [
     '/root/snap/chromium/common/chromium/SingletonLock',
+    '/root/snap/chromium/common/chromium/Singleton*',
     '/root/.config/chromium/SingletonLock',
-    '/tmp/.org.chromium.Chromium*/SingletonLock'
+    '/home/*/.config/chromium/SingletonLock'
   ]
+  
+  // Also try to kill any orphaned chromium processes that might be holding locks
+  try {
+    const { execSync } = require('child_process')
+    // Find and kill zombie chromium processes (only if they're ours)
+    execSync('pkill -9 -f "chromium.*--user-data-dir=.*\\.chromium_data" 2>/dev/null || true', { stdio: 'ignore' })
+  } catch (err) {
+    // Ignore - pkill might not exist or no processes found
+  }
   
   for (const lockPath of lockPaths) {
     try {
       // Handle glob patterns
       if (lockPath.includes('*')) {
-        const glob = require('path')
-        const baseDir = lockPath.split('*')[0]
-        if (fs.existsSync(baseDir.slice(0, -1))) {
-          // Just try to clean common tmp directories
-          const tmpDirs = fs.readdirSync('/tmp').filter(d => d.startsWith('.org.chromium.Chromium'))
-          for (const dir of tmpDirs) {
-            const singletonPath = path.join('/tmp', dir, 'SingletonLock')
-            if (fs.existsSync(singletonPath)) {
-              fs.unlinkSync(singletonPath)
-              console.log(`🧹 Cleaned up SingletonLock: ${singletonPath}`)
+        // For snap chromium, just try the main lock file
+        const basePath = lockPath.replace('*', '')
+        if (basePath.includes('Singleton')) {
+          // Clean all Singleton* files in snap chromium directory
+          const dir = '/root/snap/chromium/common/chromium'
+          if (fs.existsSync(dir)) {
+            const files = fs.readdirSync(dir).filter(f => f.startsWith('Singleton'))
+            for (const file of files) {
+              try {
+                fs.unlinkSync(path.join(dir, file))
+                console.log(`🧹 Cleaned up: ${path.join(dir, file)}`)
+              } catch (e) { /* ignore */ }
             }
           }
         }
@@ -813,6 +825,23 @@ function cleanupChromiumLocks() {
       // Ignore errors - file might be in use or we don't have permissions
       console.log(`⚠️ Could not clean SingletonLock at ${lockPath}: ${err.message}`)
     }
+  }
+  
+  // Also clean /tmp chromium directories
+  try {
+    const tmpDirs = fs.readdirSync('/tmp').filter(d => 
+      d.startsWith('.org.chromium.Chromium') || 
+      d.startsWith('puppeteer_dev_chrome_profile')
+    )
+    for (const dir of tmpDirs) {
+      const singletonPath = path.join('/tmp', dir, 'SingletonLock')
+      if (fs.existsSync(singletonPath)) {
+        fs.unlinkSync(singletonPath)
+        console.log(`🧹 Cleaned up SingletonLock: ${singletonPath}`)
+      }
+    }
+  } catch (err) {
+    // Ignore /tmp cleanup errors
   }
 }
 
