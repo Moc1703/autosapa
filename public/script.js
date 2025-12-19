@@ -3260,3 +3260,363 @@ function toggleSleepMode() {
         }
     }
 }
+
+// ===== CRM AUTOMATION =====
+let crmContacts = [];
+let crmSequences = [];
+let crmCurrentStage = 'all';
+
+async function loadCrmData() {
+    await loadCrmStats();
+    await loadCrmContacts();
+    await loadCrmSequences();
+}
+
+async function loadCrmStats() {
+    try {
+        const res = await apiFetch(getUserApi() + '/crm/stats');
+        const data = await res.json();
+        
+        document.getElementById('crmTotalContacts').textContent = data.total || 0;
+        document.getElementById('crmInSequence').textContent = data.inSequence || 0;
+        document.getElementById('crmPendingFollowUp').textContent = data.pendingFollowUp || 0;
+        document.getElementById('crmClosed').textContent = data.byStage?.closed || 0;
+    } catch (e) {
+        console.error('Error loading CRM stats:', e);
+    }
+}
+
+async function loadCrmContacts() {
+    try {
+        const stageFilter = crmCurrentStage === 'all' ? '' : `?stage=${crmCurrentStage}`;
+        const res = await apiFetch(getUserApi() + '/crm/contacts' + stageFilter);
+        const data = await res.json();
+        crmContacts = data.contacts || [];
+        renderCrmContacts();
+    } catch (e) {
+        console.error('Error loading CRM contacts:', e);
+    }
+}
+
+function renderCrmContacts() {
+    const list = document.getElementById('crmContactsList');
+    if (!crmContacts.length) {
+        list.innerHTML = `
+            <div class="empty-state" style="text-align:center; padding:40px;">
+                <div class="empty-icon" style="font-size:48px; margin-bottom:16px;">🎯</div>
+                <div class="empty-title" style="font-weight:600; margin-bottom:8px;">No CRM contacts yet</div>
+                <p class="text-muted">Add contacts to start your sales pipeline</p>
+                <button class="btn btn-primary mt-4" onclick="showAddCrmContact()">+ Add First Contact</button>
+            </div>`;
+        return;
+    }
+
+    const stageIcons = { new: '🆕', offered: '📨', interested: '🔥', closed: '✅', dnc: '🚫' };
+    const stageColors = { new: '#888', offered: '#f59e0b', interested: '#10b981', closed: '#00ff88', dnc: '#ef4444' };
+
+    list.innerHTML = crmContacts.map(c => `
+        <div class="card-list-item" data-id="${c.id}" data-phone="${escapeAttr(c.phone)}" data-name="${escapeAttr(c.name || '')}">
+            <div class="card-icon-large" style="background:${stageColors[c.stage] || '#888'}20; color:${stageColors[c.stage] || '#888'}">
+                ${stageIcons[c.stage] || '👤'}
+            </div>
+            <div class="card-info">
+                <div class="card-title">${escapeHtml(c.name || c.phone)}</div>
+                <div class="card-subtitle">${escapeHtml(c.phone)}${c.sequenceId ? ' • In Sequence' : ''}</div>
+            </div>
+            <div class="flex gap-2">
+                ${c.stage !== 'closed' && c.stage !== 'dnc' ? `
+                    <button class="btn btn-sm btn-secondary" onclick="showCrmContactActions('${c.id}')" title="Actions">⚡</button>
+                ` : ''}
+                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteCrmContact('${c.id}')">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterCrmStage(stage) {
+    crmCurrentStage = stage;
+    
+    // Update button styles
+    document.querySelectorAll('.crm-stage-btn').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-secondary');
+    });
+    const activeBtn = document.querySelector(`.crm-stage-btn[data-stage="${stage}"]`);
+    if (activeBtn) {
+        activeBtn.classList.remove('btn-secondary');
+        activeBtn.classList.add('btn-primary');
+    }
+    
+    loadCrmContacts();
+}
+
+function filterCrmContacts() {
+    const q = (document.getElementById('searchCrmContacts')?.value || '').toLowerCase();
+    document.querySelectorAll('#crmContactsList .card-list-item').forEach(item => {
+        const name = (item.dataset.name || '').toLowerCase();
+        const phone = (item.dataset.phone || '').toLowerCase();
+        item.style.display = (name.includes(q) || phone.includes(q)) ? '' : 'none';
+    });
+}
+
+async function loadCrmSequences() {
+    try {
+        const res = await apiFetch(getUserApi() + '/crm/sequences');
+        const data = await res.json();
+        crmSequences = data.sequences || [];
+        renderCrmSequences();
+    } catch (e) {
+        console.error('Error loading CRM sequences:', e);
+    }
+}
+
+function renderCrmSequences() {
+    const list = document.getElementById('crmSequencesList');
+    if (!crmSequences.length) {
+        list.innerHTML = `
+            <div class="empty-state" style="text-align:center; padding:20px;">
+                <p class="text-muted">No sequences yet</p>
+                <button class="btn btn-sm btn-secondary mt-2" onclick="showAddSequence()">Create Sequence</button>
+            </div>`;
+        return;
+    }
+
+    list.innerHTML = crmSequences.map(s => `
+        <div class="card-list-item" data-id="${s.id}">
+            <div class="card-icon-large" style="background:rgba(0,255,136,0.2); color:var(--primary)">⚡</div>
+            <div class="card-info">
+                <div class="card-title">${escapeHtml(s.name)}</div>
+                <div class="card-subtitle">${s.steps?.length || 0} steps • Max ${s.maxFollowUps} follow-ups</div>
+            </div>
+            <div class="flex gap-2">
+                <button class="btn btn-sm btn-secondary btn-icon" onclick="editSequence('${s.id}')">✏️</button>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteSequence('${s.id}')">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showAddCrmContact() {
+    const phone = prompt('Masukkan nomor WhatsApp (contoh: 628123456789):');
+    if (!phone) return;
+    
+    const name = prompt('Nama kontak (opsional):', '');
+    
+    saveCrmContact(phone, name);
+}
+
+async function saveCrmContact(phone, name) {
+    try {
+        await apiFetch(getUserApi() + '/crm/contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, name })
+        });
+        toast('Contact added!', 'success');
+        loadCrmData();
+    } catch (e) {
+        toast('Failed to add contact', 'error');
+    }
+}
+
+async function deleteCrmContact(id) {
+    if (!confirm('Delete this contact?')) return;
+    
+    try {
+        await apiFetch(getUserApi() + '/crm/contacts/' + id, { method: 'DELETE' });
+        toast('Contact deleted', 'success');
+        loadCrmData();
+    } catch (e) {
+        toast('Failed to delete', 'error');
+    }
+}
+
+function showCrmContactActions(contactId) {
+    const contact = crmContacts.find(c => c.id === contactId);
+    if (!contact) return;
+    
+    const actions = [
+        '1. Change Stage',
+        '2. Start Sequence',
+        '3. Stop Sequence',
+        '4. Mark as Interested',
+        '5. Mark as Closed',
+        '6. Mark as Do Not Contact'
+    ].join('\n');
+    
+    const choice = prompt(`Actions for ${contact.name || contact.phone}:\n\n${actions}\n\nEnter number:`);
+    
+    if (choice === '1') {
+        const stage = prompt('Enter stage (new/offered/interested/closed/dnc):');
+        if (stage) updateCrmContactStage(contactId, stage);
+    } else if (choice === '2') {
+        showStartSequenceDialog(contactId);
+    } else if (choice === '3') {
+        stopContactSequence(contactId);
+    } else if (choice === '4') {
+        updateCrmContactStage(contactId, 'interested');
+    } else if (choice === '5') {
+        updateCrmContactStage(contactId, 'closed');
+    } else if (choice === '6') {
+        updateCrmContactStage(contactId, 'dnc');
+    }
+}
+
+async function updateCrmContactStage(id, stage) {
+    try {
+        await apiFetch(getUserApi() + '/crm/contacts/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stage })
+        });
+        toast('Contact updated!', 'success');
+        loadCrmData();
+    } catch (e) {
+        toast('Failed to update', 'error');
+    }
+}
+
+function showStartSequenceDialog(contactId) {
+    if (!crmSequences.length) {
+        toast('No sequences available. Create one first!', 'error');
+        return;
+    }
+    
+    const options = crmSequences.map((s, i) => `${i + 1}. ${s.name}`).join('\n');
+    const choice = prompt(`Select sequence:\n\n${options}\n\nEnter number:`);
+    
+    const idx = parseInt(choice) - 1;
+    if (idx >= 0 && idx < crmSequences.length) {
+        startContactSequence(contactId, crmSequences[idx].id);
+    }
+}
+
+async function startContactSequence(contactId, sequenceId) {
+    try {
+        await apiFetch(getUserApi() + '/crm/contacts/' + contactId + '/start-sequence', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sequenceId })
+        });
+        toast('Sequence started!', 'success');
+        loadCrmData();
+    } catch (e) {
+        toast('Failed to start sequence', 'error');
+    }
+}
+
+async function stopContactSequence(contactId) {
+    try {
+        await apiFetch(getUserApi() + '/crm/contacts/' + contactId + '/stop-sequence', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        toast('Sequence stopped', 'success');
+        loadCrmData();
+    } catch (e) {
+        toast('Failed to stop sequence', 'error');
+    }
+}
+
+function showAddSequence() {
+    const name = prompt('Nama sequence (contoh: Follow-up Penawaran):');
+    if (!name) return;
+    
+    const stepsJson = prompt('Steps (JSON format):\nContoh: [{"delay":3,"delayUnit":"days","message":"Halo, apakah tertarik?"}]');
+    
+    try {
+        const steps = JSON.parse(stepsJson || '[]');
+        if (!steps.length) {
+            toast('At least one step is required', 'error');
+            return;
+        }
+        saveSequence(name, steps);
+    } catch (e) {
+        toast('Invalid JSON format', 'error');
+    }
+}
+
+async function saveSequence(name, steps) {
+    try {
+        await apiFetch(getUserApi() + '/crm/sequences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, steps, maxFollowUps: 3 })
+        });
+        toast('Sequence created!', 'success');
+        loadCrmSequences();
+    } catch (e) {
+        toast('Failed to create sequence', 'error');
+    }
+}
+
+async function deleteSequence(id) {
+    if (!confirm('Delete this sequence? Contacts using it will be removed from the sequence.')) return;
+    
+    try {
+        await apiFetch(getUserApi() + '/crm/sequences/' + id, { method: 'DELETE' });
+        toast('Sequence deleted', 'success');
+        loadCrmSequences();
+    } catch (e) {
+        toast('Failed to delete', 'error');
+    }
+}
+
+function editSequence(id) {
+    toast('Edit sequence - coming soon', 'info');
+}
+
+function showImportCrmContacts() {
+    const data = prompt('Paste contacts (one per line, format: phone,name):\nExample:\n628123456789,John Doe\n628987654321,Jane');
+    if (!data) return;
+    
+    const contacts = data.split('\n').map(line => {
+        const [phone, name] = line.split(',').map(s => s.trim());
+        return { phone, name };
+    }).filter(c => c.phone);
+    
+    if (!contacts.length) {
+        toast('No valid contacts found', 'error');
+        return;
+    }
+    
+    importCrmContacts(contacts);
+}
+
+async function importCrmContacts(contacts) {
+    try {
+        const res = await apiFetch(getUserApi() + '/crm/contacts/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contacts })
+        });
+        const data = await res.json();
+        toast(`Imported ${data.success} contacts (${data.failed} failed)`, 'success');
+        loadCrmData();
+    } catch (e) {
+        toast('Failed to import', 'error');
+    }
+}
+
+// Update switchTab to include CRM
+const originalSwitchTab = window.switchTab;
+window.switchTab = function(tab) {
+    // Close sidebar on tab switch (mobile)
+    document.querySelector('.sidebar')?.classList.remove('open');
+
+    // Hide all panels
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+    // Update sidebar items
+    document.querySelectorAll('.sidebar-item').forEach(n => n.classList.remove('active'));
+    const sidebarItem = document.querySelector(`.sidebar-item[data-tab="${tab}"]`);
+    if (sidebarItem) sidebarItem.classList.add('active');
+
+    // Show selected panel
+    const panel = document.getElementById('tab-' + tab);
+    if (panel) panel.classList.add('active');
+
+    // Load data for tab
+    if (tab === 'crm') { loadCrmData(); }
+};
