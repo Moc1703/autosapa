@@ -59,11 +59,12 @@ if (process.env.NODE_ENV !== "production") {
             const API_BASE = '';
             const userId = 'preview_user';
             let groups = [];
-            let contacts = [];
             let autoreplies = [];
             let templates = [];
             let commands = [];
             let schedules = [];
+            let crmContacts = [];
+            let crmSequences = [];
             let settings = { queue: true, typing: true, auth: false };
             let selectedFile = null;
             let bulkMode = false;
@@ -206,10 +207,76 @@ if (process.env.NODE_ENV !== "production") {
                 });
             }
 
-            function switchCrmView(mode) {
-                document.getElementById('crmKanbanView').classList.toggle('hidden', mode !== 'kanban');
-                document.getElementById('crmListView').classList.toggle('hidden', mode !== 'list');
-            }
+            window.switchCrmView = function(mode) {
+                const kv = document.getElementById('crmKanbanView');
+                const lv = document.getElementById('crmListView');
+                if (kv) kv.classList.toggle('hidden', mode !== 'kanban');
+                if (lv) lv.classList.toggle('hidden', mode !== 'list');
+            };
+
+            window.escapeHtml = function(str) {
+                const div = document.createElement('div');
+                div.textContent = str || '';
+                return div.innerHTML;
+            };
+
+            window.showCrmContactActions = function(id) {
+                const contact = crmContacts.find(c => c.id === id);
+                if (!contact) return;
+                crmCurrentContactId = id;
+                const info = document.getElementById('crmContactActionsInfo');
+                if (info) info.textContent = 'Actions for ' + (contact.name || contact.phone);
+                const modal = document.getElementById('crmContactActionsModal');
+                if (modal) modal.classList.remove('hidden');
+            };
+
+            window.renderCrmContacts = function() {
+                const list = document.getElementById('crmContactsList');
+                if (!list) return;
+                list.innerHTML = crmContacts.map(c => 
+                    '<div class=\"card-list-item\">' +
+                        '<div class=\"card-info\">' +
+                            '<div class=\"card-title\">' + escapeHtml(c.name || c.phone) + '</div>' +
+                            '<div class=\"card-subtitle\">' + escapeHtml(c.phone) + (c.sequenceId ? ' • In Sequence' : '') + '</div>' +
+                        '</div>' +
+                        '<div class=\"flex gap-2\">' +
+                            '<button class=\"btn btn-sm btn-secondary\" onclick=\"window.showCrmContactActions(\'' + c.id + '\')\">⚡</button>' +
+                        '</div>' +
+                    '</div>'
+                ).join('');
+            };
+
+            window.renderCrmKanban = function() {
+                const stages = ['new', 'offered', 'interested', 'closed', 'dnc'];
+                stages.forEach(stage => {
+                    const list = document.getElementById('list-' + stage);
+                    if (!list) return;
+                    const count = document.getElementById('count-' + stage);
+                    const contacts = crmContacts.filter(c => c.stage === stage);
+                    if (count) count.textContent = contacts.length;
+                    
+                    if (contacts.length === 0) {
+                        list.innerHTML = '<div class=\"empty-state\" style=\"padding:10px; font-size:11px; opacity:0.5;\">No contacts</div>';
+                        return;
+                    }
+                    list.innerHTML = contacts.map(c => 
+                        '<div class=\"kanban-card\">' +
+                            '<div class=\"kanban-card-title\">' + escapeHtml(c.name || 'No Name') + '</div>' +
+                            '<div class=\"kanban-card-phone\">' + c.phone + '</div>' +
+                            '<div class=\"kanban-card-footer\">' +
+                                '<span class=\"kanban-tag\">' + (c.sequenceId ? '⚡ Active' : 'Idle') + '</span>' +
+                                '<button class=\"btn btn-sm btn-icon\" onclick=\"window.showCrmContactActions(\'' + c.id + '\')\">⋮</button>' +
+                            '</div>' +
+                        '</div>'
+                    ).join('');
+                });
+            };
+
+            let crmCurrentContactId = null;
+            function crmActionChangeStage() { showToast('Preview: Opening stage selector'); closeModal('crmContactActionsModal'); }
+            function crmActionStartSequence() { showToast('Preview: Opening sequence selector'); closeModal('crmContactActionsModal'); }
+            function crmActionStopSequence() { showToast('Sequence stopped (preview)', 'success'); closeModal('crmContactActionsModal'); }
+            function crmActionMarkAs(s) { showToast('Marked as ' + s + ' (preview)', 'success'); closeModal('crmContactActionsModal'); }
 
             // Set status to preview mode
             document.addEventListener('DOMContentLoaded', () => {
@@ -250,7 +317,7 @@ if (process.env.NODE_ENV !== "production") {
                     { id: 'mock2', name: 'Budi', phone: '628123456789', stage: 'offered', tags: 'Hot Lead', sequenceId: 'seq1' }
                 ];
                 renderCrmContacts();
-                if (typeof renderCrmKanban === 'function') renderCrmKanban();
+                renderCrmKanban();
             });
         </script>`
     )
