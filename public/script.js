@@ -435,25 +435,12 @@ async function loadGroupStats() {
 }
 
 
-// Check if user is logged in
-const authToken = localStorage.getItem('token');
-const userStr = localStorage.getItem('user');
-
-if (!authToken || !userStr) {
-    window.location.href = '/login';
-}
-
-// Use user.id from login as userId (consistent across sessions)
-const loggedInUser = JSON.parse(userStr);
-let userId = loggedInUser.id;
+// Personal App - Retrieve auth from storage or redirect to login
+const authToken = localStorage.getItem('wa_token');
+let userId = 'owner';
 
 // Save for consistency
 localStorage.setItem('wa_userId', userId);
-
-// Redirect to scan if userId somehow missing
-if (!userId) {
-    window.location.href = '/scan';
-}
 
 const API = '';
 const getUserApi = () => `/api/${userId}`;
@@ -493,10 +480,16 @@ let scheduleImage = null;
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check auth token validity
-    const authValid = await checkAuthToken();
-    if (!authValid) {
-        localStorage.removeItem('token');
+    // Check if authenticated
+    if (!authToken) {
+        window.location.href = '/login';
+        return;
+    }
+
+    // Verify token is valid
+    const isValid = await checkAuthToken();
+    if (!isValid) {
+        localStorage.removeItem('wa_token');
         window.location.href = '/login';
         return;
     }
@@ -557,21 +550,12 @@ async function checkAuthToken() {
         const res = await fetch('/api/auth/me', {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-
         const data = await res.json();
-
-        if (!data.success) return false;
-
-        currentUser = data.user;
-
-        // Check if subscription is active
-        if (!data.user.isActive) {
-            alert('Subscription Anda telah berakhir. Silakan upgrade ke Pro.');
-            window.location.href = '/dashboard';
-            return false;
+        if (data.success) {
+            currentUser = data.user;
+            return true;
         }
-
-        return true;
+        return false;
     } catch (e) {
         console.error('Auth check failed:', e);
         return false;
@@ -620,23 +604,9 @@ async function backgroundSyncGroups() {
     trySync();
 }
 
-// ===== AUTH SYSTEM =====
+// Check if user is logged in (bypassed)
 async function checkAuth() {
-    try {
-        const res = await fetch(API + '/api/auth/check', {
-            headers: { 'X-Auth-Token': authToken }
-        });
-        const data = await res.json();
-
-        if (data.authEnabled && !data.authenticated) {
-            showModal('loginModal');
-            return false;
-        }
-        return true;
-    } catch (e) {
-        console.error('Auth check failed:', e);
-        return true; // Allow access if check fails
-    }
+    return true;
 }
 
 async function login() {

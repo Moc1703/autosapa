@@ -1,1351 +1,208 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoSapa - Aplikasi Broadcast WhatsApp & Auto Reply Aman (Anti-Banned)</title>
-    <meta name="description"
-        content="Kelola ribuan chat, broadcast grup otomatis, dan auto-reply WhatsApp dengan fitur keamanan canggih (Spintax & Sleep Mode). Solusi CRM terbaik untuk UMKM & Komunitas.">
-    <meta name="keywords"
-        content="Broadcast WhatsApp aman, Tools WA Blast, Auto Reply WhatsApp, Manajemen Grup WhatsApp, Aplikasi Kirim Pesan Massal, WhatsApp Automation Indonesia">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://autosapa.com">
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="AutoSapa - Broadcast WhatsApp & Auto Reply Aman">
-    <meta property="og:description" content="Otomatisasi WhatsApp paling manusiawi untuk Bisnis & Komunitas">
-    <meta property="og:type" content="website">
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #25D366;
-            --primary-dark: #128C7E;
-            --bg: #0b141a;
-            --bg-card: #1f2c34;
-            --bg-dark: #0a0e12;
-            --border: #2a3942;
-            --text: #e9edef;
-            --text-muted: #94a3b8;
-            --text-dim: #64748b;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.7;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-
-        /* Navbar */
-        nav {
-            padding: 16px 0;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(11, 20, 26, 0.95);
-            backdrop-filter: blur(12px);
-            z-index: 100;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
-        }
-
-        nav .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: #fff;
-            text-decoration: none;
-        }
-
-        .logo span {
-            color: var(--primary);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 32px;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s;
-        }
-
-        .nav-links a:hover {
-            color: #fff;
-        }
-
-        .nav-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 12px 24px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-muted);
-        }
-
-        .btn-ghost:hover {
-            color: #fff;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: var(--bg);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #475569;
-            color: #f1f5f9;
-        }
-
-        .btn-outline:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .btn-lg {
-            padding: 16px 32px;
-            font-size: 16px;
-        }
-
-        .btn-white {
-            background: #fff;
-            color: var(--primary-dark);
-        }
-
-        .btn-white:hover {
-            background: #f0f0f0;
-        }
-
-        /* Hero */
-        .hero {
-            padding: 160px 0 100px;
-            text-align: center;
-            background: radial-gradient(ellipse at top, rgba(37, 211, 102, 0.08) 0%, transparent 60%);
-        }
-
-        .hero-badge {
-            display: inline-block;
-            background: rgba(37, 211, 102, 0.15);
-            color: var(--primary);
-            padding: 8px 18px;
-            border-radius: 100px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 28px;
-            border: 1px solid rgba(37, 211, 102, 0.3);
-        }
-
-        .hero h1 {
-            font-size: 52px;
-            font-weight: 800;
-            margin-bottom: 24px;
-            line-height: 1.15;
-            letter-spacing: -1px;
-        }
-
-        .hero h1 .gradient {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-subtitle {
-            font-size: 19px;
-            color: var(--text-muted);
-            max-width: 640px;
-            margin: 0 auto 36px;
-            line-height: 1.7;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 14px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .trust-badges {
-            display: flex;
-            justify-content: center;
-            gap: 32px;
-            margin-top: 48px;
-            padding-top: 32px;
-            border-top: 1px solid var(--border);
-            flex-wrap: wrap;
-        }
-
-        .trust-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-
-        .trust-badge .icon {
-            color: var(--primary);
-            font-size: 16px;
-        }
-
-        /* Section Styles */
-        section {
-            padding: 100px 0;
-        }
-
-        .section-label {
-            text-align: center;
-            color: var(--primary);
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 14px;
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 18px;
-            letter-spacing: -0.5px;
-        }
-
-        .section-desc {
-            text-align: center;
-            color: var(--text-muted);
-            max-width: 560px;
-            margin: 0 auto 56px;
-            font-size: 17px;
-        }
-
-        /* Problem Section */
-        .problem {
-            background: var(--bg-dark);
-        }
-
-        .problem-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            align-items: center;
-        }
-
-        .problem-list {
-            list-style: none;
-        }
-
-        .problem-item {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding: 20px;
-            background: rgba(239, 68, 68, 0.08);
-            border-radius: 12px;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .problem-item .icon {
-            font-size: 24px;
-            flex-shrink: 0;
-        }
-
-        .problem-item h4 {
-            font-size: 16px;
-            margin-bottom: 4px;
-            color: var(--danger);
-        }
-
-        .problem-item p {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .solution-box {
-            background: linear-gradient(135deg, rgba(37, 211, 102, 0.1), rgba(18, 140, 126, 0.05));
-            border: 1px solid rgba(37, 211, 102, 0.3);
-            border-radius: 16px;
-            padding: 32px;
-        }
-
-        .solution-box h3 {
-            color: var(--primary);
-            margin-bottom: 16px;
-            font-size: 22px;
-        }
-
-        .solution-box p {
-            color: var(--text-muted);
-            font-size: 15px;
-            line-height: 1.8;
-        }
-
-        /* Features */
-        .features-section {
-            background: var(--bg);
-        }
-
-        .feature-category {
-            margin-bottom: 80px;
-        }
-
-        .feature-category:last-child {
-            margin-bottom: 0;
-        }
-
-        .feature-category-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .feature-category-header h3 {
-            font-size: 26px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .feature-category-header h3 .num {
-            background: var(--primary);
-            color: var(--bg);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: 700;
-        }
-
-        .feature-category-header p {
-            color: var(--text-muted);
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        .feature-card {
-            background: var(--bg-card);
-            border-radius: 14px;
-            padding: 28px;
-            border: 1px solid var(--border);
-            transition: all 0.25s;
-        }
-
-        .feature-card:hover {
-            border-color: rgba(37, 211, 102, 0.4);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .feature-icon {
-            width: 52px;
-            height: 52px;
-            background: rgba(37, 211, 102, 0.15);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            margin-bottom: 18px;
-        }
-
-        .feature-card h4 {
-            font-size: 17px;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .feature-card p {
-            color: var(--text-muted);
-            font-size: 14px;
-            line-height: 1.7;
-        }
-
-        /* Target Users */
-        .target-users {
-            background: var(--bg-dark);
-        }
-
-        .users-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-        }
-
-        .user-card {
-            background: var(--bg-card);
-            border-radius: 14px;
-            padding: 28px;
-            text-align: center;
-            border: 1px solid var(--border);
-            transition: all 0.25s;
-        }
-
-        .user-card:hover {
-            border-color: var(--primary);
-            transform: translateY(-4px);
-        }
-
-        .user-icon {
-            font-size: 42px;
-            margin-bottom: 16px;
-        }
-
-        .user-card h4 {
-            font-size: 15px;
-            margin-bottom: 10px;
-        }
-
-        .user-card p {
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-
-        /* Security */
-        .security {
-            background: var(--bg);
-        }
-
-        .security-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-
-        .security-card {
-            background: var(--bg-card);
-            border-radius: 14px;
-            padding: 28px;
-            border: 1px solid var(--border);
-            display: flex;
-            gap: 20px;
-        }
-
-        .security-card .icon {
-            font-size: 32px;
-            flex-shrink: 0;
-        }
-
-        .security-card h4 {
-            font-size: 16px;
-            margin-bottom: 8px;
-        }
-
-        .security-card p {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        /* Pricing */
-        .pricing {
-            background: var(--bg-dark);
-        }
-
-        .pricing-box {
-            max-width: 600px;
-            margin: 0 auto;
-            background: linear-gradient(180deg, var(--bg-card) 0%, #162420 100%);
-            border: 2px solid var(--primary);
-            border-radius: 20px;
-            padding: 48px;
-            text-align: center;
-            position: relative;
-        }
-
-        .pricing-badge {
-            position: absolute;
-            top: -14px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--primary);
-            color: var(--bg);
-            padding: 8px 20px;
-            border-radius: 100px;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .pricing-box h3 {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-
-        .pricing-subtitle {
-            color: var(--text-dim);
-            margin-bottom: 24px;
-        }
-
-        .pricing-features {
-            list-style: none;
-            text-align: left;
-            margin-bottom: 32px;
-        }
-
-        .pricing-features li {
-            padding: 14px 0;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            font-size: 15px;
-        }
-
-        .pricing-features li:last-child {
-            border-bottom: none;
-        }
-
-        .pricing-features .check {
-            color: var(--primary);
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        /* FAQ */
-        .faq {
-            background: var(--bg);
-        }
-
-        .faq-list {
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .faq-item {
-            background: var(--bg-card);
-            border-radius: 12px;
-            margin-bottom: 12px;
-            border: 1px solid var(--border);
-            overflow: hidden;
-        }
-
-        .faq-question {
-            padding: 20px 24px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            font-size: 15px;
-        }
-
-        .faq-question:hover {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .faq-toggle {
-            font-size: 20px;
-            color: var(--primary);
-            transition: transform 0.2s;
-        }
-
-        .faq-answer {
-            padding: 0 24px 20px;
-            color: var(--text-muted);
-            font-size: 14px;
-            line-height: 1.8;
-            display: none;
-        }
-
-        .faq-item.active .faq-answer {
-            display: block;
-        }
-
-        .faq-item.active .faq-toggle {
-            transform: rotate(45deg);
-        }
-
-        /* CTA */
-        .cta {
-            padding: 100px 0;
-            text-align: center;
-            background: var(--bg-dark);
-        }
-
-        .cta-box {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            border-radius: 24px;
-            padding: 72px 48px;
-        }
-
-        .cta h2 {
-            font-size: 32px;
-            margin-bottom: 16px;
-        }
-
-        .cta p {
-            color: rgba(255, 255, 255, 0.85);
-            margin-bottom: 32px;
-            font-size: 17px;
-        }
-
-        /* Footer */
-        footer {
-            padding: 40px 0;
-            text-align: center;
-            border-top: 1px solid var(--border);
-        }
-
-        .disclaimer {
-            max-width: 700px;
-            margin: 0 auto 24px;
-            padding: 20px;
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 10px;
-            font-size: 12px;
-            color: var(--text-muted);
-            line-height: 1.7;
-        }
-
-        .disclaimer strong {
-            color: var(--warning);
-        }
-
-        .copyright {
-            color: var(--text-dim);
-            font-size: 13px;
-        }
-
-        /* Mobile Responsive - Comprehensive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 16px;
-            }
-
-            /* Navigation */
-            nav {
-                padding: 12px 0;
-            }
-
-            nav .container {
-                padding: 0 16px;
-            }
-
-            .logo {
-                font-size: 20px;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .nav-buttons .btn-ghost {
-                display: none;
-            }
-
-            .nav-buttons .btn-primary {
-                padding: 10px 16px;
-                font-size: 13px;
-            }
-
-            /* Hero */
-            .hero {
-                padding: 110px 0 60px;
-            }
-
-            .hero-badge {
-                font-size: 12px;
-                padding: 6px 14px;
-                margin-bottom: 20px;
-            }
-
-            .hero h1 {
-                font-size: 28px;
-                line-height: 1.25;
-                margin-bottom: 18px;
-            }
-
-            .hero h1 br {
-                display: none;
-            }
-
-            .hero-subtitle {
-                font-size: 15px;
-                line-height: 1.6;
-                margin-bottom: 28px;
-                padding: 0 8px;
-            }
-
-            .hero-buttons {
-                flex-direction: column;
-                gap: 12px;
-                padding: 0 16px;
-            }
-
-            .hero-buttons .btn {
-                width: 100%;
-                justify-content: center;
-                padding: 14px 24px;
-            }
-
-            .trust-badges {
-                flex-direction: column;
-                gap: 12px;
-                margin-top: 36px;
-                padding-top: 24px;
-            }
-
-            .trust-badge {
-                font-size: 12px;
-                justify-content: center;
-            }
-
-            /* Sections */
-            section {
-                padding: 60px 0;
-            }
-
-            .section-label {
-                font-size: 11px;
-                letter-spacing: 1.5px;
-            }
-
-            .section-title {
-                font-size: 24px;
-                padding: 0 8px;
-                margin-bottom: 12px;
-            }
-
-            .section-desc {
-                font-size: 14px;
-                margin-bottom: 36px;
-                padding: 0 8px;
-            }
-
-            /* Problem Section */
-            .problem-grid {
-                grid-template-columns: 1fr;
-                gap: 28px;
-            }
-
-            .problem-item {
-                padding: 16px;
-                margin-bottom: 16px;
-            }
-
-            .problem-item .icon {
-                font-size: 20px;
-            }
-
-            .problem-item h4 {
-                font-size: 15px;
-            }
-
-            .problem-item p {
-                font-size: 13px;
-            }
-
-            .solution-box {
-                padding: 24px;
-            }
-
-            .solution-box h3 {
-                font-size: 18px;
-            }
-
-            .solution-box p {
-                font-size: 14px;
-            }
-
-            /* Features */
-            .feature-category {
-                margin-bottom: 48px;
-            }
-
-            .feature-category-header {
-                margin-bottom: 24px;
-            }
-
-            .feature-category-header h3 {
-                font-size: 20px;
-                flex-wrap: wrap;
-            }
-
-            .feature-category-header h3 .num {
-                width: 28px;
-                height: 28px;
-                font-size: 13px;
-            }
-
-            .feature-category-header p {
-                font-size: 13px;
-            }
-
-            .features-grid {
-                grid-template-columns: 1fr;
-                gap: 14px;
-            }
-
-            .feature-card {
-                padding: 20px;
-            }
-
-            .feature-icon {
-                width: 44px;
-                height: 44px;
-                font-size: 22px;
-                margin-bottom: 14px;
-            }
-
-            .feature-card h4 {
-                font-size: 15px;
-            }
-
-            .feature-card p {
-                font-size: 13px;
-            }
-
-            /* Target Users */
-            .users-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 12px;
-            }
-
-            .user-card {
-                padding: 20px 14px;
-            }
-
-            .user-icon {
-                font-size: 32px;
-                margin-bottom: 12px;
-            }
-
-            .user-card h4 {
-                font-size: 13px;
-                line-height: 1.3;
-            }
-
-            .user-card p {
-                font-size: 11px;
-                display: none;
-            }
-
-            /* Security */
-            .security-grid {
-                grid-template-columns: 1fr;
-                gap: 14px;
-            }
-
-            .security-card {
-                padding: 20px;
-                gap: 16px;
-            }
-
-            .security-card .icon {
-                font-size: 28px;
-            }
-
-            .security-card h4 {
-                font-size: 15px;
-            }
-
-            .security-card p {
-                font-size: 13px;
-            }
-
-            /* Pricing */
-            .pricing-box {
-                padding: 32px 20px;
-                margin: 0 8px;
-            }
-
-            .pricing-badge {
-                font-size: 10px;
-                padding: 6px 14px;
-                top: -12px;
-            }
-
-            .pricing-box h3 {
-                font-size: 20px;
-            }
-
-            .pricing-features li {
-                font-size: 14px;
-                padding: 12px 0;
-            }
-
-            .pricing-features .check {
-                font-size: 16px;
-            }
-
-            /* FAQ */
-            .faq-list {
-                margin: 0 -8px;
-            }
-
-            .faq-item {
-                border-radius: 10px;
-                margin-bottom: 10px;
-            }
-
-            .faq-question {
-                padding: 16px 18px;
-                font-size: 14px;
-                gap: 12px;
-            }
-
-            .faq-toggle {
-                font-size: 18px;
-                flex-shrink: 0;
-            }
-
-            .faq-answer {
-                padding: 0 18px 16px;
-                font-size: 13px;
-            }
-
-            /* CTA */
-            .cta {
-                padding: 60px 0;
-            }
-
-            .cta-box {
-                padding: 40px 20px;
-                border-radius: 16px;
-                margin: 0 8px;
-            }
-
-            .cta h2 {
-                font-size: 22px;
-                margin-bottom: 12px;
-            }
-
-            .cta p {
-                font-size: 14px;
-                margin-bottom: 24px;
-            }
-
-            .cta .btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            /* Footer */
-            footer {
-                padding: 32px 0;
-            }
-
-            .disclaimer {
-                padding: 16px;
-                font-size: 11px;
-                margin: 0 8px 20px;
-            }
-
-            .copyright {
-                font-size: 12px;
-            }
-        }
-
-        /* Extra small devices */
-        @media (max-width: 380px) {
-            .hero h1 {
-                font-size: 24px;
-            }
-
-            .section-title {
-                font-size: 22px;
-            }
-
-            .users-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .user-card p {
-                display: block;
-            }
-
-            .feature-category-header h3 {
-                font-size: 18px;
-            }
-        }
-
-        /* Tablet */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .hero h1 {
-                font-size: 40px;
-            }
-
-            .features-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .users-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
+    <title>AutoSapa - WhatsApp Automation & CRM</title>
+    <link rel="stylesheet" href="landing.css">
+    <!-- Ionicons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
-
 <body>
-    <!-- Navbar -->
-    <nav>
-        <div class="container">
-            <a href="/" class="logo">Auto<span>Sapa</span></a>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="/" class="logo">
+                <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" stroke="url(#logo-grad)" stroke-width="8"/>
+                    <path d="M30 50L45 65L70 35" stroke="url(#logo-grad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="logo-grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#00ff88"/>
+                            <stop offset="1" stop-color="#00d2ff"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>AutoSapa</span>
+            </a>
             <div class="nav-links">
-                <a href="#features">Fitur</a>
-                <a href="#security">Keamanan</a>
+                <a href="#features" class="nav-link">Fitur</a>
+                <a href="#pricing" class="nav-link">Harga</a>
             </div>
-            <div class="nav-buttons">
-                <a href="/login" class="btn btn-ghost">Masuk</a>
-                <!-- Registration temporarily disabled -->
-                <!-- <a href="/register" class="btn btn-primary">Daftar Gratis</a> -->
+            <div class="nav-actions">
+                <a href="/app" class="btn btn-primary">Masuk Aplikasi</a>
             </div>
         </div>
     </nav>
 
-    <!-- Hero -->
+    <!-- HERO -->
     <section class="hero">
         <div class="container">
-            <div class="hero-badge">🔥 Safe Mode & Smart Spintax</div>
-            <h1>Otomatisasi WhatsApp Paling<br>"<span class="gradient">Manusiawi</span>" untuk Bisnis & Komunitas</h1>
-            <p class="hero-subtitle">Tinggalkan cara manual. Kirim broadcast ke ribuan kontak atau grup, jadwalkan
-                pesan, dan balas otomatis 24/7 tanpa takut blokir berkat teknologi Safe-Mode & Smart Spintax.</p>
-            <div class="hero-buttons">
-                <!-- Registration temporarily disabled -->
-                <!-- <a href="/register" class="btn btn-primary btn-lg">🔥 Coba Gratis Sekarang</a> -->
-                <a href="/login" class="btn btn-primary btn-lg">🔥 Masuk Sekarang</a>
-                <a href="#features" class="btn btn-outline btn-lg">Lihat Fitur Lengkap</a>
+            <div class="badge-new">
+                <span class="badge-dot"></span>
+                Baru: CRM & Automation Pipeline ⚡
+            </div>
+            <h1>Automasi WhatsApp <br><span class="highlight">Tanpa Batas</span></h1>
+            <p>Solusi CRM & Broadcast WhatsApp tercepat untuk melejitkan performa bisnis Anda. Tingkatkan konversi dengan fitur automasi cerdas.</p>
+            <div class="hero-actions">
+                <a href="/app" class="btn btn-primary btn-lg">Coba Sekarang</a>
+                <a href="#features" class="btn btn-outline btn-lg">Lihat Fitur</a>
             </div>
 
-            <div class="trust-badges">
-                <div class="trust-badge"><span class="icon">✅</span> Data Terenkripsi (End-to-End)</div>
-                <div class="trust-badge"><span class="icon">✅</span> Support Multi-Device</div>
-                <div class="trust-badge"><span class="icon">✅</span> Tanpa Install Aplikasi Tambahan</div>
+            <div class="hero-preview">
+                <div class="preview-container">
+                    <img src="dashboard-preview.png" alt="AutoSapa Dashboard" class="preview-image">
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Problem & Solution -->
-    <section class="problem">
-        <div class="container">
-            <div class="section-label">Masalah & Solusi</div>
-            <h2 class="section-title">Mengelola Ratusan Chat Manual Itu Melelahkan & Berisiko</h2>
-            <p class="section-desc">Apakah Anda sering mengalami ini?</p>
+    <!-- STATS -->
+    <section class="stats">
+        <div class="container stats-grid">
+            <div class="stat-item">
+                <h3>5k+</h3>
+                <p>Pesan Terkirim</p>
+            </div>
+            <div class="stat-item">
+                <h3>99.9%</h3>
+                <p>Uptime Service</p>
+            </div>
+            <div class="stat-item">
+                <h3>1k+</h3>
+                <p>Grup Terhubung</p>
+            </div>
+        </div>
+    </section>
 
-            <div class="problem-grid">
-                <div>
-                    <ul class="problem-list">
-                        <li class="problem-item">
-                            <span class="icon">❌</span>
-                            <div>
-                                <h4>Jempol Keriting</h4>
-                                <p>Copy-paste pesan ke ratusan grup komunitas satu per satu.</p>
-                            </div>
-                        </li>
-                        <li class="problem-item">
-                            <span class="icon">❌</span>
-                            <div>
-                                <h4>Lupa Follow-up</h4>
-                                <p>Calon pembeli hilang karena Anda telat membalas chat.</p>
-                            </div>
-                        </li>
-                        <li class="problem-item">
-                            <span class="icon">❌</span>
-                            <div>
-                                <h4>Nomor Terblokir</h4>
-                                <p>Kena ban WhatsApp karena broadcast terlalu bar-bar tanpa jeda.</p>
-                            </div>
-                        </li>
+    <!-- FEATURES -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Powerful Features</span>
+                <h2 class="section-title">Semua yang Anda Butuhkan</h2>
+                <p class="section-desc">Fitur lengkap untuk mengelola ribuan kontak dan grup WhatsApp secara efisien.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><ion-icon name="megaphone-outline"></ion-icon></div>
+                    <h3>Mass Broadcast</h3>
+                    <p>Kirim pesan ke ribuan grup atau nomor secara massal dengan fitur anti-ban dan spintax.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><ion-icon name="chatbubbles-outline"></ion-icon></div>
+                    <h3>Auto Reply</h3>
+                    <p>Balas pesan pelanggan secara otomatis berdasarkan keyword yang Anda tentukan sendiri.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><ion-icon name="git-network-outline"></ion-icon></div>
+                    <h3>CRM Pipeline</h3>
+                    <p>Kelola leads dan pelanggan dengan sistem Kanban yang intuitif dan follow-up otomatis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><ion-icon name="calendar-outline"></ion-icon></div>
+                    <h3>Scheduled Messages</h3>
+                    <p>Atur jadwal pengiriman pesan secara presisi untuk promosi mingguan atau bulanan.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><ion-icon name="stats-chart-outline"></ion-icon></div>
+                    <h3>Real-time Analytics</h3>
+                    <p>Pantau performa kampanye Anda dengan statistik pengiriman yang lengkap dan grafis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
+                    <h3>Anti-Ban Protection</h3>
+                    <p>Sistem keamanan dengan delay acak dan mode 'sleep' untuk melindungi akun WhatsApp Anda.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Pricing</span>
+                <h2 class="section-title">Tertarik? Hubungi Kami</h2>
+                <p class="section-desc">Dapatkan akses ke AutoSapa untuk automasi WhatsApp bisnis Anda.</p>
+            </div>
+
+            <div style="max-width: 500px; margin: 0 auto;">
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">PREMIUM</div>
+                    <div class="plan-name">AutoSapa Full Access</div>
+                    <div class="plan-price" style="font-size: 2.5rem;">Hubungi Kami</div>
+                    <p class="plan-desc">Dapatkan penawaran terbaik untuk kebutuhan bisnis Anda.</p>
+                    <ul class="plan-features">
+                        <li><span class="check-icon">✓</span> Unlimited Groups</li>
+                        <li><span class="check-icon">✓</span> Unlimited Broadcast</li>
+                        <li><span class="check-icon">✓</span> Full CRM Features</li>
+                        <li><span class="check-icon">✓</span> Auto Reply & Scheduling</li>
+                        <li><span class="check-icon">✓</span> Anti-Ban Protection</li>
+                        <li><span class="check-icon">✓</span> Premium Support</li>
                     </ul>
-                </div>
-                <div class="solution-box">
-                    <h3>💡 Solusi Kami</h3>
-                    <p>AutoSapa hadir bukan sekadar sebagai bot, tapi sebagai <strong>Asisten Virtual Cerdas</strong>
-                        yang bekerja otomatis di latar belakang, membiarkan Anda fokus pada strategi bisnis, bukan
-                        teknis mengetik.</p>
-                    <br>
-                    <!-- Registration temporarily disabled -->
-                    <!-- <a href="/register" class="btn btn-primary">Mulai Sekarang →</a> -->
-                    <a href="/login" class="btn btn-primary">Masuk →</a>
+                    <a href="https://wa.me/6285161682748" class="btn btn-primary btn-lg" style="margin-top: 16px;">📱 Hubungi via WhatsApp</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Features -->
-    <section class="features-section" id="features">
+    <!-- CTA -->
+    <section class="cta">
         <div class="container">
-            <div class="section-label">Fitur Unggulan</div>
-            <h2 class="section-title">Semua Tools yang Anda Butuhkan</h2>
-            <p class="section-desc">Fitur lengkap untuk mengelola komunikasi WhatsApp bisnis Anda dengan aman</p>
-
-            <!-- Feature 1: Broadcast -->
-            <div class="feature-category">
-                <div class="feature-category-header">
-                    <h3><span class="num">1</span> Broadcast Pintar & Aman (Anti-Cemas)</h3>
-                    <p>Kirim info promo atau update komunitas dengan fitur keamanan tingkat tinggi</p>
-                </div>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">🎲</div>
-                        <h4>Spintax Support</h4>
-                        <p>Variasi pesan otomatis (contoh: {Halo|Hai|Pagi}) agar tidak terdeteksi sebagai spam oleh
-                            WhatsApp.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🤖</div>
-                        <h4>Human Simulation</h4>
-                        <p>Dilengkapi Random Delay & Typing Simulation agar terlihat natural seperti manusia.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">😴</div>
-                        <h4>Sleep Mode</h4>
-                        <p>Sistem otomatis "istirahat" sejenak setelah mengirim sejumlah pesan untuk menjaga kesehatan
-                            akun.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Feature 2: Group Management -->
-            <div class="feature-category">
-                <div class="feature-category-header">
-                    <h3><span class="num">2</span> Manajemen Grup Otomatis (Community Power)</h3>
-                    <p>Fitur wajib bagi Admin Grup dan Community Manager</p>
-                </div>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">🔄</div>
-                        <h4>Auto Sync Group</h4>
-                        <p>Tarik data ribuan grup WA Anda dalam sekali klik. Tidak perlu input manual satu per satu.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">📢</div>
-                        <h4>Group Broadcast</h4>
-                        <p>Kirim pesan ke 50+ grup sekaligus tanpa perlu forward manual satu per satu.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🏷️</div>
-                        <h4>Kategorisasi</h4>
-                        <p>Pisahkan grup "VIP", "Reseller", atau "Umum" agar pesan lebih relevan dan tertarget.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Feature 3: Auto Reply & Scheduling -->
-            <div class="feature-category">
-                <div class="feature-category-header">
-                    <h3><span class="num">3</span> Auto-Reply & Penjadwalan (24/7 Service)</h3>
-                    <p>Layanan pelanggan yang tidak pernah tidur</p>
-                </div>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">💬</div>
-                        <h4>Smart Reply</h4>
-                        <p>Balas chat otomatis berdasarkan keyword, regex, atau bahkan kirim gambar produk secara
-                            instan.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">📅</div>
-                        <h4>Scheduled Message</h4>
-                        <p>Siapkan pesan hari ini, kirim minggu depan. Cocok untuk reminder tagihan, event, atau ucapan
-                            ultah.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">📊</div>
-                        <h4>Analytics</h4>
-                        <p>Pantau performa broadcast Anda dengan data Success Rate dan laporan mingguan yang rapi.</p>
-                    </div>
+            <div class="cta-box">
+                <div class="cta-content">
+                    <h2>Siap Memulai Automasi?</h2>
+                    <p>Hubungi kami sekarang untuk mendapatkan akses AutoSapa dan mulai tingkatkan efisiensi bisnis Anda.</p>
+                    <a href="https://wa.me/6285161682748" class="btn btn-white btn-lg">📱 Hubungi Sekarang</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Target Users -->
-    <section class="target-users">
-        <div class="container">
-            <div class="section-label">Untuk Siapa</div>
-            <h2 class="section-title">Siapa yang Wajib Pakai AutoSapa?</h2>
-            <p class="section-desc">Platform ini cocok untuk berbagai kebutuhan bisnis dan komunitas</p>
-
-            <div class="users-grid">
-                <div class="user-card">
-                    <div class="user-icon">🏢</div>
-                    <h4>UMKM & Online Shop</h4>
-                    <p>Follow up customer & broadcast promo tanpa spamming.</p>
-                </div>
-                <div class="user-card">
-                    <div class="user-icon">🗣️</div>
-                    <h4>Community Manager</h4>
-                    <p>Sebar info event ke puluhan grup komunitas dalam 1 klik.</p>
-                </div>
-                <div class="user-card">
-                    <div class="user-icon">💻</div>
-                    <h4>Digital Agency</h4>
-                    <p>Kelola notifikasi klien dengan laporan Analytics yang rapi.</p>
-                </div>
-                <div class="user-card">
-                    <div class="user-icon">📞</div>
-                    <h4>Tim CS</h4>
-                    <p>Auto-reply pertanyaan FAQ, biarkan CS fokus ke masalah kompleks.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Security -->
-    <section class="security" id="security">
-        <div class="container">
-            <div class="section-label">Keamanan</div>
-            <h2 class="section-title">Keamanan Data & Akun Adalah Prioritas Kami</h2>
-            <p class="section-desc">Kami membangun AutoSapa dengan standar keamanan industri modern</p>
-
-            <div class="security-grid">
-                <div class="security-card">
-                    <div class="icon">🔒</div>
-                    <div>
-                        <h4>Isolated User Data</h4>
-                        <p>Database Anda terisolasi per user, tidak bercampur dengan data pengguna lain.</p>
-                    </div>
-                </div>
-                <div class="security-card">
-                    <div class="icon">🛡️</div>
-                    <div>
-                        <h4>Spam Prevention System</h4>
-                        <p>Deteksi otomatis memblokir penggunaan ilegal (judi/penipuan) demi menjaga reputasi server.
-                        </p>
-                    </div>
-                </div>
-                <div class="security-card">
-                    <div class="icon">🔐</div>
-                    <div>
-                        <h4>High-Level Encryption</h4>
-                        <p>Login aman dengan otentikasi JWT & bcrypt hashing untuk password protection.</p>
-                    </div>
-                </div>
-                <div class="security-card">
-                    <div class="icon">🌐</div>
-                    <div>
-                        <h4>Secure Connection</h4>
-                        <p>Didukung HTTP Security Headers untuk mencegah serangan XSS dan data breach.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing, FAQ, CTA temporarily hidden -->
-    <!--
-
-    -->
-
-    <!-- Footer -->
+    <!-- FOOTER -->
     <footer>
         <div class="container">
-            <div class="disclaimer">
-                <strong>⚠️ Disclaimer:</strong> AutoSapa adalah tool pihak ketiga (unofficial) dan tidak terafiliasi
-                dengan WhatsApp Inc. Pengguna bertanggung jawab penuh atas konten pesan yang dikirim. Kami menindak
-                tegas dan akan memblokir akun yang menggunakan platform ini untuk SPAM, penipuan, atau konten ilegal.
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <span>AutoSapa</span>
+                    </a>
+                    <p>Solusi automasi WhatsApp terlengkap untuk efisiensi bisnis Anda.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Program</h4>
+                    <ul class="footer-links">
+                        <li><a href="#features">Fitur</a></li>
+                        <li><a href="#pricing">Harga</a></li>
+                        <li><a href="/app">Masuk App</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Bantuan</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Dokumentasi</a></li>
+                        <li><a href="#">Kontak</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Social</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Instagram</a></li>
+                        <li><a href="#">Facebook</a></li>
+                        <li><a href="#">YouTube</a></li>
+                    </ul>
+                </div>
             </div>
-            <p class="copyright">© 2025 AutoSapa v1.5.0 - Hemat Waktu, Tingkatkan Omzet.</p>
+            <div class="footer-bottom">
+                &copy; 2025 AutoSapa Program. Build with ❤️ for Developers.
+            </div>
         </div>
     </footer>
 
-    <script>
-        // FAQ Toggle
-        document.querySelectorAll('.faq-question').forEach(q => {
-            q.addEventListener('click', () => {
-                const item = q.parentElement;
-                const wasActive = item.classList.contains('active');
-
-                // Close all
-                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
-
-                // Open clicked if not already open
-                if (!wasActive) item.classList.add('active');
-            });
-        });
-
-        // Check if user is logged in
-        const token = localStorage.getItem('token');
-
-        if (token) {
-            const navButtons = document.querySelector('.nav-buttons');
-            navButtons.innerHTML = '<a href="/dashboard" class="btn btn-primary">Dashboard</a>';
-
-            const badge = document.querySelector('.hero-badge');
-            if (badge) badge.textContent = '✨ Selamat datang kembali!';
-
-            const heroButtons = document.querySelector('.hero-buttons');
-            heroButtons.innerHTML = '<a href="/dashboard" class="btn btn-primary btn-lg">Buka Dashboard →</a>';
-
-            const cta = document.querySelector('.cta');
-            if (cta) cta.style.display = 'none';
-
-            document.querySelectorAll('a[href="/register"]').forEach(btn => {
-                btn.textContent = 'Buka Dashboard';
-                btn.href = '/dashboard';
-            });
-        }
-
-        // Smooth scroll for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-    </script>
 </body>
-
 </html>

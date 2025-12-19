@@ -9,6 +9,9 @@ const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const fs = require("fs")
 const path = require("path")
+
+const JWT_SECRET = process.env.JWT_SECRET || "personal-secret-key-" + crypto.randomBytes(16).toString("hex")
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123"
 const zlib = require("zlib")
 const multer = require("multer")
 const cron = require("node-cron")
@@ -34,15 +37,63 @@ app.use((req, res, next) => {
 })
 
 // Clean URLs (tanpa .html)
+// Main App Route (Promotional Landing)
 app.get("/", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "landing.html"))
 )
 app.get("/scan", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "scan.html"))
 )
+app.get("/login", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "login.html"))
+)
 app.get("/app", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "app.html"))
 )
+
+// Simplified Auth Middleware for Personal App
+async function requireAuth(req, res, next) {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "")
+    if (!token) return res.status(401).json({ error: "Authentication required" })
+
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (decoded.userId !== "owner") return res.status(403).json({ error: "Access denied" })
+
+    req.authUserId = "owner"
+    next()
+  } catch (error) {
+    res.status(401).json({ error: "Invalid or expired token" })
+  }
+}
+
+// Global requireUserAuth (same as requireAuth for personal)
+const requireUserAuth = requireAuth;
+const requireSession = requireAuth;
+
+// Simple Login Endpoint
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { password } = req.body
+    const owner = UserDB.findById("owner")
+    
+    if (!owner) return res.status(404).json({ error: "System error: Owner not initialized" })
+
+    const isMatch = await bcrypt.compare(password, owner.password)
+    if (!isMatch) return res.status(401).json({ error: "Password salah!" })
+
+    const token = jwt.sign({ userId: "owner" }, JWT_SECRET, { expiresIn: "30d" })
+    res.json({ success: true, token, user: { id: "owner", name: owner.name } })
+  } catch (error) {
+    res.status(500).json({ error: "Login failed" })
+  }
+})
+
+// Auth check endpoint
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  const owner = UserDB.findById("owner")
+  res.json({ success: true, user: { ...owner, isActive: true } })
+})
 
 // DEV ONLY: Preview app without auth (disabled in production)
 if (process.env.NODE_ENV !== "production") {
@@ -324,38 +375,12 @@ if (process.env.NODE_ENV !== "production") {
     res.send(previewHtml)
   })
 }
-app.get("/login", (req, res) =>
-  res.sendFile(path.join(__dirname, "public", "login.html"))
-)
-app.get("/register", (req, res) =>
-  res.sendFile(path.join(__dirname, "public", "register.html"))
-)
-app.get("/dashboard", (req, res) =>
-  res.sendFile(path.join(__dirname, "public", "dashboard.html"))
-)
-app.get("/forgot-password", (req, res) =>
-  res.sendFile(path.join(__dirname, "public", "forgot-password.html"))
-)
-app.get("/reset-password", (req, res) =>
-  res.sendFile(path.join(__dirname, "public", "reset-password.html"))
-)
-app.get("/admin", (req, res) =>
-  res.sendFile(path.join(__dirname, "public", "admin.html"))
-)
-
 app.use(express.static("public"))
 
 // Trust proxy for rate limiting (if behind nginx/cloudflare)
 app.set("trust proxy", 1)
 
-// ===== JWT SECRET =====
-const JWT_SECRET =
-  process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex")
-if (!process.env.JWT_SECRET) {
-  console.warn(
-    "⚠️  WARNING: JWT_SECRET not set in .env! Using random secret (tokens will invalidate on restart)"
-  )
-}
+// JWT_SECRET defined at top of file
 
 // ===== ADMIN KEY =====
 const ADMIN_KEY = process.env.ADMIN_KEY || "admin-secret-key"
@@ -477,6 +502,25 @@ try {
 }
 
 console.log("✅ CRM Automation tables initialized")
+
+// Initialize owner user if not exists
+try {
+    const owner = db.prepare("SELECT * FROM users WHERE id = 'owner'").get()
+    const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10)
+    
+    if (!owner) {
+        db.prepare(`
+            INSERT INTO users (id, email, name, password, plan, maxGroups, maxBroadcastPerDay)
+            VALUES ('owner', 'owner@autosapa.tool', 'Owner', ?, 'pro', 999, 999)
+        `).run(hashedPassword)
+        console.log("👤 Created default owner user")
+    } else {
+        // Update password if env changed or to ensure it's hashed correctly
+        db.prepare("UPDATE users SET password = ? WHERE id = 'owner'").run(hashedPassword)
+    }
+} catch (e) {
+    console.error("❌ Failed to initialize owner user:", e.message)
+}
 
 // ===== USER HELPER FUNCTIONS (SQLite) =====
 const UserDB = {
@@ -636,11 +680,9 @@ const PLAN_LIMITS = {
   },
 }
 
-// Helper function to get user limits
+// Helper function to get user limits (Unlimited for personal app)
 function getUserLimits(userId) {
-  const user = UserDB.findById(userId)
-  if (!user) return PLAN_LIMITS.trial
-  return PLAN_LIMITS[user.plan] || PLAN_LIMITS.trial
+  return PLAN_LIMITS.pro
 }
 
 // ===== ACTIVITY LOGGING =====
@@ -1927,728 +1969,7 @@ function normalizePhone(phone) {
 // ===== AUTH ROUTES =====
 // =============================================
 
-// Register
-app.post("/api/auth/register", async (req, res) => {
-  try {
-    const ip = req.ip || req.connection.remoteAddress
-
-    // Rate limit check
-    const rateCheck = checkAuthRateLimit(ip)
-    if (!rateCheck.allowed) {
-      return res.status(429).json({ error: rateCheck.message })
-    }
-
-    let { email, phone, password, name } = req.body
-
-    // Must have email OR phone
-    if ((!email && !phone) || !password || !name) {
-      return res
-        .status(400)
-        .json({ error: "Email atau No HP, password, dan nama diperlukan" })
-    }
-
-    // Sanitize and validate
-    name = sanitizeName(name)
-
-    if (!isStrongPassword(password)) {
-      return res
-        .status(400)
-        .json({ error: "Password minimal 6 karakter" })
-    }
-
-    if (name.length < 2) {
-      return res
-        .status(400)
-        .json({ error: "Nama minimal 2 karakter" })
-    }
-
-    let identifier = null
-    let identifierType = null
-
-    // Validate email if provided
-    if (email) {
-      email = email.toLowerCase().trim()
-      if (!isValidEmail(email)) {
-        return res.status(400).json({ error: "Format email tidak valid" })
-      }
-      identifier = email
-      identifierType = "email"
-    }
-
-    // Validate phone if provided (and no email)
-    if (phone && !email) {
-      if (!isValidPhone(phone)) {
-        return res.status(400).json({ error: "Format nomor HP tidak valid (min 10 digit)" })
-      }
-      phone = normalizePhone(phone)
-      identifier = phone
-      identifierType = "phone"
-    }
-
-    // Check if user exists (by email or phone)
-    const existingByEmail = email ? UserDB.findOne({ email }) : null
-    const existingByPhone = phone ? UserDB.findOne({ phone }) : null
-
-    if (existingByEmail) {
-      return res.status(400).json({ error: "Email sudah terdaftar" })
-    }
-    if (existingByPhone) {
-      return res.status(400).json({ error: "No HP sudah terdaftar" })
-    }
-
-    // Hash password with higher cost factor
-    const hashedPassword = await bcrypt.hash(password, 12)
-
-    // Create user with 10-day trial
-    const trialEndsAt = new Date()
-    trialEndsAt.setDate(trialEndsAt.getDate() + 10)
-
-    const userData = {
-      password: hashedPassword,
-      name,
-      plan: "trial",
-      trialEndsAt,
-      limits: PLAN_LIMITS.trial,
-    }
-
-    if (email) userData.email = email
-    if (phone) userData.phone = phone
-
-    const user = UserDB.create(userData)
-
-    // Generate token
-    const token = jwt.sign(
-      { userId: user._id, email: user.email || user.phone },
-      JWT_SECRET,
-      { expiresIn: "30d" }
-    )
-
-    res.json({
-      success: true,
-      message: "Registrasi berhasil! 10 hari trial gratis dimulai.",
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        phone: user.phone,
-        name: user.name,
-        plan: user.plan,
-        trialEndsAt: user.trialEndsAt,
-        limits: user.limits,
-      },
-    })
-  } catch (error) {
-    console.error("Registration error:", error)
-    res.status(500).json({ error: "Registrasi gagal" })
-  }
-})
-
-// Login
-app.post("/api/auth/login", async (req, res) => {
-  try {
-    const ip = req.ip || req.connection.remoteAddress
-
-    // Rate limit check
-    const rateCheck = checkAuthRateLimit(ip)
-    if (!rateCheck.allowed) {
-      return res.status(429).json({ error: rateCheck.message })
-    }
-
-    let { email, phone, password } = req.body
-
-    // Must have email OR phone
-    if ((!email && !phone) || !password) {
-      return res.status(400).json({ error: "Email/No HP dan password diperlukan" })
-    }
-
-    let user = null
-
-    // Try to find user by email
-    if (email) {
-      email = email.toLowerCase().trim()
-      user = UserDB.findOne({ email })
-    }
-
-    // Try to find user by phone
-    if (!user && phone) {
-      phone = normalizePhone(phone)
-      user = UserDB.findOne({ phone })
-    }
-
-    if (!user) {
-      return res.status(401).json({ error: "Email/No HP atau password salah" })
-    }
-
-    // Check password
-    const isValid = await bcrypt.compare(password, user.password)
-    if (!isValid) {
-      return res.status(401).json({ error: "Email/No HP atau password salah" })
-    }
-
-    // Reset rate limit on successful login
-    resetAuthAttempts(ip)
-
-    // Generate token
-    const token = jwt.sign({ userId: user.id, email: user.email || user.phone }, JWT_SECRET, {
-      expiresIn: "30d",
-    })
-
-    // Log successful login
-    ActivityLog.log(user.id, "login", null, 0, ip)
-
-    res.json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        phone: user.phone,
-        name: user.name,
-        plan: user.plan,
-        trialEndsAt: user.trialEndsAt,
-        subscriptionEndsAt: user.subscriptionEndsAt,
-        limits: user.limits,
-      },
-    })
-  } catch (error) {
-    console.error("Login error:", error)
-    res.status(500).json({ error: "Login gagal" })
-  }
-})
-
-// ===== PASSWORD RESET =====
-const resetTokens = new Map()
-
-// Cleanup expired reset tokens every 15 minutes
-setInterval(() => {
-  const now = Date.now()
-  for (const [token, data] of resetTokens) {
-    if (now > data.expiry) {
-      resetTokens.delete(token)
-    }
-  }
-}, 15 * 60 * 1000)
-
-// Forgot password - Generate reset token
-app.post("/api/auth/forgot-password", async (req, res) => {
-  try {
-    const ip = req.ip || req.connection.remoteAddress
-
-    // Rate limit check
-    const rateCheck = checkAuthRateLimit(ip)
-    if (!rateCheck.allowed) {
-      return res.status(429).json({ error: rateCheck.message })
-    }
-
-    let { email } = req.body
-
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" })
-    }
-
-    email = email.toLowerCase().trim()
-
-    const user = UserDB.findOne({ email })
-
-    // Don't reveal if email exists (security best practice)
-    if (!user) {
-      return res.json({
-        success: true,
-        message: "If the email exists, a reset link has been sent",
-      })
-    }
-
-    // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString("hex")
-    const resetExpiry = Date.now() + 3600000 // 1 hour
-
-    resetTokens.set(resetToken, {
-      userId: user.id,
-      email: user.email,
-      expiry: resetExpiry,
-    })
-
-    // Reset link
-    const resetLink = `${req.protocol}://${req.get(
-      "host"
-    )}/reset-password.html?token=${resetToken}`
-
-    console.log(`🔑 Reset link for ${email}: ${resetLink}`)
-
-    // TODO: Send email via nodemailer
-    // For now, just log it (in production, send via email)
-
-    res.json({
-      success: true,
-      message: "If the email exists, a reset link has been sent",
-    })
-  } catch (error) {
-    console.error("Forgot password error:", error)
-    res.status(500).json({ error: "Failed to process request" })
-  }
-})
-
-// Reset password with token
-app.post("/api/auth/reset-password", async (req, res) => {
-  try {
-    const { token, newPassword } = req.body
-
-    if (!token || !newPassword) {
-      return res
-        .status(400)
-        .json({ error: "Token and new password are required" })
-    }
-
-    if (!isStrongPassword(newPassword)) {
-      return res
-        .status(400)
-        .json({ error: "Password must be at least 6 characters" })
-    }
-
-    const resetData = resetTokens.get(token)
-
-    if (!resetData) {
-      return res.status(400).json({ error: "Invalid or expired reset token" })
-    }
-
-    if (Date.now() > resetData.expiry) {
-      resetTokens.delete(token)
-      return res
-        .status(400)
-        .json({ error: "Reset token has expired. Please request a new one." })
-    }
-
-    // Update password
-    const hashedPassword = await bcrypt.hash(newPassword, 12)
-    UserDB.update(resetData.userId, { password: hashedPassword })
-
-    // Delete used token
-    resetTokens.delete(token)
-
-    console.log(`✅ Password reset successfully for: ${resetData.email}`)
-
-    res.json({
-      success: true,
-      message: "Password has been reset successfully. You can now login.",
-    })
-  } catch (error) {
-    console.error("Reset password error:", error)
-    res.status(500).json({ error: "Failed to reset password" })
-  }
-})
-
-// Admin: Manual reset password
-app.post("/api/admin/reset-user-password", async (req, res) => {
-  const adminKey = req.headers["x-admin-key"]
-  if (adminKey !== ADMIN_KEY) {
-    return res.status(403).json({ error: "Forbidden" })
-  }
-
-  const { email, newPassword } = req.body
-
-  try {
-    const user = UserDB.findOne({ email: email.toLowerCase() })
-    if (!user) {
-      return res.status(404).json({ error: "User not found" })
-    }
-
-    const hashedPassword = await bcrypt.hash(newPassword, 12)
-    UserDB.update(user.id, { password: hashedPassword })
-
-    res.json({ success: true, message: `Password reset for ${email}` })
-  } catch (error) {
-    res.status(500).json({ error: "Failed to reset password" })
-  }
-})
-
-// Get current user
-app.get("/api/auth/me", async (req, res) => {
-  try {
-    const token = req.headers.authorization?.replace("Bearer ", "")
-    if (!token) {
-      return res.status(401).json({ error: "No token provided" })
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET)
-    const user = UserDB.findById(decoded.userId)
-
-    if (!user) {
-      return res.status(401).json({ error: "User not found" })
-    }
-
-    // Check subscription status
-    const now = new Date()
-    let isActive = false
-    let daysLeft = 0
-
-    if (user.plan === "trial") {
-      isActive = user.trialEndsAt > now
-      daysLeft = Math.ceil((user.trialEndsAt - now) / (1000 * 60 * 60 * 24))
-    } else if (user.plan === "pro") {
-      isActive = !user.subscriptionEndsAt || user.subscriptionEndsAt > now
-      if (user.subscriptionEndsAt) {
-        daysLeft = Math.ceil(
-          (user.subscriptionEndsAt - now) / (1000 * 60 * 60 * 24)
-        )
-      } else {
-        daysLeft = 999 // Lifetime
-      }
-    }
-
-    // Reset daily broadcast count if new day
-    const today = new Date().toDateString()
-    if (user.lastBroadcastDate !== today) {
-      UserDB.update(user.id, { broadcastToday: 0, lastBroadcastDate: today })
-      user.broadcastToday = 0
-      user.lastBroadcastDate = today
-    }
-
-    res.json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        plan: user.plan,
-        isActive,
-        daysLeft: Math.max(0, daysLeft),
-        trialEndsAt: user.trialEndsAt,
-        subscriptionEndsAt: user.subscriptionEndsAt,
-        limits: user.limits,
-        broadcastToday: user.broadcastToday,
-        createdAt: user.createdAt,
-      },
-    })
-  } catch (error) {
-    res.status(401).json({ error: "Invalid token" })
-  }
-})
-
-// Auth middleware
-async function requireAuth(req, res, next) {
-  try {
-    const token = req.headers.authorization?.replace("Bearer ", "")
-    if (!token) {
-      return res.status(401).json({ error: "Authentication required" })
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET)
-    const user = UserDB.findById(decoded.userId)
-
-    if (!user) {
-      return res.status(401).json({ error: "User not found" })
-    }
-
-    // Check if subscription is active
-    const now = new Date()
-    let isActive = false
-
-    if (user.plan === "trial") {
-      isActive = user.trialEndsAt > now
-    } else if (user.plan === "pro") {
-      isActive = !user.subscriptionEndsAt || user.subscriptionEndsAt > now
-    }
-
-    if (!isActive) {
-      return res
-        .status(403)
-        .json({ error: "Subscription expired", code: "SUBSCRIPTION_EXPIRED" })
-    }
-
-    // Check if user is suspended
-    if (user.suspended) {
-      return res
-        .status(403)
-        .json({
-          error: "Account suspended: " + (user.suspendReason || "Violation of terms"),
-          code: "ACCOUNT_SUSPENDED"
-        })
-    }
-
-    req.user = user
-    next()
-  } catch (error) {
-    res.status(401).json({ error: "Invalid token" })
-  }
-}
-
-// ===== ADMIN RATE LIMITING =====
-const adminAttempts = new Map()
-const ADMIN_RATE_LIMIT = { maxAttempts: 5, windowMs: 15 * 60 * 1000 } // 5 attempts per 15 min
-
-function checkAdminRateLimit(ip) {
-  const now = Date.now()
-  const attempts = adminAttempts.get(ip) || { count: 0, firstAttempt: now }
-
-  // Reset if window expired
-  if (now - attempts.firstAttempt > ADMIN_RATE_LIMIT.windowMs) {
-    adminAttempts.set(ip, { count: 1, firstAttempt: now })
-    return { allowed: true }
-  }
-
-  if (attempts.count >= ADMIN_RATE_LIMIT.maxAttempts) {
-    const remainingMs = ADMIN_RATE_LIMIT.windowMs - (now - attempts.firstAttempt)
-    return { allowed: false, message: `Too many attempts. Try again in ${Math.ceil(remainingMs / 60000)} minutes` }
-  }
-
-  attempts.count++
-  adminAttempts.set(ip, attempts)
-  return { allowed: true }
-}
-
-// Admin auth middleware with rate limiting
-function requireAdminAuth(req, res, next) {
-  const ip = req.ip || req.connection.remoteAddress
-  const adminKey = req.headers["x-admin-key"]
-
-  // Check rate limit first
-  const rateCheck = checkAdminRateLimit(ip)
-  if (!rateCheck.allowed) {
-    return res.status(429).json({ error: rateCheck.message })
-  }
-
-  // Validate admin key
-  if (!adminKey || adminKey !== ADMIN_KEY) {
-    // Log failed attempt
-    console.warn(`⚠️ Failed admin auth attempt from IP: ${ip}`)
-    return res.status(403).json({ error: "Forbidden" })
-  }
-
-  // Reset attempts on success
-  adminAttempts.delete(ip)
-  next()
-}
-
-// Admin: List all users
-app.get("/api/admin/users", requireAdminAuth, (req, res) => {
-  const users = UserDB.find().map((u) => {
-    const { password, ...userWithoutPassword } = u
-    return userWithoutPassword
-  })
-  res.json({ success: true, users })
-})
-
-// Admin: Activate Pro subscription
-app.post("/api/admin/activate", requireAdminAuth, async (req, res) => {
-  const { email, months } = req.body
-
-  try {
-    const user = UserDB.findOne({ email })
-    if (!user) {
-      return res.status(404).json({ error: "User not found" })
-    }
-
-    // Set subscription end date
-    const subscriptionEndsAt = new Date()
-    subscriptionEndsAt.setMonth(subscriptionEndsAt.getMonth() + (months || 1))
-
-    UserDB.update(user.id, {
-      plan: "pro",
-      subscriptionEndsAt,
-      maxGroups: PLAN_LIMITS.pro.maxGroups,
-      maxBroadcastPerDay: PLAN_LIMITS.pro.maxBroadcastPerDay,
-    })
-
-    res.json({
-      success: true,
-      message: `Pro subscription activated for ${email} until ${subscriptionEndsAt.toDateString()}`,
-      user: {
-        email: user.email,
-        plan: user.plan,
-        subscriptionEndsAt: user.subscriptionEndsAt,
-      },
-    })
-  } catch (error) {
-    res.status(500).json({ error: "Failed to activate subscription" })
-  }
-})
-
-// Admin: Delete user
-app.delete("/api/admin/users/:id", requireAdminAuth, async (req, res) => {
-  const { id } = req.params
-
-  try {
-    // Delete user from database
-    UserDB.delete(id)
-
-    // Also destroy their session if exists
-    if (sessions.has(id)) {
-      const client = sessions.get(id)
-      if (client) {
-        try {
-          await client.destroy()
-        } catch (e) {
-          console.error(`Error destroying session ${id}:`, e)
-        }
-      }
-      sessions.delete(id)
-      sessionStatuses.delete(id)
-      qrCodes.delete(id)
-    }
-
-    res.json({ success: true, message: "User deleted" })
-  } catch (error) {
-    res.status(500).json({ error: "Failed to delete user" })
-  }
-})
-
-// Admin: Clear all sessions
-app.post("/api/admin/sessions/clear", requireAdminAuth, async (req, res) => {
-  try {
-    const sessionCount = sessions.size
-
-    // Destroy all clients
-    for (const [userId, client] of sessions) {
-      if (client) {
-        try {
-          await client.destroy()
-        } catch (e) {
-          console.error(`Error destroying session ${userId}:`, e)
-        }
-      }
-    }
-
-    // Clear all sessions
-    sessions.clear()
-    sessionStatuses.clear()
-    qrCodes.clear()
-
-    res.json({ success: true, message: `Cleared ${sessionCount} sessions` })
-  } catch (error) {
-    res.status(500).json({ error: "Failed to clear sessions" })
-  }
-})
-
-// Admin: Get activity logs
-app.get("/api/admin/logs", requireAdminAuth, (req, res) => {
-  const { userId, action, limit = 100, offset = 0 } = req.query
-
-  try {
-    const logs = ActivityLog.getLogs({
-      userId,
-      action,
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    })
-
-    // Get user info for each log
-    const logsWithUser = logs.map(log => {
-      const user = UserDB.findById(log.userId)
-      return {
-        ...log,
-        userName: user?.name || "Unknown",
-        userEmail: user?.email || user?.phone || "-"
-      }
-    })
-
-    res.json({ success: true, logs: logsWithUser })
-  } catch (error) {
-    res.status(500).json({ error: "Failed to get logs" })
-  }
-})
-
-// Get activity logs for current user
-app.get("/api/:userId/activity", requireUserAuth, (req, res) => {
-  try {
-    const logs = db.prepare(`
-      SELECT * FROM activity_logs 
-      WHERE userId = ? 
-      ORDER BY createdAt DESC 
-      LIMIT 20
-    `).all(req.params.userId)
-    res.json({ success: true, logs })
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-})
-
-// Admin: Get suspicious users
-app.get("/api/admin/suspicious", requireAdminAuth, (req, res) => {
-  try {
-    const suspicious = getSuspiciousUsers()
-    res.json({ success: true, users: suspicious })
-  } catch (error) {
-    res.status(500).json({ error: "Failed to get suspicious users" })
-  }
-})
-
-// Admin: Suspend user
-app.post("/api/admin/suspend/:userId", requireAdminAuth, async (req, res) => {
-  const { userId } = req.params
-  const { reason } = req.body
-
-  try {
-    const user = UserDB.findById(userId)
-    if (!user) {
-      return res.status(404).json({ error: "User not found" })
-    }
-
-    // Update user suspension status
-    db.prepare(`
-      UPDATE users SET suspended = 1, suspendedAt = ?, suspendReason = ?
-      WHERE id = ?
-    `).run(new Date().toISOString(), reason || "Violation of terms", userId)
-
-    // Destroy their WhatsApp session
-    if (sessions.has(userId)) {
-      const client = sessions.get(userId)
-      if (client) {
-        try {
-          await client.destroy()
-        } catch (e) {
-          console.error(`Error destroying session ${userId}:`, e)
-        }
-      }
-      sessions.delete(userId)
-      sessionStatuses.delete(userId)
-      qrCodes.delete(userId)
-    }
-
-    // Log the suspension
-    ActivityLog.log(userId, "suspended", reason || "Violation of terms", 0, null)
-
-    console.log(`⛔ User ${user.email || user.phone} suspended: ${reason}`)
-
-    res.json({
-      success: true,
-      message: `User ${user.email || user.phone} has been suspended`,
-      user: { id: userId, name: user.name, suspended: true }
-    })
-  } catch (error) {
-    res.status(500).json({ error: "Failed to suspend user" })
-  }
-})
-
-// Admin: Unsuspend user
-app.post("/api/admin/unsuspend/:userId", requireAdminAuth, (req, res) => {
-  const { userId } = req.params
-
-  try {
-    const user = UserDB.findById(userId)
-    if (!user) {
-      return res.status(404).json({ error: "User not found" })
-    }
-
-    // Update user suspension status
-    db.prepare(`
-      UPDATE users SET suspended = 0, suspendedAt = NULL, suspendReason = NULL
-      WHERE id = ?
-    `).run(userId)
-
-    // Log the unsuspension
-    ActivityLog.log(userId, "unsuspended", null, 0, null)
-
-    console.log(`✅ User ${user.email || user.phone} unsuspended`)
-
-    res.json({
-      success: true,
-      message: `User ${user.email || user.phone} has been unsuspended`,
-      user: { id: userId, name: user.name, suspended: false }
-    })
-  } catch (error) {
-    res.status(500).json({ error: "Failed to unsuspend user" })
-  }
-})
+// SaaS Auth and Admin routes removed for personal app
 
 // Admin: Get user activity details
 app.get("/api/admin/user/:userId/activity", (req, res) => {
@@ -2883,71 +2204,8 @@ app.post("/api/session/logout/:userId", requireUserAuth, async (req, res) => {
 // ===== API ENDPOINTS - PER-USER FEATURES =====
 // =============================================
 
-// Middleware to verify user owns the resource (SECURITY FIX)
-async function requireUserAuth(req, res, next) {
-  try {
-    const token = req.headers.authorization?.replace("Bearer ", "")
-    if (!token) {
-      return res.status(401).json({ error: "Authentication required" })
-    }
+// requireUserAuth and requireSession are defined at top of file
 
-    const decoded = jwt.verify(token, JWT_SECRET)
-    const requestedUserId = req.params.userId
-
-    // Verify the user is accessing their own data
-    if (requestedUserId && decoded.userId !== requestedUserId) {
-      return res
-        .status(403)
-        .json({ error: "Access denied. You can only access your own data." })
-    }
-
-    req.authUserId = decoded.userId
-    next()
-  } catch (error) {
-    return res.status(401).json({ error: "Invalid or expired token" })
-  }
-}
-
-// Middleware to check session (also verifies auth)
-function requireSession(req, res, next) {
-  const userId = req.params.userId || req.body.userId || req.query.userId
-
-  if (!userId) {
-    return res.status(400).json({ error: "userId is required" })
-  }
-
-  // Verify auth first
-  const token = req.headers.authorization?.replace("Bearer ", "")
-  if (!token) {
-    return res.status(401).json({ error: "Authentication required" })
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET)
-    if (decoded.userId !== userId) {
-      return res.status(403).json({ error: "Access denied" })
-    }
-  } catch (e) {
-    return res.status(401).json({ error: "Invalid token" })
-  }
-
-  if (!sessions.has(userId)) {
-    return res
-      .status(404)
-      .json({ error: "Session not found. Please start a session first." })
-  }
-
-  const status = sessionStatuses.get(userId)
-  if (status !== "connected") {
-    return res
-      .status(400)
-      .json({ error: `Session not connected. Current status: ${status}` })
-  }
-
-  req.userId = userId
-  req.client = sessions.get(userId)
-  next()
-}
 
 // ===== CATEGORIES (placeholder) =====
 app.get("/api/:userId/categories", requireUserAuth, (req, res) => {
@@ -3159,38 +2417,9 @@ app.post("/api/:userId/broadcast", requireSession, async (req, res) => {
     return res.status(400).json({ error: "At least one group is required" })
   }
 
-  // Check broadcast daily limit
-  const user = UserDB.findById(userId)
-  const limits = getUserLimits(userId)
+  // Limits removed for personal app
+  const limits = PLAN_LIMITS.pro
   const today = new Date().toDateString()
-
-  // Check group selection limit (maxGroups = max groups per broadcast)
-  if (groups.length > limits.maxGroups) {
-    return res.status(403).json({
-      error: `Trial hanya bisa broadcast ke ${limits.maxGroups} grup sekaligus. Upgrade ke Pro untuk unlimited.`,
-      code: "GROUP_SELECTION_LIMIT",
-      limit: limits.maxGroups,
-      selected: groups.length
-    })
-  }
-
-  // Reset counter if new day
-  let broadcastToday = user?.broadcastToday || 0
-  if (user?.lastBroadcastDate !== today) {
-    broadcastToday = 0
-  }
-
-  // Check if limit reached
-  if (broadcastToday + groups.length > limits.maxBroadcastPerDay) {
-    const remaining = limits.maxBroadcastPerDay - broadcastToday
-    return res.status(403).json({
-      error: `Limit broadcast harian tercapai. Sisa quota: ${remaining}/${limits.maxBroadcastPerDay}. Upgrade ke Pro untuk 500/hari.`,
-      code: "BROADCAST_LIMIT_REACHED",
-      limit: limits.maxBroadcastPerDay,
-      used: broadcastToday,
-      remaining: remaining
-    })
-  }
 
   const settings = readSettings(userId)
   const results = []
@@ -3303,16 +2532,7 @@ app.post("/api/:userId/autoreplies", requireUserAuth, (req, res) => {
   }
 
   const replies = readAutoReplies(userId)
-  const limits = getUserLimits(userId)
-
-  // Check auto-reply limit
-  if (replies.length >= limits.maxAutoReplies) {
-    return res.status(403).json({
-      error: `Limit auto-reply tercapai (${limits.maxAutoReplies}). Upgrade ke Pro untuk unlimited.`,
-      code: "LIMIT_REACHED",
-      limit: limits.maxAutoReplies
-    })
-  }
+  // Limits removed for personal app
 
   replies.push({
     id: Date.now().toString(),
@@ -3367,16 +2587,7 @@ app.post("/api/:userId/templates", requireUserAuth, (req, res) => {
   }
 
   const templates = readTemplates(userId)
-  const limits = getUserLimits(userId)
-
-  // Check template limit
-  if (templates.length >= limits.maxTemplates) {
-    return res.status(403).json({
-      error: `Limit template tercapai (${limits.maxTemplates}). Upgrade ke Pro untuk unlimited.`,
-      code: "LIMIT_REACHED",
-      limit: limits.maxTemplates
-    })
-  }
+  // Limits removed for personal app
 
   templates.push({
     id: Date.now().toString(),
@@ -3503,16 +2714,7 @@ app.post("/api/:userId/commands", requireUserAuth, (req, res) => {
   if (!command.startsWith("!")) command = "!" + command
 
   const commands = readCommands(userId)
-  const limits = getUserLimits(userId)
-
-  // Check command limit
-  if (commands.length >= limits.maxCommands) {
-    return res.status(403).json({
-      error: `Limit command tercapai (${limits.maxCommands}). Upgrade ke Pro untuk unlimited.`,
-      code: "LIMIT_REACHED",
-      limit: limits.maxCommands
-    })
-  }
+  // Limits removed for personal app
 
   commands.push({
     id: Date.now().toString(),
