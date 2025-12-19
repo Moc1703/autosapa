@@ -821,6 +821,23 @@
                         <button class="btn btn-warning btn-block" onclick="switchWhatsApp()">🔄 Switch WhatsApp Account</button>
                     </div>
 
+                    <div class="card mb-4">
+                        <h3 class="card-title mb-4">🔐 Ganti Password</h3>
+                        <div class="form-group mb-3">
+                            <label class="form-label mb-2" style="display:block;">Password Lama</label>
+                            <input type="password" class="form-input" id="oldPassword" placeholder="Masukkan password lama">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label mb-2" style="display:block;">Password Baru</label>
+                            <input type="password" class="form-input" id="newPassword" placeholder="Masukkan password baru">
+                        </div>
+                        <div class="form-group mb-4">
+                            <label class="form-label mb-2" style="display:block;">Konfirmasi Password Baru</label>
+                            <input type="password" class="form-input" id="confirmPassword" placeholder="Ulangi password baru">
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="changePassword()">💾 Simpan Password</button>
+                    </div>
+
                 </div>
             </div>
         </div>

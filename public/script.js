@@ -4000,3 +4000,45 @@ async function loadUserActivity() {
         console.error('Error loading user activity:', e);
     }
 }
+
+// ===== CHANGE PASSWORD =====
+async function changePassword() {
+    const oldPassword = document.getElementById('oldPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        toast('Semua field harus diisi!', 'error');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        toast('Password baru tidak cocok!', 'error');
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        toast('Password baru minimal 6 karakter!', 'error');
+        return;
+    }
+
+    try {
+        const res = await apiFetch('/api/auth/change-password', {
+            method: 'POST',
+            body: { oldPassword, newPassword }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            toast('Password berhasil diubah!', 'success');
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        } else {
+            toast(data.error || 'Gagal mengubah password', 'error');
+        }
+    } catch (e) {
+        console.error('Change password error:', e);
+        toast('Terjadi kesalahan saat mengubah password', 'error');
+    }
+}

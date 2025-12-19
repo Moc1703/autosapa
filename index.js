@@ -95,6 +95,37 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ success: true, user: { ...owner, isActive: true } })
 })
 
+// Password change endpoint
+app.post("/api/auth/change-password", requireAuth, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body
+    
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ error: "Password lama dan baru harus diisi" })
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Password baru minimal 6 karakter" })
+    }
+    
+    const owner = UserDB.findById("owner")
+    if (!owner) return res.status(404).json({ error: "User tidak ditemukan" })
+    
+    const isMatch = await bcrypt.compare(oldPassword, owner.password)
+    if (!isMatch) {
+      return res.status(401).json({ error: "Password lama salah!" })
+    }
+    
+    const hashedPassword = bcrypt.hashSync(newPassword, 10)
+    db.prepare("UPDATE users SET password = ? WHERE id = 'owner'").run(hashedPassword)
+    
+    res.json({ success: true, message: "Password berhasil diubah!" })
+  } catch (error) {
+    console.error("Password change error:", error)
+    res.status(500).json({ error: "Gagal mengubah password" })
+  }
+})
+
 // DEV ONLY: Preview app without auth (disabled in production)
 if (process.env.NODE_ENV !== "production") {
   app.get("/preview-app", (req, res) => {
