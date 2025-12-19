@@ -501,12 +501,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // DEV: Bypass session check for testing
-    // const isConnected = await checkSessionConnected();
-    // if (!isConnected) {
-    //     window.location.href = '/scan';
-    //     return;
-    // }
+    // Check if session is connected, if not redirect to scan
+    const isConnected = await checkSessionConnected();
+    if (!isConnected) {
+        window.location.href = '/scan';
+        return;
+    }
 
     // Save userId
     localStorage.setItem('wa_userId', userId);
@@ -2408,10 +2408,6 @@ function showModal(id) {
 
 function closeModal(id) {
     document.getElementById(id).classList.add('hidden');
-}
-
-function showModal(id) {
-    document.getElementById(id).classList.remove('hidden');
 }
 
 document.addEventListener('click', (e) => {
