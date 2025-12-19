@@ -3624,11 +3624,124 @@ let crmCurrentContactId = null;
 
 function showCrmContactActions(contactId) {
     const contact = crmContacts.find(c => c.id === contactId);
-    if (!contact) return;
+    if (!contact) {
+        toast('Contact not found', 'error');
+        return;
+    }
     
     crmCurrentContactId = contactId;
-    document.getElementById('crmContactActionsInfo').textContent = `Actions for ${contact.name || contact.phone}`;
-    showModal('crmContactActionsModal');
+    
+    Swal.fire({
+        title: '⚡ Contact Actions',
+        html: `<p style="margin-bottom:16px;color:#8696a0;">${contact.name || contact.phone}</p>`,
+        showCancelButton: true,
+        showDenyButton: false,
+        confirmButtonText: '🔄 Change Stage',
+        cancelButtonText: 'Close',
+        showCloseButton: true,
+        customClass: {
+            popup: 'swal-dark',
+            confirmButton: 'swal-btn-primary',
+            cancelButton: 'swal-btn-secondary'
+        },
+        footer: `
+            <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+                <button class="swal-action-btn" onclick="Swal.close(); crmActionStartSequenceAlert()">▶️ Start Sequence</button>
+                <button class="swal-action-btn" onclick="Swal.close(); crmActionStopSequenceAlert()">⏹️ Stop Sequence</button>
+                <button class="swal-action-btn success" onclick="Swal.close(); crmActionMarkAsAlert('interested')">🔥 Interested</button>
+                <button class="swal-action-btn primary" onclick="Swal.close(); crmActionMarkAsAlert('closed')">✅ Closed</button>
+                <button class="swal-action-btn danger" onclick="Swal.close(); crmActionMarkAsAlert('dnc')">🚫 DNC</button>
+                <button class="swal-action-btn danger" onclick="Swal.close(); deleteCrmContactAlert()">🗑️ Delete</button>
+            </div>
+        `
+    }).then((result) => {
+        if (result.isConfirmed) {
+            crmActionChangeStageAlert();
+        }
+    });
+}
+
+// SweetAlert versions of CRM actions
+function crmActionChangeStageAlert() {
+    Swal.fire({
+        title: '🔄 Select Stage',
+        input: 'select',
+        inputOptions: {
+            'new': '🆕 New',
+            'offered': '📨 Offered',
+            'interested': '🔥 Interested',
+            'closed': '✅ Closed',
+            'dnc': '🚫 Do Not Contact'
+        },
+        inputPlaceholder: 'Select a stage',
+        showCancelButton: true,
+        customClass: {
+            popup: 'swal-dark',
+            confirmButton: 'swal-btn-primary',
+            cancelButton: 'swal-btn-secondary'
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value) {
+            crmSetStage(result.value);
+        }
+    });
+}
+
+function crmActionStartSequenceAlert() {
+    if (crmSequences.length === 0) {
+        toast('No sequences available', 'error');
+        return;
+    }
+    
+    const options = {};
+    crmSequences.forEach(seq => {
+        options[seq.id] = seq.name;
+    });
+    
+    Swal.fire({
+        title: '▶️ Start Sequence',
+        input: 'select',
+        inputOptions: options,
+        inputPlaceholder: 'Select a sequence',
+        showCancelButton: true,
+        customClass: {
+            popup: 'swal-dark',
+            confirmButton: 'swal-btn-primary',
+            cancelButton: 'swal-btn-secondary'
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value) {
+            startContactSequenceFromModal(result.value);
+        }
+    });
+}
+
+function crmActionStopSequenceAlert() {
+    crmActionStopSequence();
+}
+
+function crmActionMarkAsAlert(stage) {
+    crmActionMarkAs(stage);
+}
+
+function deleteCrmContactAlert() {
+    Swal.fire({
+        title: 'Delete Contact?',
+        text: 'This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        customClass: {
+            popup: 'swal-dark',
+            confirmButton: 'swal-btn-danger',
+            cancelButton: 'swal-btn-secondary'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            deleteCrmContact(crmCurrentContactId);
+        }
+    });
 }
 
 function crmActionChangeStage() {

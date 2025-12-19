@@ -869,3 +869,78 @@ input:checked + .slider:before { transform: translateX(20px); box-shadow: 0 0 5p
     border: 2px dashed var(--primary);
     transform: scale(0.95);
 }
+
+/* =========================================
+   13. SWEETALERT CUSTOM STYLES
+   ========================================= */
+.swal-dark {
+    background: #0a0a0f !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-lg) !important;
+    color: var(--text-main) !important;
+}
+
+.swal-dark .swal2-title {
+    color: var(--text-main) !important;
+}
+
+.swal-dark .swal2-html-container {
+    color: var(--text-muted) !important;
+}
+
+.swal-dark .swal2-input,
+.swal-dark .swal2-select {
+    background: rgba(0,0,0,0.3) !important;
+    border: 1px solid var(--glass-border) !important;
+    color: var(--text-main) !important;
+    border-radius: 8px !important;
+}
+
+.swal-btn-primary {
+    background: linear-gradient(135deg, var(--primary), #00cc6a) !important;
+    color: #000 !important;
+    border: none !important;
+}
+
+.swal-btn-secondary {
+    background: rgba(255,255,255,0.1) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--glass-border) !important;
+}
+
+.swal-btn-danger {
+    background: #ff4757 !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+.swal-action-btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    color: var(--text-main);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.swal-action-btn:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.2);
+}
+.swal-action-btn.success {
+    background: rgba(0,255,136,0.2);
+    border-color: rgba(0,255,136,0.3);
+    color: var(--primary);
+}
+.swal-action-btn.primary {
+    background: rgba(0,210,255,0.2);
+    border-color: rgba(0,210,255,0.3);
+    color: var(--secondary);
+}
+.swal-action-btn.danger {
+    background: rgba(255,71,87,0.2);
+    border-color: rgba(255,71,87,0.3);
+    color: #ff4757;
+}
