@@ -293,6 +293,56 @@ try {
   // Indexes already exist
 }
 
+// ===== CRM AUTOMATION TABLES =====
+// Contacts table for CRM pipeline
+db.exec(`
+  CREATE TABLE IF NOT EXISTS crm_contacts (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    name TEXT,
+    stage TEXT DEFAULT 'new',
+    sequenceId TEXT,
+    sequenceStep INTEGER DEFAULT 0,
+    lastContactedAt TEXT,
+    nextFollowUpAt TEXT,
+    followUpCount INTEGER DEFAULT 0,
+    notes TEXT,
+    tags TEXT,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+// Sequences table for automation workflows
+db.exec(`
+  CREATE TABLE IF NOT EXISTS crm_sequences (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    steps TEXT NOT NULL,
+    triggerKeywords TEXT,
+    stopKeywords TEXT,
+    maxFollowUps INTEGER DEFAULT 3,
+    isActive INTEGER DEFAULT 1,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+// Create indexes for CRM tables
+try {
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_userId ON crm_contacts(userId)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_stage ON crm_contacts(stage)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_contacts_nextFollowUp ON crm_contacts(nextFollowUpAt)`)
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_crm_sequences_userId ON crm_sequences(userId)`)
+} catch (e) {
+  // Indexes already exist
+}
+
+console.log("✅ CRM Automation tables initialized")
+
 // ===== USER HELPER FUNCTIONS (SQLite) =====
 const UserDB = {
   findOne: (query) => {
@@ -611,6 +661,236 @@ setInterval(() => {
   ActivityLog.cleanup()
   console.log("🧹 Old activity logs cleaned up")
 }, 24 * 60 * 60 * 1000)
+
+// ===== CRM HELPER FUNCTIONS =====
+const CRM = {
+  // Contacts
+  getContacts: (userId, filters = {}) => {
+    let query = "SELECT * FROM crm_contacts WHERE userId = ?"
+    const params = [userId]
+    
+    if (filters.stage) {
+      query += " AND stage = ?"
+      params.push(filters.stage)
+    }
+    if (filters.sequenceId) {
+      query += " AND sequenceId = ?"
+      params.push(filters.sequenceId)
+    }
+    
+    query += " ORDER BY createdAt DESC"
+    return db.prepare(query).all(...params)
+  },
+
+  getContact: (userId, contactId) => {
+    return db.prepare("SELECT * FROM crm_contacts WHERE userId = ? AND id = ?").get(userId, contactId)
+  },
+
+  createContact: (userId, data) => {
+    const id = crypto.randomUUID()
+    const stmt = db.prepare(`
+      INSERT INTO crm_contacts (id, userId, phone, name, stage, notes, tags, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    const now = new Date().toISOString()
+    stmt.run(id, userId, data.phone, data.name || null, data.stage || 'new', data.notes || null, data.tags || null, now, now)
+    return CRM.getContact(userId, id)
+  },
+
+  updateContact: (userId, contactId, data) => {
+    const updates = []
+    const params = []
+    
+    if (data.name !== undefined) { updates.push("name = ?"); params.push(data.name) }
+    if (data.phone !== undefined) { updates.push("phone = ?"); params.push(data.phone) }
+    if (data.stage !== undefined) { updates.push("stage = ?"); params.push(data.stage) }
+    if (data.sequenceId !== undefined) { updates.push("sequenceId = ?"); params.push(data.sequenceId) }
+    if (data.sequenceStep !== undefined) { updates.push("sequenceStep = ?"); params.push(data.sequenceStep) }
+    if (data.lastContactedAt !== undefined) { updates.push("lastContactedAt = ?"); params.push(data.lastContactedAt) }
+    if (data.nextFollowUpAt !== undefined) { updates.push("nextFollowUpAt = ?"); params.push(data.nextFollowUpAt) }
+    if (data.followUpCount !== undefined) { updates.push("followUpCount = ?"); params.push(data.followUpCount) }
+    if (data.notes !== undefined) { updates.push("notes = ?"); params.push(data.notes) }
+    if (data.tags !== undefined) { updates.push("tags = ?"); params.push(data.tags) }
+    
+    updates.push("updatedAt = ?")
+    params.push(new Date().toISOString())
+    params.push(userId, contactId)
+    
+    db.prepare(`UPDATE crm_contacts SET ${updates.join(", ")} WHERE userId = ? AND id = ?`).run(...params)
+    return CRM.getContact(userId, contactId)
+  },
+
+  deleteContact: (userId, contactId) => {
+    db.prepare("DELETE FROM crm_contacts WHERE userId = ? AND id = ?").run(userId, contactId)
+  },
+
+  // Get contacts that need follow-up
+  getContactsForFollowUp: () => {
+    const now = new Date().toISOString()
+    return db.prepare(`
+      SELECT c.*, s.steps, s.maxFollowUps 
+      FROM crm_contacts c
+      LEFT JOIN crm_sequences s ON c.sequenceId = s.id
+      WHERE c.nextFollowUpAt IS NOT NULL 
+        AND c.nextFollowUpAt <= ?
+        AND c.stage NOT IN ('closed', 'dnc')
+    `).all(now)
+  },
+
+  // Sequences
+  getSequences: (userId) => {
+    const rows = db.prepare("SELECT * FROM crm_sequences WHERE userId = ? ORDER BY createdAt DESC").all(userId)
+    return rows.map(row => ({
+      ...row,
+      steps: JSON.parse(row.steps || '[]'),
+      triggerKeywords: row.triggerKeywords ? JSON.parse(row.triggerKeywords) : [],
+      stopKeywords: row.stopKeywords ? JSON.parse(row.stopKeywords) : []
+    }))
+  },
+
+  getSequence: (userId, sequenceId) => {
+    const row = db.prepare("SELECT * FROM crm_sequences WHERE userId = ? AND id = ?").get(userId, sequenceId)
+    if (!row) return null
+    return {
+      ...row,
+      steps: JSON.parse(row.steps || '[]'),
+      triggerKeywords: row.triggerKeywords ? JSON.parse(row.triggerKeywords) : [],
+      stopKeywords: row.stopKeywords ? JSON.parse(row.stopKeywords) : []
+    }
+  },
+
+  createSequence: (userId, data) => {
+    const id = crypto.randomUUID()
+    const stmt = db.prepare(`
+      INSERT INTO crm_sequences (id, userId, name, description, steps, triggerKeywords, stopKeywords, maxFollowUps, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    const now = new Date().toISOString()
+    stmt.run(
+      id, userId, data.name, data.description || null,
+      JSON.stringify(data.steps || []),
+      JSON.stringify(data.triggerKeywords || []),
+      JSON.stringify(data.stopKeywords || ['stop', 'unsubscribe', 'jangan hubungi']),
+      data.maxFollowUps || 3,
+      now, now
+    )
+    return CRM.getSequence(userId, id)
+  },
+
+  updateSequence: (userId, sequenceId, data) => {
+    const updates = []
+    const params = []
+    
+    if (data.name !== undefined) { updates.push("name = ?"); params.push(data.name) }
+    if (data.description !== undefined) { updates.push("description = ?"); params.push(data.description) }
+    if (data.steps !== undefined) { updates.push("steps = ?"); params.push(JSON.stringify(data.steps)) }
+    if (data.triggerKeywords !== undefined) { updates.push("triggerKeywords = ?"); params.push(JSON.stringify(data.triggerKeywords)) }
+    if (data.stopKeywords !== undefined) { updates.push("stopKeywords = ?"); params.push(JSON.stringify(data.stopKeywords)) }
+    if (data.maxFollowUps !== undefined) { updates.push("maxFollowUps = ?"); params.push(data.maxFollowUps) }
+    if (data.isActive !== undefined) { updates.push("isActive = ?"); params.push(data.isActive ? 1 : 0) }
+    
+    updates.push("updatedAt = ?")
+    params.push(new Date().toISOString())
+    params.push(userId, sequenceId)
+    
+    db.prepare(`UPDATE crm_sequences SET ${updates.join(", ")} WHERE userId = ? AND id = ?`).run(...params)
+    return CRM.getSequence(userId, sequenceId)
+  },
+
+  deleteSequence: (userId, sequenceId) => {
+    // Remove sequence from all contacts first
+    db.prepare("UPDATE crm_contacts SET sequenceId = NULL, sequenceStep = 0, nextFollowUpAt = NULL WHERE userId = ? AND sequenceId = ?").run(userId, sequenceId)
+    db.prepare("DELETE FROM crm_sequences WHERE userId = ? AND id = ?").run(userId, sequenceId)
+  },
+
+  // Start a sequence for a contact
+  startSequence: (userId, contactId, sequenceId) => {
+    const sequence = CRM.getSequence(userId, sequenceId)
+    if (!sequence || !sequence.steps.length) return null
+    
+    const firstStep = sequence.steps[0]
+    const nextFollowUp = new Date(Date.now() + (firstStep.delay || 0) * (firstStep.delayUnit === 'hours' ? 3600000 : 86400000))
+    
+    CRM.updateContact(userId, contactId, {
+      sequenceId,
+      sequenceStep: 0,
+      nextFollowUpAt: nextFollowUp.toISOString(),
+      stage: 'offered'
+    })
+    
+    return CRM.getContact(userId, contactId)
+  },
+
+  // Stop sequence for a contact
+  stopSequence: (userId, contactId, reason = null) => {
+    CRM.updateContact(userId, contactId, {
+      sequenceId: null,
+      sequenceStep: 0,
+      nextFollowUpAt: null,
+      stage: reason === 'dnc' ? 'dnc' : 'new'
+    })
+    return CRM.getContact(userId, contactId)
+  },
+
+  // Advance to next step in sequence
+  advanceSequence: (userId, contactId) => {
+    const contact = CRM.getContact(userId, contactId)
+    if (!contact || !contact.sequenceId) return null
+    
+    const sequence = CRM.getSequence(userId, contact.sequenceId)
+    if (!sequence) return null
+    
+    const nextStep = contact.sequenceStep + 1
+    
+    // Check if we've completed all steps or hit max follow-ups
+    if (nextStep >= sequence.steps.length || contact.followUpCount >= sequence.maxFollowUps) {
+      CRM.updateContact(userId, contactId, {
+        sequenceId: null,
+        nextFollowUpAt: null,
+        stage: 'dnc' // Move to do-not-contact after sequence completes
+      })
+      return CRM.getContact(userId, contactId)
+    }
+    
+    const step = sequence.steps[nextStep]
+    const nextFollowUp = new Date(Date.now() + (step.delay || 1) * (step.delayUnit === 'hours' ? 3600000 : 86400000))
+    
+    CRM.updateContact(userId, contactId, {
+      sequenceStep: nextStep,
+      nextFollowUpAt: nextFollowUp.toISOString(),
+      followUpCount: contact.followUpCount + 1
+    })
+    
+    return CRM.getContact(userId, contactId)
+  },
+
+  // Get stats for dashboard
+  getStats: (userId) => {
+    const stats = {
+      total: 0,
+      byStage: {},
+      inSequence: 0,
+      pendingFollowUp: 0
+    }
+    
+    const rows = db.prepare(`
+      SELECT stage, COUNT(*) as count FROM crm_contacts WHERE userId = ? GROUP BY stage
+    `).all(userId)
+    
+    rows.forEach(row => {
+      stats.byStage[row.stage] = row.count
+      stats.total += row.count
+    })
+    
+    const inSeq = db.prepare("SELECT COUNT(*) as count FROM crm_contacts WHERE userId = ? AND sequenceId IS NOT NULL").get(userId)
+    stats.inSequence = inSeq?.count || 0
+    
+    const pending = db.prepare("SELECT COUNT(*) as count FROM crm_contacts WHERE userId = ? AND nextFollowUpAt IS NOT NULL AND nextFollowUpAt <= ?").get(userId, new Date().toISOString())
+    stats.pendingFollowUp = pending?.count || 0
+    
+    return stats
+  }
+}
 
 // ===== CONFIGURATION =====
 const PORT = process.env.PORT || 3000
@@ -3297,6 +3577,192 @@ app.get("/api/:userId/stats", requireUserAuth, (req, res) => {
     todaySent,
     historyCount: history.length,
   })
+})
+
+// ===== CRM AUTOMATION =====
+// Get CRM stats
+app.get("/api/:userId/crm/stats", requireUserAuth, (req, res) => {
+  try {
+    const stats = CRM.getStats(req.params.userId)
+    res.json({ success: true, ...stats })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// List contacts
+app.get("/api/:userId/crm/contacts", requireUserAuth, (req, res) => {
+  try {
+    const { stage, sequenceId } = req.query
+    const contacts = CRM.getContacts(req.params.userId, { stage, sequenceId })
+    res.json({ success: true, contacts })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get single contact
+app.get("/api/:userId/crm/contacts/:contactId", requireUserAuth, (req, res) => {
+  try {
+    const contact = CRM.getContact(req.params.userId, req.params.contactId)
+    if (!contact) return res.status(404).json({ error: "Contact not found" })
+    res.json({ success: true, contact })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Create contact
+app.post("/api/:userId/crm/contacts", requireUserAuth, (req, res) => {
+  try {
+    const { phone, name, stage, notes, tags } = req.body
+    if (!phone) return res.status(400).json({ error: "Phone is required" })
+    
+    const contact = CRM.createContact(req.params.userId, { phone, name, stage, notes, tags })
+    res.json({ success: true, contact })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Update contact
+app.put("/api/:userId/crm/contacts/:contactId", requireUserAuth, (req, res) => {
+  try {
+    const contact = CRM.updateContact(req.params.userId, req.params.contactId, req.body)
+    if (!contact) return res.status(404).json({ error: "Contact not found" })
+    res.json({ success: true, contact })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Delete contact
+app.delete("/api/:userId/crm/contacts/:contactId", requireUserAuth, (req, res) => {
+  try {
+    CRM.deleteContact(req.params.userId, req.params.contactId)
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Bulk import contacts
+app.post("/api/:userId/crm/contacts/import", requireUserAuth, (req, res) => {
+  try {
+    const { contacts } = req.body
+    if (!contacts || !Array.isArray(contacts)) {
+      return res.status(400).json({ error: "Contacts array is required" })
+    }
+    
+    const results = { success: 0, failed: 0, errors: [] }
+    
+    for (const c of contacts) {
+      try {
+        if (!c.phone) {
+          results.failed++
+          results.errors.push(`Missing phone for contact`)
+          continue
+        }
+        CRM.createContact(req.params.userId, c)
+        results.success++
+      } catch (e) {
+        results.failed++
+        results.errors.push(`${c.phone}: ${e.message}`)
+      }
+    }
+    
+    res.json({ success: true, ...results })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Start sequence for contact
+app.post("/api/:userId/crm/contacts/:contactId/start-sequence", requireUserAuth, (req, res) => {
+  try {
+    const { sequenceId } = req.body
+    if (!sequenceId) return res.status(400).json({ error: "sequenceId is required" })
+    
+    const contact = CRM.startSequence(req.params.userId, req.params.contactId, sequenceId)
+    if (!contact) return res.status(404).json({ error: "Contact or sequence not found" })
+    
+    res.json({ success: true, contact })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Stop sequence for contact
+app.post("/api/:userId/crm/contacts/:contactId/stop-sequence", requireUserAuth, (req, res) => {
+  try {
+    const { reason } = req.body
+    const contact = CRM.stopSequence(req.params.userId, req.params.contactId, reason)
+    if (!contact) return res.status(404).json({ error: "Contact not found" })
+    
+    res.json({ success: true, contact })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// List sequences
+app.get("/api/:userId/crm/sequences", requireUserAuth, (req, res) => {
+  try {
+    const sequences = CRM.getSequences(req.params.userId)
+    res.json({ success: true, sequences })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get single sequence
+app.get("/api/:userId/crm/sequences/:sequenceId", requireUserAuth, (req, res) => {
+  try {
+    const sequence = CRM.getSequence(req.params.userId, req.params.sequenceId)
+    if (!sequence) return res.status(404).json({ error: "Sequence not found" })
+    res.json({ success: true, sequence })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Create sequence
+app.post("/api/:userId/crm/sequences", requireUserAuth, (req, res) => {
+  try {
+    const { name, description, steps, triggerKeywords, stopKeywords, maxFollowUps } = req.body
+    if (!name) return res.status(400).json({ error: "Name is required" })
+    if (!steps || !Array.isArray(steps) || steps.length === 0) {
+      return res.status(400).json({ error: "At least one step is required" })
+    }
+    
+    const sequence = CRM.createSequence(req.params.userId, {
+      name, description, steps, triggerKeywords, stopKeywords, maxFollowUps
+    })
+    res.json({ success: true, sequence })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Update sequence
+app.put("/api/:userId/crm/sequences/:sequenceId", requireUserAuth, (req, res) => {
+  try {
+    const sequence = CRM.updateSequence(req.params.userId, req.params.sequenceId, req.body)
+    if (!sequence) return res.status(404).json({ error: "Sequence not found" })
+    res.json({ success: true, sequence })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Delete sequence
+app.delete("/api/:userId/crm/sequences/:sequenceId", requireUserAuth, (req, res) => {
+  try {
+    CRM.deleteSequence(req.params.userId, req.params.sequenceId)
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 })
 
 // ===== MEDIA LIBRARY =====
