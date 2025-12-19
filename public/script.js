@@ -3401,7 +3401,7 @@ function renderCrmKanban() {
                     ${tagsHtml ? `<div class="kanban-tags-container">${tagsHtml}</div>` : ''}
                     <div class="kanban-card-footer">
                         <span class="kanban-tag">${c.sequenceId ? '⚡ Active' : 'Idle'}</span>
-                        <button class="btn btn-sm btn-icon" onclick="showCrmContactActions('${c.id}')">⋮</button>
+                        <button class="btn btn-sm btn-icon" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); showCrmContactActions('${c.id}')">⋮</button>
                     </div>
                 </div>
             `;

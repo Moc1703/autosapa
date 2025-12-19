@@ -243,6 +243,14 @@ if (process.env.NODE_ENV !== "production") {
                             '</div>' +
                         '</div>';
                 }
+
+                // Mock CRM Data for Preview
+                crmContacts = [
+                    { id: 'mock1', name: 'Ayu', phone: '6285939459783', stage: 'new', tags: 'VIP', sequenceId: null },
+                    { id: 'mock2', name: 'Budi', phone: '628123456789', stage: 'offered', tags: 'Hot Lead', sequenceId: 'seq1' }
+                ];
+                renderCrmContacts();
+                if (typeof renderCrmKanban === 'function') renderCrmKanban();
             });
         </script>`
     )
