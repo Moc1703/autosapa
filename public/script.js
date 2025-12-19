@@ -3160,6 +3160,8 @@ async function loadDashboardStats() {
         await Promise.all([loadGroups(), loadStats(), loadSchedules()]);
     }
 
+    loadUserActivity();
+
     // Update Stats Cards
     const elGroups = document.getElementById('dashTotalGroups');
     if (elGroups) elGroups.textContent = groups.length;
@@ -3350,6 +3352,102 @@ function filterCrmStage(stage) {
     loadCrmContacts();
 }
 
+let crmViewMode = 'kanban'; // Default to kanban for v2.0
+
+function switchCrmView(mode) {
+    crmViewMode = mode;
+    const kanbanBtn = document.getElementById('crmViewModeKanban');
+    const listBtn = document.getElementById('crmViewModeList');
+    const kanbanView = document.getElementById('crmKanbanView');
+    const listView = document.getElementById('crmListView');
+
+    if (mode === 'kanban') {
+        kanbanBtn.classList.replace('btn-secondary', 'btn-primary');
+        listBtn.classList.replace('btn-primary', 'btn-secondary');
+        kanbanView.classList.remove('hidden');
+        listView.classList.add('hidden');
+        renderCrmKanban();
+    } else {
+        listBtn.classList.replace('btn-secondary', 'btn-primary');
+        kanbanBtn.classList.replace('btn-primary', 'btn-secondary');
+        listView.classList.remove('hidden');
+        kanbanView.classList.add('hidden');
+        renderCrmContacts();
+    }
+}
+
+function renderCrmKanban() {
+    const stages = ['new', 'offered', 'interested', 'closed', 'dnc'];
+    stages.forEach(stage => {
+        const list = document.getElementById(`list-${stage}`);
+        const count = document.getElementById(`count-${stage}`);
+        const contacts = crmContacts.filter(c => c.stage === stage);
+        
+        count.textContent = contacts.length;
+        
+        if (contacts.length === 0) {
+            list.innerHTML = `<div class="empty-state" style="padding:10px; font-size:11px; opacity:0.5;">No contacts</div>`;
+            return;
+        }
+
+        list.innerHTML = contacts.map(c => {
+            const tagsList = c.tags ? c.tags.split(',').map(t => t.trim()).filter(t => t) : [];
+            const tagsHtml = tagsList.map(t => `<span class="kanban-tag-mini">${escapeHtml(t)}</span>`).join('');
+            
+            return `
+                <div class="kanban-card" draggable="true" ondragstart="drag(event)" id="card-${c.id}" data-id="${c.id}">
+                    <div class="kanban-card-title">${escapeHtml(c.name || 'No Name')}</div>
+                    <div class="kanban-card-phone">${c.phone}</div>
+                    ${tagsHtml ? `<div class="kanban-tags-container">${tagsHtml}</div>` : ''}
+                    <div class="kanban-card-footer">
+                        <span class="kanban-tag">${c.sequenceId ? '⚡ Active' : 'Idle'}</span>
+                        <button class="btn btn-sm btn-icon" onclick="showCrmContactActions('${c.id}')">⋮</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    });
+}
+
+// Drag & Drop Handlers
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("contactId", ev.target.dataset.id);
+    ev.target.classList.add('dragging');
+}
+
+async function drop(ev) {
+    ev.preventDefault();
+    const contactId = ev.dataTransfer.getData("contactId");
+    const draggingEl = document.getElementById(`card-${contactId}`);
+    if (draggingEl) draggingEl.classList.remove('dragging');
+
+    // Find the target column
+    const column = ev.target.closest('.kanban-column');
+    if (!column) return;
+    
+    const newStage = column.id.replace('kanban-', '');
+    const contact = crmContacts.find(c => c.id === contactId);
+    
+    if (contact && contact.stage !== newStage) {
+        try {
+            await apiFetch(getUserApi() + '/crm/contacts/' + contactId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stage: newStage })
+            });
+            toast(`Updated to ${newStage}`, 'success');
+            loadCrmData();
+        } catch (e) {
+            toast('Failed to update stage', 'error');
+        }
+    }
+}
+
+
 function filterCrmContacts() {
     const q = (document.getElementById('searchCrmContacts')?.value || '').toLowerCase();
     document.querySelectorAll('#crmContactsList .card-list-item').forEach(item => {
@@ -3405,6 +3503,8 @@ function showAddCrmContact() {
                 <input id="swal-phone" class="swal2-input" placeholder="628123456789" style="width:100%; margin:0 0 12px 0;">
                 <label style="display:block; margin-bottom:4px; color:#8696a0;">👤 Name</label>
                 <input id="swal-name" class="swal2-input" placeholder="John Doe" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">🏷️ Tags (comma separated)</label>
+                <input id="swal-tags" class="swal2-input" placeholder="lead, vip, help" style="width:100%; margin:0 0 12px 0;">
                 <label style="display:block; margin-bottom:4px; color:#8696a0;">📝 Notes (optional)</label>
                 <textarea id="swal-notes" class="swal2-textarea" placeholder="Notes..." style="width:100%; margin:0;"></textarea>
             </div>
@@ -3418,12 +3518,13 @@ function showAddCrmContact() {
         preConfirm: () => {
             const phone = document.getElementById('swal-phone').value.trim();
             const name = document.getElementById('swal-name').value.trim();
+            const tags = document.getElementById('swal-tags').value.trim();
             const notes = document.getElementById('swal-notes').value.trim();
             if (!phone) {
                 Swal.showValidationMessage('Phone number is required');
                 return false;
             }
-            return { phone, name, notes };
+            return { phone, name, tags, notes };
         }
     }).then(async (result) => {
         if (result.isConfirmed && result.value) {
@@ -3661,17 +3762,32 @@ function showAddSequence() {
             <div style="text-align:left;">
                 <label style="display:block; margin-bottom:4px; color:#8696a0;">📛 Sequence Name</label>
                 <input id="swal-seq-name" class="swal2-input" placeholder="Follow-up Sequence" style="width:100%; margin:0 0 12px 0;">
-                <label style="display:block; margin-bottom:4px; color:#8696a0;">🔄 Max Follow-ups</label>
-                <select id="swal-seq-max" class="swal2-select" style="width:100%; margin:0 0 12px 0;">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3" selected>3</option>
-                    <option value="5">5</option>
-                </select>
-                <label style="display:block; margin-bottom:4px; color:#8696a0;">⏰ First Message (after days)</label>
-                <input type="number" id="swal-seq-delay" class="swal2-input" value="3" min="1" style="width:100%; margin:0 0 12px 0;">
-                <label style="display:block; margin-bottom:4px; color:#8696a0;">💬 Message</label>
-                <textarea id="swal-seq-message" class="swal2-textarea" placeholder="Hi! Just following up..." style="width:100%; margin:0;"></textarea>
+                
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:4px; color:#8696a0;">🔄 Max Follow-ups</label>
+                        <select id="swal-seq-max" class="swal2-select" style="width:100%; margin:0 0 12px 0;">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3" selected>3</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:4px; color:#8696a0;">⏰ Delay (days)</label>
+                        <input type="number" id="swal-seq-delay" class="swal2-input" value="3" min="1" style="width:100%; margin:0 0 12px 0;">
+                    </div>
+                </div>
+
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">⚡ Trigger Keywords (comma separated)</label>
+                <input id="swal-seq-triggers" class="swal2-input" placeholder="halo, info, harga" style="width:100%; margin:0 0 12px 0;">
+
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">🛑 Stop Keywords (comma separated)</label>
+                <input id="swal-seq-stop" class="swal2-input" placeholder="stop, tidak, dnc" style="width:100%; margin:0 0 12px 0;">
+
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">💬 Message Content</label>
+                <textarea id="swal-seq-message" class="swal2-textarea" placeholder="Hi {first_name}! Just following up..." style="width:100%; height:100px; margin:0;"></textarea>
+                <div style="font-size:11px; color:#8696a0; margin-top:4px;">Available: {name}, {first_name}, {date}, {time}</div>
             </div>
         `,
         showCancelButton: true,
@@ -3685,6 +3801,8 @@ function showAddSequence() {
             const maxFollowUps = parseInt(document.getElementById('swal-seq-max').value);
             const delay = parseInt(document.getElementById('swal-seq-delay').value);
             const message = document.getElementById('swal-seq-message').value.trim();
+            const triggerKeywords = document.getElementById('swal-seq-triggers').value.trim();
+            const stopKeywords = document.getElementById('swal-seq-stop').value.trim();
             
             if (!name) {
                 Swal.showValidationMessage('Sequence name is required');
@@ -3698,6 +3816,8 @@ function showAddSequence() {
             return { 
                 name, 
                 maxFollowUps,
+                triggerKeywords,
+                stopKeywords,
                 steps: [{ delay, delayUnit: 'days', message }]
             };
         }
@@ -3816,6 +3936,17 @@ function editSequence(id) {
 // Redundant functions removed to avoid overwriting SweetAlert2 versions
 
 
+async function loadCrmData() {
+    await loadCrmContacts();
+    await loadCrmSequences();
+    
+    if (crmViewMode === 'kanban') {
+        renderCrmKanban();
+    } else {
+        renderCrmContacts();
+    }
+}
+
 // Update switchTab to include CRM
 const originalSwitchTab = window.switchTab;
 window.switchTab = function(tab) {
@@ -3863,3 +3994,39 @@ document.addEventListener('click', function(e) {
         showImportCrmContacts();
     }
 });
+// ===== USER ACTIVITY DASHBOARD =====
+async function loadUserActivity() {
+    try {
+        const res = await apiFetch(getUserApi() + '/activity');
+        const data = await res.json();
+        
+        const container = document.getElementById('recentActivity');
+        if (!container) return;
+
+        if (!data.logs || data.logs.length === 0) {
+            container.innerHTML = '<div class="empty-state">No recent activity</div>';
+            return;
+        }
+
+        const actionIcons = {
+            'login': '🔑',
+            'broadcast': '📢',
+            'crm_trigger': '⚡',
+            'crm_followup': '🤖',
+            'suspended': '⛔',
+            'unsuspended': '✅'
+        };
+
+        container.innerHTML = data.logs.map(log => `
+            <div class="activity-item">
+                <div class="activity-icon-small">${actionIcons[log.action] || '📝'}</div>
+                <div class="activity-content">
+                    <div class="activity-text">${escapeHtml(log.details || log.action)}</div>
+                    <div class="activity-time">${formatDate(log.createdAt)}</div>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Error loading user activity:', e);
+    }
+}

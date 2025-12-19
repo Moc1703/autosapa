@@ -162,6 +162,55 @@ if (process.env.NODE_ENV !== "production") {
             function bulkDeleteGroups() {}
             function loadAnalytics() {}
 
+            function showAddSequence() {
+                Swal.fire({
+                    title: '⚡ Create Sequence',
+                    html: '<div style=\"text-align:left;\">' +
+                            '<label style=\"display:block; margin-bottom:4px; color:#8696a0;\">📛 Sequence Name</label>' +
+                            '<input class=\"swal2-input\" placeholder=\"Follow-up Sequence\" style=\"width:100%; margin:0 0 12px 0;\">' +
+                            '<div style=\"display:flex; gap:10px;\">' +
+                                '<div style=\"flex:1;\">' +
+                                    '<label style=\"display:block; margin-bottom:4px; color:#8696a0;\">🔄 Max Follow-ups</label>' +
+                                    '<select class=\"swal2-select\" style=\"width:100%; margin:0 0 12px 0;\">' +
+                                        '<option value=\"3\" selected>3</option>' +
+                                    '</select>' +
+                                '</div>' +
+                                '<div style=\"flex:1;\">' +
+                                    '<label style=\"display:block; margin-bottom:4px; color:#8696a0;\">⏰ Delay (days)</label>' +
+                                    '<input type=\"number\" class=\"swal2-input\" value=\"3\" min=\"1\" style=\"width:100%; margin:0 0 12px 0;\">' +
+                                '</div>' +
+                            '</div>' +
+                            '<label style=\"display:block; margin-bottom:4px; color:#8696a0;\">⚡ Trigger Keywords</label>' +
+                            '<input class=\"swal2-input\" placeholder=\"halo, info\" style=\"width:100%; margin:0 0 12px 0;\">' +
+                            '<label style=\"display:block; margin-bottom:4px; color:#8696a0;\">🛑 Stop Keywords</label>' +
+                            '<input class=\"swal2-input\" placeholder=\"stop, dnc\" style=\"width:100%; margin:0 0 12px 0;\">' +
+                        '</div>',
+                    background: '#1f2c34',
+                    color: '#e9edef'
+                });
+            }
+
+            function showAddCrmContact() {
+                Swal.fire({
+                    title: '➕ Add CRM Contact',
+                    html: '<div style=\"text-align:left;\">' +
+                            '<label style=\"display:block; margin-bottom:4px; color:#8696a0;\">📱 Phone Number</label>' +
+                            '<input class=\"swal2-input\" placeholder=\"628123456789\" style=\"width:100%; margin:0 0 12px 0;\">' +
+                            '<label style=\"display:block; margin-bottom:4px; color:#8696a0;\">👤 Name</label>' +
+                            '<input class=\"swal2-input\" placeholder=\"John Doe\" style=\"width:100%; margin:0 0 12px 0;\">' +
+                            '<label style=\"display:block; margin-bottom:4px; color:#8696a0;\">🏷️ Tags</label>' +
+                            '<input class=\"swal2-input\" placeholder=\"vip, lead\" style=\"width:100%; margin:0 0 12px 0;\">' +
+                        '</div>',
+                    background: '#1f2c34',
+                    color: '#e9edef'
+                });
+            }
+
+            function switchCrmView(mode) {
+                document.getElementById('crmKanbanView').classList.toggle('hidden', mode !== 'kanban');
+                document.getElementById('crmListView').classList.toggle('hidden', mode !== 'list');
+            }
+
             // Set status to preview mode
             document.addEventListener('DOMContentLoaded', () => {
                 ['statusBadge', 'statusBadgeDesktop', 'statusBadgeMobile'].forEach(id => {
@@ -175,6 +224,25 @@ if (process.env.NODE_ENV !== "production") {
                     const el = document.getElementById(id);
                     if (el) el.textContent = 'Preview Mode';
                 });
+
+                // Render some dummy activity
+                const activityContainer = document.getElementById('recentActivity');
+                if (activityContainer) {
+                    activityContainer.innerHTML = '<div class=\"activity-item\">' +
+                            '<div class=\"activity-icon-small\">🔑</div>' +
+                            '<div class=\"activity-content\">' +
+                                '<div class=\"activity-text\">Login successful</div>' +
+                                '<div class=\"activity-time\">Just now</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class=\"activity-item\">' +
+                            '<div class=\"activity-icon-small\">⚡</div>' +
+                            '<div class=\"activity-content\">' +
+                                '<div class=\"activity-text\">Trigger detected: halo</div>' +
+                                '<div class=\"activity-time\">5 minutes ago</div>' +
+                            '</div>' +
+                        '</div>';
+                }
             });
         </script>`
     )
@@ -201,15 +269,6 @@ app.get("/admin", (req, res) =>
 )
 
 app.use(express.static("public"))
-
-// Security headers
-app.use((req, res, next) => {
-  res.setHeader("X-Content-Type-Options", "nosniff")
-  res.setHeader("X-Frame-Options", "DENY")
-  res.setHeader("X-XSS-Protection", "1; mode=block")
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin")
-  next()
-})
 
 // Trust proxy for rate limiting (if behind nginx/cloudflare)
 app.set("trust proxy", 1)
@@ -914,7 +973,7 @@ const CRM = {
           continue
         }
 
-        const message = processMessageVariables(step.message)
+        const message = processMessageVariables(step.message, contact)
         const chatId = contact.phone.includes('@') ? contact.phone : `${contact.phone}@c.us`
         
         await client.sendMessage(chatId, message)
@@ -932,6 +991,73 @@ const CRM = {
         CRM.updateContact(contact.userId, contact.id, { nextFollowUpAt: retryAt })
       }
     }
+  },
+
+  // Handle incoming messages for smart triggers and sequence stopping
+  handleIncomingMessage: async (userId, client, msg) => {
+    try {
+      const senderPhone = msg.from.replace('@c.us', '').replace('@g.us', '')
+      const msgText = msg.body.toLowerCase()
+      
+      // 1. Find contact in CRM
+      let contact = CRM.getContactByPhone(userId, senderPhone)
+      
+      // 2. If contact found, check for stop keywords or active sequence triggers
+      if (contact) {
+        // If in sequence, check for stop keywords
+        if (contact.sequenceId) {
+          const sequence = CRM.getSequence(userId, contact.sequenceId)
+          if (sequence && sequence.stopKeywords) {
+            const stopKeywords = sequence.stopKeywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k)
+            if (stopKeywords.some(k => msgText.includes(k))) {
+              console.log(`[${userId}] 🛑 Sequence stopped for ${senderPhone} (Stop keyword detected)`)
+              CRM.stopSequence(userId, contact.id, 'dnc')
+              ActivityLog.log(userId, 'crm_trigger', `Sequence stopped for ${senderPhone} (Stop keyword detected)`, 1)
+              return
+            }
+          }
+        }
+
+        // Check for trigger keywords to change stage or start a NEW sequence
+        const sequences = CRM.getSequences(userId)
+        for (const seq of sequences) {
+          if (!seq.triggerKeywords) continue
+          const triggers = seq.triggerKeywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k)
+          if (triggers.some(k => msgText.includes(k))) {
+            console.log(`[${userId}] ⚡ Trigger detected for ${senderPhone}: starting ${seq.name}`)
+            CRM.startSequence(userId, contact.id, seq.id)
+            ActivityLog.log(userId, 'crm_trigger', `Trigger detected for ${senderPhone}: starting ${seq.name}`, 1)
+            return
+          }
+        }
+      } else {
+        // 3. Contact not found, check global trigger keywords to auto-add to CRM
+        const sequences = CRM.getSequences(userId)
+        for (const seq of sequences) {
+          if (!seq.triggerKeywords) continue
+          const triggers = seq.triggerKeywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k)
+          if (triggers.some(k => msgText.includes(k))) {
+            console.log(`[${userId}] ✨ Auto-adding ${senderPhone} to CRM via trigger: ${seq.name}`)
+            const contactName = (await msg.getContact()).pushname || senderPhone
+            const newContact = CRM.createContact(userId, { 
+              phone: senderPhone, 
+              name: contactName,
+              stage: 'new',
+              notes: `Auto-added via trigger: ${seq.name}`
+            })
+            CRM.startSequence(userId, newContact.id, seq.id)
+            ActivityLog.log(userId, 'crm_trigger', `Auto-added ${senderPhone} to CRM via trigger: ${seq.name}`, 1)
+            return
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`[${userId}] CRM Trigger Error:`, error)
+    }
+  },
+
+  getContactByPhone: (userId, phone) => {
+    return db.prepare("SELECT * FROM crm_contacts WHERE userId = ? AND phone = ?").get(userId, phone)
   }
 }
 
@@ -1034,7 +1160,8 @@ const writeQuickActions = (userId, data) =>
   writeUserData(userId, "quickactions.json", data)
 
 // ===== MESSAGE VARIABLES PROCESSOR =====
-function processMessageVariables(message) {
+// ===== MESSAGE VARIABLES PROCESSOR =====
+function processMessageVariables(message, contact = null) {
   if (!message) return ""
   const now = new Date()
   const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
@@ -1053,7 +1180,7 @@ function processMessageVariables(message) {
     "Desember",
   ]
 
-  return message
+  let processed = message
     .replace(/{date}/g, now.toLocaleDateString("id-ID"))
     .replace(
       /{time}/g,
@@ -1062,6 +1189,19 @@ function processMessageVariables(message) {
     .replace(/{day}/g, days[now.getDay()])
     .replace(/{month}/g, months[now.getMonth()])
     .replace(/{year}/g, now.getFullYear().toString())
+
+  if (contact) {
+    const fullName = contact.name || ""
+    const firstName = fullName.split(" ")[0] || ""
+    const phone = contact.phone || ""
+
+    processed = processed
+      .replace(/{name}/g, fullName)
+      .replace(/{first_name}/g, firstName)
+      .replace(/{phone}/g, phone)
+  }
+
+  return processed
 }
 
 // ===== ANTI-LOOP PROTECTION =====
@@ -1406,6 +1546,9 @@ async function handleIncomingMessage(userId, client, msg) {
 
     const settings = readSettings(userId)
 
+    // CRM Smart Triggers
+    await CRM.handleIncomingMessage(userId, client, msg)
+
     // Check Custom Commands first
     if (msg.body.startsWith("!")) {
       const commands = readCommands(userId)
@@ -1421,7 +1564,8 @@ async function handleIncomingMessage(userId, client, msg) {
           await delay(settings.typing.durationMs || 1000)
         }
 
-        const response = processMessageVariables(cmd.response)
+        const contact = CRM.getContactByPhone(userId, senderNumber)
+        const response = processMessageVariables(cmd.response, contact)
         await msg.reply(response)
         console.log(`[${userId}] Command ${cmdName} executed`)
         return
@@ -1481,7 +1625,9 @@ async function handleIncomingMessage(userId, client, msg) {
           responseText = responses[Math.floor(Math.random() * responses.length)]
         }
 
-        const response = processMessageVariables(responseText)
+        const contact = CRM.getContactByPhone(userId, senderNumber)
+        const responseTextProcessed = processMessageVariables(responseText, contact)
+        const response = responseTextProcessed
 
         // Reply with image if set
         if (reply.imagePath) {
@@ -2326,6 +2472,21 @@ app.get("/api/admin/logs", requireAdminAuth, (req, res) => {
   }
 })
 
+// Get activity logs for current user
+app.get("/api/:userId/activity", requireUserAuth, (req, res) => {
+  try {
+    const logs = db.prepare(`
+      SELECT * FROM activity_logs 
+      WHERE userId = ? 
+      ORDER BY createdAt DESC 
+      LIMIT 20
+    `).all(req.params.userId)
+    res.json({ success: true, logs })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // Admin: Get suspicious users
 app.get("/api/admin/suspicious", requireAdminAuth, (req, res) => {
   try {
@@ -2870,6 +3031,25 @@ app.get("/api/:userId/whatsapp-groups", requireSession, async (req, res) => {
     res.json(groups)
   } catch (error) {
     res.status(500).json({ error: error.message })
+  }
+})
+
+// ===== DRAFT =====
+app.get("/api/:userId/draft", requireUserAuth, (req, res) => {
+  try {
+    const draft = readUserData(req.params.userId, "draft.json")
+    res.json(draft || {})
+  } catch (e) {
+    res.json({})
+  }
+})
+
+app.post("/api/:userId/draft", requireUserAuth, (req, res) => {
+  try {
+    writeUserData(req.params.userId, "draft.json", req.body)
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
   }
 })
 

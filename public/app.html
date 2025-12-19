@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AutoSapa - WhatsApp Automation</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Ionicons for clean icons -->
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
@@ -19,7 +23,16 @@
     <!-- 1. SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-logo">📡</div> 
+            <svg class="sidebar-logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" stroke="url(#logo-grad)" stroke-width="8"/>
+                <path d="M30 50L45 65L70 35" stroke="url(#logo-grad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                    <linearGradient id="logo-grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00ff88"/>
+                        <stop offset="1" stop-color="#00d2ff"/>
+                    </linearGradient>
+                </defs>
+            </svg>
             <span class="sidebar-title">AutoSapa</span>
         </div>
         
@@ -74,13 +87,13 @@
             <!-- Welcome Section -->
             <div class="dash-welcome">
                 <div>
-                    <h1 class="page-title">Welcome back! 👋</h1>
-                    <p class="page-subtitle" id="currentDate">Loading date...</p>
+                    <h1 class="page-title">Halo, Selamat Datang! 👋</h1>
+                    <p class="page-subtitle" id="currentDate">Memuat tanggal...</p>
                 </div>
                 <!-- Status Badge (Desktop/Tablet) -->
-                <div class="dash-status-pill disconnected" id="dashStatusPill">
+                <div class="dash-status-pill disconnected" id="dashStatusPill" style="padding: 8px 16px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);">
                     <span class="status-dot"></span>
-                    <span id="dashStatusText">Connecting...</span>
+                    <span id="dashStatusText" style="font-weight: 600;">Connecting...</span>
                 </div>
             </div>
 
@@ -456,6 +469,10 @@
         <div id="tab-crm" class="tab-panel">
             <div class="page-header flex justify-between align-center mb-4">
                 <h1 class="page-title">🎯 CRM Automation</h1>
+                <div class="flex gap-2" style="background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
+                    <button class="btn btn-sm btn-primary" id="crmViewModeKanban" onclick="switchCrmView('kanban')">📋 Kanban</button>
+                    <button class="btn btn-sm btn-secondary" id="crmViewModeList" onclick="switchCrmView('list')">📝 List</button>
+                </div>
             </div>
 
             <!-- CRM Stats -->
@@ -478,55 +495,84 @@
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
-                <!-- Left: Contacts Pipeline -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">📋 Contacts Pipeline</h3>
-                        <div class="flex gap-2">
-                            <button class="btn btn-sm btn-secondary" onclick="showImportCrmContacts()">📥 Import</button>
-                            <button class="btn btn-sm btn-primary" onclick="showAddCrmContact()">+ Add Contact</button>
+            <!-- View Mode: List -->
+            <div id="crmListView" class="hidden">
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
+                    <!-- Left: Contacts Pipeline -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📋 Contacts Pipeline</h3>
+                            <div class="flex gap-2">
+                                <button class="btn btn-sm btn-secondary" onclick="showImportCrmContacts()">📥 Import</button>
+                                <button class="btn btn-sm btn-primary" onclick="showAddCrmContact()">+ Add Contact</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Pipeline Filter Tabs -->
+                        <div class="flex gap-2 mb-4" style="background:rgba(0,0,0,0.3); padding:4px; border-radius:12px;">
+                            <button class="btn btn-sm btn-primary crm-stage-btn active" onclick="filterCrmStage('all')" data-stage="all">All</button>
+                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('new')" data-stage="new">🆕 New</button>
+                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('offered')" data-stage="offered">📨 Offered</button>
+                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('interested')" data-stage="interested">🔥 Interested</button>
+                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('closed')" data-stage="closed">✅ Closed</button>
+                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('dnc')" data-stage="dnc">🚫 DNC</button>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <input type="text" class="form-input" id="searchCrmContacts" placeholder="Search contacts..." oninput="filterCrmContacts()">
+                        </div>
+
+                        <div class="list" id="crmContactsList">
+                            <!-- Populated via script -->
                         </div>
                     </div>
-                    
-                    <!-- Pipeline Filter Tabs -->
-                    <div class="flex gap-2 mb-4" style="background:rgba(0,0,0,0.3); padding:4px; border-radius:12px;">
-                        <button class="btn btn-sm btn-primary crm-stage-btn active" onclick="filterCrmStage('all')" data-stage="all">All</button>
-                        <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('new')" data-stage="new">🆕 New</button>
-                        <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('offered')" data-stage="offered">📨 Offered</button>
-                        <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('interested')" data-stage="interested">🔥 Interested</button>
-                        <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('closed')" data-stage="closed">✅ Closed</button>
-                        <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('dnc')" data-stage="dnc">🚫 DNC</button>
-                    </div>
 
-                    <div class="form-group mb-4">
-                        <input type="text" class="form-input" id="searchCrmContacts" placeholder="Search contacts..." oninput="filterCrmContacts()">
-                    </div>
-
-                    <div class="list" id="crmContactsList">
-                        <div class="empty-state" style="text-align:center; padding:40px;">
-                            <div class="empty-icon" style="font-size:48px; margin-bottom:16px;">🎯</div>
-                            <div class="empty-title" style="font-weight:600; margin-bottom:8px;">No CRM contacts yet</div>
-                            <p class="text-muted">Add contacts to start your sales pipeline</p>
-                            <button class="btn btn-primary mt-4" onclick="showAddCrmContact()">+ Add First Contact</button>
+                    <!-- Right: Sequences -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">⚡ Sequences</h3>
+                            <button class="btn btn-sm btn-primary" onclick="showAddSequence()">+ New</button>
+                        </div>
+                        <p class="text-muted mb-4" style="font-size:13px;">Automation workflows untuk follow-up otomatis</p>
+                        
+                        <div class="list" id="crmSequencesList">
+                            <!-- Populated via script -->
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Right: Sequences -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">⚡ Sequences</h3>
-                        <button class="btn btn-sm btn-primary" onclick="showAddSequence()">+ New</button>
+            <!-- View Mode: Kanban -->
+            <div id="crmKanbanView" class="kanban-container">
+                <div class="kanban-column" id="kanban-new" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="kanban-column-header">
+                        <div class="kanban-column-title">🆕 New <span class="kanban-count" id="count-new">0</span></div>
                     </div>
-                    <p class="text-muted mb-4" style="font-size:13px;">Automation workflows untuk follow-up otomatis</p>
-                    
-                    <div class="list" id="crmSequencesList">
-                        <div class="empty-state" style="text-align:center; padding:20px;">
-                            <p class="text-muted">No sequences yet</p>
-                            <button class="btn btn-sm btn-secondary mt-2" onclick="showAddSequence()">Create Sequence</button>
-                        </div>
+                    <div class="kanban-list" id="list-new"></div>
+                </div>
+                <div class="kanban-column" id="kanban-offered" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="kanban-column-header">
+                        <div class="kanban-column-title">📨 Offered <span class="kanban-count" id="count-offered">0</span></div>
                     </div>
+                    <div class="kanban-list" id="list-offered"></div>
+                </div>
+                <div class="kanban-column" id="kanban-interested" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="kanban-column-header">
+                        <div class="kanban-column-title">🔥 Interested <span class="kanban-count" id="count-interested">0</span></div>
+                    </div>
+                    <div class="kanban-list" id="list-interested"></div>
+                </div>
+                <div class="kanban-column" id="kanban-closed" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="kanban-column-header">
+                        <div class="kanban-column-title">✅ Closed <span class="kanban-count" id="count-closed">0</span></div>
+                    </div>
+                    <div class="kanban-list" id="list-closed"></div>
+                </div>
+                <div class="kanban-column" id="kanban-dnc" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <div class="kanban-column-header">
+                        <div class="kanban-column-title">🚫 DNC <span class="kanban-count" id="count-dnc">0</span></div>
+                    </div>
+                    <div class="kanban-list" id="list-dnc"></div>
                 </div>
             </div>
         </div>
