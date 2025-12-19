@@ -3397,34 +3397,55 @@ function renderCrmSequences() {
 }
 
 function showAddCrmContact() {
-    document.getElementById('crmContactPhone').value = '';
-    document.getElementById('crmContactName').value = '';
-    document.getElementById('crmContactNotes').value = '';
-    showModal('addCrmContactModal');
+    Swal.fire({
+        title: '➕ Add CRM Contact',
+        html: `
+            <div style="text-align:left;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">📱 Phone Number</label>
+                <input id="swal-phone" class="swal2-input" placeholder="628123456789" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">👤 Name</label>
+                <input id="swal-name" class="swal2-input" placeholder="John Doe" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">📝 Notes (optional)</label>
+                <textarea id="swal-notes" class="swal2-textarea" placeholder="Notes..." style="width:100%; margin:0;"></textarea>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Save Contact',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#25D366',
+        background: '#1f2c34',
+        color: '#e9edef',
+        preConfirm: () => {
+            const phone = document.getElementById('swal-phone').value.trim();
+            const name = document.getElementById('swal-name').value.trim();
+            const notes = document.getElementById('swal-notes').value.trim();
+            if (!phone) {
+                Swal.showValidationMessage('Phone number is required');
+                return false;
+            }
+            return { phone, name, notes };
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed && result.value) {
+            try {
+                await apiFetch(getUserApi() + '/crm/contacts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(result.value)
+                });
+                toast('Contact added!', 'success');
+                loadCrmData();
+            } catch (e) {
+                toast('Failed to add contact', 'error');
+            }
+        }
+    });
 }
 
+// Keep old function for backward compatibility but now unused
 async function saveCrmContactFromModal() {
-    const phone = document.getElementById('crmContactPhone').value.trim();
-    const name = document.getElementById('crmContactName').value.trim();
-    const notes = document.getElementById('crmContactNotes').value.trim();
-
-    if (!phone) {
-        toast('Phone number is required', 'error');
-        return;
-    }
-
-    try {
-        await apiFetch(getUserApi() + '/crm/contacts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, name, notes })
-        });
-        toast('Contact added!', 'success');
-        closeModal('addCrmContactModal');
-        loadCrmData();
-    } catch (e) {
-        toast('Failed to add contact', 'error');
-    }
+    // This is now handled by SweetAlert2 in showAddCrmContact
+    console.log('saveCrmContactFromModal called - now handled by SweetAlert2');
 }
 
 async function deleteCrmContact(id) {
@@ -3546,12 +3567,67 @@ async function crmActionMarkAs(stage) {
 let sequenceSteps = [];
 
 function showAddSequence() {
-    document.getElementById('sequenceName').value = '';
-    document.getElementById('sequenceMaxFollowUps').value = '3';
-    sequenceSteps = [];
-    renderSequenceSteps();
-    addSequenceStep(); // Add first step by default
-    showModal('addSequenceModal');
+    Swal.fire({
+        title: '⚡ Create Sequence',
+        html: `
+            <div style="text-align:left;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">📛 Sequence Name</label>
+                <input id="swal-seq-name" class="swal2-input" placeholder="Follow-up Sequence" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">🔄 Max Follow-ups</label>
+                <select id="swal-seq-max" class="swal2-select" style="width:100%; margin:0 0 12px 0;">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="5">5</option>
+                </select>
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">⏰ First Message (after days)</label>
+                <input type="number" id="swal-seq-delay" class="swal2-input" value="3" min="1" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">💬 Message</label>
+                <textarea id="swal-seq-message" class="swal2-textarea" placeholder="Hi! Just following up..." style="width:100%; margin:0;"></textarea>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Create Sequence',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#25D366',
+        background: '#1f2c34',
+        color: '#e9edef',
+        preConfirm: () => {
+            const name = document.getElementById('swal-seq-name').value.trim();
+            const maxFollowUps = parseInt(document.getElementById('swal-seq-max').value);
+            const delay = parseInt(document.getElementById('swal-seq-delay').value);
+            const message = document.getElementById('swal-seq-message').value.trim();
+            
+            if (!name) {
+                Swal.showValidationMessage('Sequence name is required');
+                return false;
+            }
+            if (!message) {
+                Swal.showValidationMessage('Message is required');
+                return false;
+            }
+            
+            return { 
+                name, 
+                maxFollowUps,
+                steps: [{ delay, delayUnit: 'days', message }]
+            };
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed && result.value) {
+            try {
+                await apiFetch(getUserApi() + '/crm/sequences', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(result.value)
+                });
+                toast('Sequence created!', 'success');
+                loadCrmSequences();
+            } catch (e) {
+                toast('Failed to create sequence', 'error');
+            }
+        }
+    });
 }
 
 function addSequenceStep() {
