@@ -11,6 +11,7 @@ const fs = require("fs")
 const path = require("path")
 const zlib = require("zlib")
 const multer = require("multer")
+const cron = require("node-cron")
 
 const app = express()
 
@@ -889,6 +890,48 @@ const CRM = {
     stats.pendingFollowUp = pending?.count || 0
     
     return stats
+  },
+
+  // Process pending follow-ups
+  processQueue: async () => {
+    const contacts = CRM.getContactsForFollowUp()
+    if (!contacts.length) return
+
+    console.log(`🤖 CRM: Processing ${contacts.length} follow-ups...`)
+
+    for (const contact of contacts) {
+      const client = sessions.get(contact.userId)
+      if (!client || sessionStatuses.get(contact.userId) !== "connected") {
+        continue
+      }
+
+      try {
+        const steps = JSON.parse(contact.steps || '[]')
+        const step = steps[contact.sequenceStep]
+        
+        if (!step || !step.message) {
+          CRM.updateContact(contact.userId, contact.id, { nextFollowUpAt: null })
+          continue
+        }
+
+        const message = processMessageVariables(step.message)
+        const chatId = contact.phone.includes('@') ? contact.phone : `${contact.phone}@c.us`
+        
+        await client.sendMessage(chatId, message)
+        console.log(`✅ CRM: Sent follow-up to ${contact.phone}`)
+
+        // Log activity
+        ActivityLog.log(contact.userId, 'crm_followup', `Sent follow-up step ${contact.sequenceStep + 1} to ${contact.phone}`, 1)
+
+        // Advance sequence
+        CRM.advanceSequence(contact.userId, contact.id)
+      } catch (e) {
+        console.error(`❌ CRM Error (${contact.phone}):`, e.message)
+        // Postpone by 30 mins to retry
+        const retryAt = new Date(Date.now() + 30 * 60000).toISOString()
+        CRM.updateContact(contact.userId, contact.id, { nextFollowUpAt: retryAt })
+      }
+    }
   }
 }
 
@@ -3968,6 +4011,12 @@ async function checkSchedules() {
 
 // Run schedule checker every minute
 setInterval(checkSchedules, 60000)
+
+// Run CRM Queue processor every minute
+cron.schedule('* * * * *', () => {
+    CRM.processQueue().catch(err => console.error("❌ CRM Cron Error:", err));
+});
+
 
 // ===== START SERVER =====
 async function startServer() {
