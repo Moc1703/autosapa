@@ -3460,6 +3460,94 @@ async function deleteCrmContact(id) {
     }
 }
 
+function showImportCrmContacts() {
+    Swal.fire({
+        title: '📥 Import Contacts',
+        html: `
+            <div style="text-align:left;">
+                <label style="display:block; margin-bottom:8px; color:#8696a0;">📁 Upload CSV File</label>
+                <input type="file" id="swal-csv-file" accept=".csv,.txt" 
+                    style="width:100%; padding:10px; background:#111b21; border:1px dashed #3b4a54; border-radius:8px; color:#e9edef; margin-bottom:16px;">
+                
+                <div style="text-align:center; color:#8696a0; margin-bottom:16px;">— OR —</div>
+                
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">📝 Paste Data (one per line)</label>
+                <textarea id="swal-import-data" class="swal2-textarea" rows="6" 
+                    placeholder="628123456789,John Doe&#10;628987654321,Jane&#10;628111222333" 
+                    style="width:100%; margin:0;"></textarea>
+                
+                <div style="margin-top:12px; padding:10px; background:#111b21; border-radius:8px; font-size:12px; color:#8696a0;">
+                    <strong>📋 CSV Format:</strong><br>
+                    phone,name (name is optional)<br>
+                    <code style="color:#25D366;">628123456789,John Doe</code>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '📥 Import',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#25D366',
+        background: '#1f2c34',
+        color: '#e9edef',
+        preConfirm: async () => {
+            const fileInput = document.getElementById('swal-csv-file');
+            const textData = document.getElementById('swal-import-data').value.trim();
+            
+            let data = '';
+            
+            // Check if file was uploaded
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                data = await file.text();
+            } else if (textData) {
+                data = textData;
+            } else {
+                Swal.showValidationMessage('Please upload a file or paste data');
+                return false;
+            }
+            
+            // Parse CSV/text data
+            const contacts = data.split('\n')
+                .map(line => line.trim())
+                .filter(line => line && !line.toLowerCase().startsWith('phone')) // Skip header
+                .map(line => {
+                    const parts = line.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+                    return { phone: parts[0], name: parts[1] || '' };
+                })
+                .filter(c => c.phone && /^[0-9+]+$/.test(c.phone));
+            
+            if (!contacts.length) {
+                Swal.showValidationMessage('No valid contacts found. Check format: phone,name');
+                return false;
+            }
+            
+            return contacts;
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed && result.value) {
+            const contacts = result.value;
+            
+            try {
+                const res = await apiFetch(getUserApi() + '/crm/contacts/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contacts })
+                });
+                const data = await res.json();
+                toast(`✅ Imported ${data.success} contacts (${data.failed || 0} failed)`, 'success');
+                loadCrmData();
+            } catch (e) {
+                toast('Failed to import contacts', 'error');
+            }
+        }
+    });
+}
+
+// Keep old function for backward compatibility
+async function importCrmContactsFromModal() {
+    console.log('importCrmContactsFromModal called - now handled by SweetAlert2');
+}
+
 // Current contact being edited
 let crmCurrentContactId = null;
 
