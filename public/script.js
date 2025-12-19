@@ -3813,42 +3813,8 @@ function editSequence(id) {
     toast('Edit sequence - coming soon', 'info');
 }
 
-function showImportCrmContacts() {
-    document.getElementById('importCrmContactsData').value = '';
-    showModal('importCrmContactsModal');
-}
+// Redundant functions removed to avoid overwriting SweetAlert2 versions
 
-async function importCrmContactsFromModal() {
-    const data = document.getElementById('importCrmContactsData').value.trim();
-    if (!data) {
-        toast('Please paste contacts data', 'error');
-        return;
-    }
-    
-    const contacts = data.split('\n').map(line => {
-        const [phone, name] = line.split(',').map(s => s.trim());
-        return { phone, name };
-    }).filter(c => c.phone);
-    
-    if (!contacts.length) {
-        toast('No valid contacts found', 'error');
-        return;
-    }
-    
-    try {
-        const res = await apiFetch(getUserApi() + '/crm/contacts/import', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contacts })
-        });
-        const result = await res.json();
-        toast(`Imported ${result.success} contacts (${result.failed} failed)`, 'success');
-        closeModal('importCrmContactsModal');
-        loadCrmData();
-    } catch (e) {
-        toast('Failed to import', 'error');
-    }
-}
 
 // Update switchTab to include CRM
 const originalSwitchTab = window.switchTab;
