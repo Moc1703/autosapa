@@ -328,15 +328,14 @@
     </div>
 
     <script>
-        const token = localStorage.getItem('token');
-        const userStr = localStorage.getItem('user');
+        // Personal app - hardcoded owner
+        const token = localStorage.getItem('wa_token');
+        const userId = 'owner';
         
-        if (!token || !userStr) window.location.href = '/login';
+        if (!token) window.location.href = '/login';
         
-        const user = JSON.parse(userStr);
-        const userId = user.id;
         localStorage.setItem('wa_userId', userId);
-        document.getElementById('user-id-display').textContent = user.email || user.phone || userId;
+        document.getElementById('user-id-display').textContent = 'owner';
         
         const qrContainer = document.getElementById('qr-container');
         const statusEl = document.getElementById('status');
