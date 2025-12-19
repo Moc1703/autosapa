@@ -1075,6 +1075,145 @@
             <div class="flex justify-end gap-2">
                 <button class="btn btn-secondary" id="confirmNo">Cancel</button>
                 <button class="btn btn-danger" id="confirmYes">Delete</button>
+        </div>
+    </div>
+
+    <!-- CRM: Add Contact Modal -->
+    <div id="addCrmContactModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header flex justify-between align-center mb-4">
+                <h3 class="card-title">➕ Add CRM Contact</h3>
+                <button class="btn btn-sm btn-secondary" onclick="closeModal('addCrmContactModal')">×</button>
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label mb-2" style="display:block;">📱 Phone Number</label>
+                <input type="text" class="form-input" id="crmContactPhone" placeholder="628123456789">
+                <small class="form-hint">Format: 628xxx (tanpa + atau spasi)</small>
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label mb-2" style="display:block;">👤 Name (optional)</label>
+                <input type="text" class="form-input" id="crmContactName" placeholder="John Doe">
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label mb-2" style="display:block;">📝 Notes (optional)</label>
+                <textarea class="form-input" id="crmContactNotes" rows="2" placeholder="Catatan tentang kontak ini..."></textarea>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn btn-secondary" onclick="closeModal('addCrmContactModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveCrmContactFromModal()">Save Contact</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CRM: Add Sequence Modal -->
+    <div id="addSequenceModal" class="modal hidden">
+        <div class="modal-content" style="max-width:600px;">
+            <div class="modal-header flex justify-between align-center mb-4">
+                <h3 class="card-title">⚡ Create Automation Sequence</h3>
+                <button class="btn btn-sm btn-secondary" onclick="closeModal('addSequenceModal')">×</button>
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label mb-2" style="display:block;">Sequence Name</label>
+                <input type="text" class="form-input" id="sequenceName" placeholder="e.g., Follow-up Penawaran">
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label mb-2" style="display:block;">Max Follow-ups</label>
+                <select class="form-input" id="sequenceMaxFollowUps">
+                    <option value="2">2 kali</option>
+                    <option value="3" selected>3 kali</option>
+                    <option value="5">5 kali</option>
+                    <option value="7">7 kali</option>
+                </select>
+            </div>
+
+            <!-- Steps Builder -->
+            <div class="card mb-4" style="background:rgba(0,0,0,0.2);">
+                <div class="card-header">
+                    <h4 class="card-title">📋 Sequence Steps</h4>
+                    <button class="btn btn-sm btn-primary" onclick="addSequenceStep()">+ Add Step</button>
+                </div>
+                <div id="sequenceStepsContainer">
+                    <!-- Steps will be added here -->
+                </div>
+            </div>
+
+            <p class="form-hint mb-4">Setiap step akan dikirim otomatis sesuai delay yang diatur. Jika kontak membalas, sequence akan berhenti.</p>
+
+            <div class="flex justify-end gap-2">
+                <button class="btn btn-secondary" onclick="closeModal('addSequenceModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveSequenceFromModal()">Create Sequence</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CRM: Contact Actions Modal -->
+    <div id="crmContactActionsModal" class="modal hidden">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header flex justify-between align-center mb-4">
+                <h3 class="card-title">⚡ Contact Actions</h3>
+                <button class="btn btn-sm btn-secondary" onclick="closeModal('crmContactActionsModal')">×</button>
+            </div>
+            <p class="text-muted mb-4" id="crmContactActionsInfo">Actions for contact</p>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button class="btn btn-secondary btn-block" onclick="crmActionChangeStage()">🔄 Change Stage</button>
+                <button class="btn btn-secondary btn-block" onclick="crmActionStartSequence()">▶️ Start Sequence</button>
+                <button class="btn btn-secondary btn-block" onclick="crmActionStopSequence()">⏹️ Stop Sequence</button>
+                <hr style="border-color:var(--glass-border); margin:8px 0;">
+                <button class="btn btn-success btn-block" onclick="crmActionMarkAs('interested')">🔥 Mark as Interested</button>
+                <button class="btn btn-primary btn-block" onclick="crmActionMarkAs('closed')">✅ Mark as Closed</button>
+                <button class="btn btn-danger btn-block" onclick="crmActionMarkAs('dnc')">🚫 Do Not Contact</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CRM: Select Stage Modal -->
+    <div id="crmSelectStageModal" class="modal hidden">
+        <div class="modal-content" style="max-width:350px;">
+            <div class="modal-header flex justify-between align-center mb-4">
+                <h3 class="card-title">🔄 Select Stage</h3>
+                <button class="btn btn-sm btn-secondary" onclick="closeModal('crmSelectStageModal')">×</button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button class="btn btn-secondary btn-block" onclick="crmSetStage('new')">🆕 New</button>
+                <button class="btn btn-secondary btn-block" onclick="crmSetStage('offered')">📨 Offered</button>
+                <button class="btn btn-secondary btn-block" onclick="crmSetStage('interested')">🔥 Interested</button>
+                <button class="btn btn-secondary btn-block" onclick="crmSetStage('closed')">✅ Closed</button>
+                <button class="btn btn-secondary btn-block" onclick="crmSetStage('dnc')">🚫 Do Not Contact</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CRM: Select Sequence Modal -->
+    <div id="crmSelectSequenceModal" class="modal hidden">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header flex justify-between align-center mb-4">
+                <h3 class="card-title">▶️ Select Sequence</h3>
+                <button class="btn btn-sm btn-secondary" onclick="closeModal('crmSelectSequenceModal')">×</button>
+            </div>
+            <div id="crmSequenceOptions" style="display:flex; flex-direction:column; gap:8px;">
+                <p class="text-muted text-center">Loading sequences...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CRM: Import Contacts Modal -->
+    <div id="importCrmContactsModal" class="modal hidden">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header flex justify-between align-center mb-4">
+                <h3 class="card-title">📥 Import Contacts</h3>
+                <button class="btn btn-sm btn-secondary" onclick="closeModal('importCrmContactsModal')">×</button>
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label mb-2" style="display:block;">Paste contacts (one per line)</label>
+                <textarea class="form-input" id="importCrmContactsData" rows="8" placeholder="628123456789,John Doe
+628987654321,Jane
+628111222333"></textarea>
+                <small class="form-hint">Format: phone,name (name optional)</small>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button class="btn btn-secondary" onclick="closeModal('importCrmContactsModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="importCrmContactsFromModal()">Import Contacts</button>
             </div>
         </div>
     </div>

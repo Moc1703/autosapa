@@ -3397,22 +3397,30 @@ function renderCrmSequences() {
 }
 
 function showAddCrmContact() {
-    const phone = prompt('Masukkan nomor WhatsApp (contoh: 628123456789):');
-    if (!phone) return;
-    
-    const name = prompt('Nama kontak (opsional):', '');
-    
-    saveCrmContact(phone, name);
+    document.getElementById('crmContactPhone').value = '';
+    document.getElementById('crmContactName').value = '';
+    document.getElementById('crmContactNotes').value = '';
+    showModal('addCrmContactModal');
 }
 
-async function saveCrmContact(phone, name) {
+async function saveCrmContactFromModal() {
+    const phone = document.getElementById('crmContactPhone').value.trim();
+    const name = document.getElementById('crmContactName').value.trim();
+    const notes = document.getElementById('crmContactNotes').value.trim();
+
+    if (!phone) {
+        toast('Phone number is required', 'error');
+        return;
+    }
+
     try {
         await apiFetch(getUserApi() + '/crm/contacts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, name })
+            body: JSON.stringify({ phone, name, notes })
         });
         toast('Contact added!', 'success');
+        closeModal('addCrmContactModal');
         loadCrmData();
     } catch (e) {
         toast('Failed to add contact', 'error');
@@ -3431,120 +3439,194 @@ async function deleteCrmContact(id) {
     }
 }
 
+// Current contact being edited
+let crmCurrentContactId = null;
+
 function showCrmContactActions(contactId) {
     const contact = crmContacts.find(c => c.id === contactId);
     if (!contact) return;
     
-    const actions = [
-        '1. Change Stage',
-        '2. Start Sequence',
-        '3. Stop Sequence',
-        '4. Mark as Interested',
-        '5. Mark as Closed',
-        '6. Mark as Do Not Contact'
-    ].join('\n');
-    
-    const choice = prompt(`Actions for ${contact.name || contact.phone}:\n\n${actions}\n\nEnter number:`);
-    
-    if (choice === '1') {
-        const stage = prompt('Enter stage (new/offered/interested/closed/dnc):');
-        if (stage) updateCrmContactStage(contactId, stage);
-    } else if (choice === '2') {
-        showStartSequenceDialog(contactId);
-    } else if (choice === '3') {
-        stopContactSequence(contactId);
-    } else if (choice === '4') {
-        updateCrmContactStage(contactId, 'interested');
-    } else if (choice === '5') {
-        updateCrmContactStage(contactId, 'closed');
-    } else if (choice === '6') {
-        updateCrmContactStage(contactId, 'dnc');
-    }
+    crmCurrentContactId = contactId;
+    document.getElementById('crmContactActionsInfo').textContent = `Actions for ${contact.name || contact.phone}`;
+    showModal('crmContactActionsModal');
 }
 
-async function updateCrmContactStage(id, stage) {
+function crmActionChangeStage() {
+    closeModal('crmContactActionsModal');
+    showModal('crmSelectStageModal');
+}
+
+async function crmSetStage(stage) {
+    if (!crmCurrentContactId) return;
+    
     try {
-        await apiFetch(getUserApi() + '/crm/contacts/' + id, {
+        await apiFetch(getUserApi() + '/crm/contacts/' + crmCurrentContactId, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ stage })
         });
         toast('Contact updated!', 'success');
+        closeModal('crmSelectStageModal');
         loadCrmData();
     } catch (e) {
         toast('Failed to update', 'error');
     }
 }
 
-function showStartSequenceDialog(contactId) {
+function crmActionStartSequence() {
+    closeModal('crmContactActionsModal');
+    
     if (!crmSequences.length) {
         toast('No sequences available. Create one first!', 'error');
         return;
     }
     
-    const options = crmSequences.map((s, i) => `${i + 1}. ${s.name}`).join('\n');
-    const choice = prompt(`Select sequence:\n\n${options}\n\nEnter number:`);
+    const container = document.getElementById('crmSequenceOptions');
+    container.innerHTML = crmSequences.map(s => `
+        <button class="btn btn-secondary btn-block" onclick="startContactSequenceFromModal('${s.id}')">
+            ⚡ ${escapeHtml(s.name)} (${s.steps?.length || 0} steps)
+        </button>
+    `).join('');
     
-    const idx = parseInt(choice) - 1;
-    if (idx >= 0 && idx < crmSequences.length) {
-        startContactSequence(contactId, crmSequences[idx].id);
-    }
+    showModal('crmSelectSequenceModal');
 }
 
-async function startContactSequence(contactId, sequenceId) {
+async function startContactSequenceFromModal(sequenceId) {
+    if (!crmCurrentContactId) return;
+    
     try {
-        await apiFetch(getUserApi() + '/crm/contacts/' + contactId + '/start-sequence', {
+        await apiFetch(getUserApi() + '/crm/contacts/' + crmCurrentContactId + '/start-sequence', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sequenceId })
         });
         toast('Sequence started!', 'success');
+        closeModal('crmSelectSequenceModal');
         loadCrmData();
     } catch (e) {
         toast('Failed to start sequence', 'error');
     }
 }
 
-async function stopContactSequence(contactId) {
+async function crmActionStopSequence() {
+    if (!crmCurrentContactId) return;
+    
     try {
-        await apiFetch(getUserApi() + '/crm/contacts/' + contactId + '/stop-sequence', {
+        await apiFetch(getUserApi() + '/crm/contacts/' + crmCurrentContactId + '/stop-sequence', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({})
         });
         toast('Sequence stopped', 'success');
+        closeModal('crmContactActionsModal');
         loadCrmData();
     } catch (e) {
         toast('Failed to stop sequence', 'error');
     }
 }
 
-function showAddSequence() {
-    const name = prompt('Nama sequence (contoh: Follow-up Penawaran):');
-    if (!name) return;
-    
-    const stepsJson = prompt('Steps (JSON format):\nContoh: [{"delay":3,"delayUnit":"days","message":"Halo, apakah tertarik?"}]');
+async function crmActionMarkAs(stage) {
+    if (!crmCurrentContactId) return;
     
     try {
-        const steps = JSON.parse(stepsJson || '[]');
-        if (!steps.length) {
-            toast('At least one step is required', 'error');
-            return;
-        }
-        saveSequence(name, steps);
+        await apiFetch(getUserApi() + '/crm/contacts/' + crmCurrentContactId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stage })
+        });
+        toast('Contact updated!', 'success');
+        closeModal('crmContactActionsModal');
+        loadCrmData();
     } catch (e) {
-        toast('Invalid JSON format', 'error');
+        toast('Failed to update', 'error');
     }
 }
 
-async function saveSequence(name, steps) {
+// Sequence Builder
+let sequenceSteps = [];
+
+function showAddSequence() {
+    document.getElementById('sequenceName').value = '';
+    document.getElementById('sequenceMaxFollowUps').value = '3';
+    sequenceSteps = [];
+    renderSequenceSteps();
+    addSequenceStep(); // Add first step by default
+    showModal('addSequenceModal');
+}
+
+function addSequenceStep() {
+    sequenceSteps.push({
+        delay: 3,
+        delayUnit: 'days',
+        message: ''
+    });
+    renderSequenceSteps();
+}
+
+function removeSequenceStep(index) {
+    sequenceSteps.splice(index, 1);
+    renderSequenceSteps();
+}
+
+function renderSequenceSteps() {
+    const container = document.getElementById('sequenceStepsContainer');
+    
+    if (!sequenceSteps.length) {
+        container.innerHTML = '<p class="text-muted text-center p-4">No steps yet. Click "Add Step" to create one.</p>';
+        return;
+    }
+    
+    container.innerHTML = sequenceSteps.map((step, i) => `
+        <div class="card mb-2" style="background:rgba(0,0,0,0.3); padding:16px;">
+            <div class="flex justify-between align-center mb-2">
+                <strong>Step ${i + 1}</strong>
+                <button class="btn btn-sm btn-danger btn-icon" onclick="removeSequenceStep(${i})">🗑️</button>
+            </div>
+            <div class="flex gap-2 mb-2 align-center">
+                <span>Send after</span>
+                <input type="number" class="form-input" style="width:80px;" value="${step.delay}" 
+                    onchange="updateSequenceStep(${i}, 'delay', this.value)">
+                <select class="form-input" style="width:100px;" onchange="updateSequenceStep(${i}, 'delayUnit', this.value)">
+                    <option value="hours" ${step.delayUnit === 'hours' ? 'selected' : ''}>hours</option>
+                    <option value="days" ${step.delayUnit === 'days' ? 'selected' : ''}>days</option>
+                </select>
+            </div>
+            <textarea class="form-input" rows="2" placeholder="Message to send..." 
+                onchange="updateSequenceStep(${i}, 'message', this.value)">${escapeHtml(step.message || '')}</textarea>
+        </div>
+    `).join('');
+}
+
+function updateSequenceStep(index, field, value) {
+    if (sequenceSteps[index]) {
+        sequenceSteps[index][field] = field === 'delay' ? parseInt(value) : value;
+    }
+}
+
+async function saveSequenceFromModal() {
+    const name = document.getElementById('sequenceName').value.trim();
+    const maxFollowUps = parseInt(document.getElementById('sequenceMaxFollowUps').value);
+
+    if (!name) {
+        toast('Sequence name is required', 'error');
+        return;
+    }
+
+    // Validate steps have messages
+    const validSteps = sequenceSteps.filter(s => s.message && s.message.trim());
+    if (!validSteps.length) {
+        toast('At least one step with message is required', 'error');
+        return;
+    }
+
     try {
         await apiFetch(getUserApi() + '/crm/sequences', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, steps, maxFollowUps: 3 })
+            body: JSON.stringify({ name, steps: validSteps, maxFollowUps })
         });
         toast('Sequence created!', 'success');
+        closeModal('addSequenceModal');
         loadCrmSequences();
     } catch (e) {
         toast('Failed to create sequence', 'error');
@@ -3568,8 +3650,16 @@ function editSequence(id) {
 }
 
 function showImportCrmContacts() {
-    const data = prompt('Paste contacts (one per line, format: phone,name):\nExample:\n628123456789,John Doe\n628987654321,Jane');
-    if (!data) return;
+    document.getElementById('importCrmContactsData').value = '';
+    showModal('importCrmContactsModal');
+}
+
+async function importCrmContactsFromModal() {
+    const data = document.getElementById('importCrmContactsData').value.trim();
+    if (!data) {
+        toast('Please paste contacts data', 'error');
+        return;
+    }
     
     const contacts = data.split('\n').map(line => {
         const [phone, name] = line.split(',').map(s => s.trim());
@@ -3581,18 +3671,15 @@ function showImportCrmContacts() {
         return;
     }
     
-    importCrmContacts(contacts);
-}
-
-async function importCrmContacts(contacts) {
     try {
         const res = await apiFetch(getUserApi() + '/crm/contacts/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contacts })
         });
-        const data = await res.json();
-        toast(`Imported ${data.success} contacts (${data.failed} failed)`, 'success');
+        const result = await res.json();
+        toast(`Imported ${result.success} contacts (${result.failed} failed)`, 'success');
+        closeModal('importCrmContactsModal');
         loadCrmData();
     } catch (e) {
         toast('Failed to import', 'error');
