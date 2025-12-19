@@ -422,9 +422,14 @@
         }
         
         function logout() {
+            // SECURITY FIX: Clear ALL localStorage
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/';
+            localStorage.removeItem('wa_userId');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('autosapa_draft');
+            localStorage.removeItem('darkMode');
+            window.location.href = '/login?fresh=true';
         }
         
         loadDashboard();

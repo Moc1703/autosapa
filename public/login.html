@@ -256,7 +256,16 @@
     </div>
 
     <script>
-        if (localStorage.getItem('token')) {
+        // Check if user has valid token - but also check URL params
+        // If ?fresh=true, clear localStorage for fresh login
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('fresh') === 'true' || urlParams.get('logout') === 'true') {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('wa_userId');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('autosapa_draft');
+        } else if (localStorage.getItem('token')) {
             window.location.href = '/dashboard';
         }
         

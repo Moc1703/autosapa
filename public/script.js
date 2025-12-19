@@ -678,10 +678,16 @@ async function logout() {
         // Ignore errors
     }
 
-    authToken = '';
+    // SECURITY FIX: Clear ALL localStorage to prevent session leakage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('wa_userId');
     localStorage.removeItem('authToken');
-    toast('Logged out', 'success');
-    checkAuth();
+    localStorage.removeItem('autosapa_draft');
+    localStorage.removeItem('darkMode');
+    
+    // Redirect to login with fresh flag
+    window.location.href = '/login?fresh=true';
 }
 
 async function switchWhatsApp() {

@@ -311,11 +311,16 @@
     </div>
 
     <script>
-        if (localStorage.getItem('token')) {
-            window.location.href = '/dashboard';
-        }
+        // SECURITY FIX: Clear all localStorage when visiting register page
+        // This prevents session inheritance from previous user
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('wa_userId');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('autosapa_draft');
         
         let method = 'email';
+
         
         function switchMethod(m) {
             method = m;
