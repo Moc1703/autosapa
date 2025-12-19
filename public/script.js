@@ -3707,3 +3707,29 @@ window.switchTab = function(tab) {
     // Load data for tab
     if (tab === 'crm') { loadCrmData(); }
 };
+
+// ===== EVENT DELEGATION FOR CRM BUTTONS =====
+// Using event delegation to ensure buttons work even if they're dynamically loaded
+document.addEventListener('click', function(e) {
+    // Check if clicked element or its parent is a button with specific onclick attribute
+    const target = e.target.closest('button');
+    if (!target) return;
+    
+    const onclick = target.getAttribute('onclick');
+    if (!onclick) return;
+    
+    // Handle CRM specific buttons that might not trigger properly
+    if (onclick.includes('showAddCrmContact')) {
+        e.preventDefault();
+        e.stopPropagation();
+        showAddCrmContact();
+    } else if (onclick.includes('showAddSequence')) {
+        e.preventDefault();
+        e.stopPropagation();
+        showAddSequence();
+    } else if (onclick.includes('showImportCrmContacts')) {
+        e.preventDefault();
+        e.stopPropagation();
+        showImportCrmContacts();
+    }
+});
