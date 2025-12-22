@@ -3456,7 +3456,10 @@ async function loadCrmSequences() {
 }
 
 function renderCrmSequences() {
+    // Sequences panel removed in simplified CRM - skip if element doesn't exist
     const list = document.getElementById('crmSequencesList');
+    if (!list) return;
+    
     if (!crmSequences.length) {
         list.innerHTML = `
             <div class="empty-state" style="text-align:center; padding:20px;">

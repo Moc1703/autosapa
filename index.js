@@ -2424,7 +2424,7 @@ app.post("/api/:userId/groups/sync", requireSession, async (req, res) => {
       cached: false,
     })
   } catch (error) {
-    console.error(`[${userId}] Sync error:`, error)
+    console.error(`[${req.params.userId}] Sync error:`, error)
     res.status(500).json({ error: error.message })
   }
 })
