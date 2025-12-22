@@ -465,114 +465,52 @@
             </div>
         </div>
 
-        <!-- TAB: CRM (New Feature) -->
+        <!-- TAB: CRM (Simplified) -->
         <div id="tab-crm" class="tab-panel">
             <div class="page-header flex justify-between align-center mb-4">
-                <h1 class="page-title">🎯 CRM Automation</h1>
-                <div class="flex gap-2" style="background: rgba(0,0,0,0.3); padding: 4px; border-radius: 10px;">
-                    <button class="btn btn-sm btn-primary" id="crmViewModeKanban" onclick="switchCrmView('kanban')">📋 Kanban</button>
-                    <button class="btn btn-sm btn-secondary" id="crmViewModeList" onclick="switchCrmView('list')">📝 List</button>
+                <h1 class="page-title">🎯 CRM</h1>
+                <div class="flex gap-2">
+                    <button class="btn btn-sm btn-secondary" onclick="showImportCrmContacts()">📥 Import</button>
+                    <button class="btn btn-sm btn-primary" onclick="showAddCrmContact()">+ Add Contact</button>
                 </div>
             </div>
 
-            <!-- CRM Stats -->
-            <div class="stats-grid-4 mb-4">
+            <!-- CRM Stats (Simplified) -->
+            <div class="stats-grid-4 mb-4" style="grid-template-columns: 1fr 1fr 1fr;">
                 <div class="stat-card">
                     <div class="stat-value" id="crmTotalContacts">0</div>
                     <div class="stat-label">Total Contacts</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="crmInSequence">0</div>
-                    <div class="stat-label">In Sequence</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="crmPendingFollowUp">0</div>
-                    <div class="stat-label">Pending Follow-up</div>
+                    <div class="stat-value" id="crmInProgress">0</div>
+                    <div class="stat-label">In Progress</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" id="crmClosed">0</div>
-                    <div class="stat-label">Closed Deals</div>
+                    <div class="stat-label">Closed</div>
                 </div>
             </div>
 
-            <!-- View Mode: List -->
-            <div id="crmListView" class="hidden">
-                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
-                    <!-- Left: Contacts Pipeline -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">📋 Contacts Pipeline</h3>
-                            <div class="flex gap-2">
-                                <button class="btn btn-sm btn-secondary" onclick="showImportCrmContacts()">📥 Import</button>
-                                <button class="btn btn-sm btn-primary" onclick="showAddCrmContact()">+ Add Contact</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Pipeline Filter Tabs -->
-                        <div class="flex gap-2 mb-4" style="background:rgba(0,0,0,0.3); padding:4px; border-radius:12px;">
-                            <button class="btn btn-sm btn-primary crm-stage-btn active" onclick="filterCrmStage('all')" data-stage="all">All</button>
-                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('new')" data-stage="new">🆕 New</button>
-                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('offered')" data-stage="offered">📨 Offered</button>
-                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('interested')" data-stage="interested">🔥 Interested</button>
-                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('closed')" data-stage="closed">✅ Closed</button>
-                            <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('dnc')" data-stage="dnc">🚫 DNC</button>
-                        </div>
+            <!-- Contacts List (Simplified - No Kanban) -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📋 Contacts</h3>
+                </div>
+                
+                <!-- Simplified Stage Filter (3 stages) -->
+                <div class="flex gap-2 mb-4" style="background:rgba(0,0,0,0.3); padding:4px; border-radius:12px;">
+                    <button class="btn btn-sm btn-primary crm-stage-btn active" onclick="filterCrmStage('all')" data-stage="all">All</button>
+                    <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('lead')" data-stage="lead">🆕 Lead</button>
+                    <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('in_progress')" data-stage="in_progress">🔄 In Progress</button>
+                    <button class="btn btn-sm btn-secondary crm-stage-btn" onclick="filterCrmStage('done')" data-stage="done">✅ Done</button>
+                </div>
 
-                        <div class="form-group mb-4">
-                            <input type="text" class="form-input" id="searchCrmContacts" placeholder="Search contacts..." oninput="filterCrmContacts()">
-                        </div>
+                <div class="form-group mb-4">
+                    <input type="text" class="form-input" id="searchCrmContacts" placeholder="Search contacts..." oninput="filterCrmContacts()">
+                </div>
 
-                        <div class="list" id="crmContactsList">
-                            <!-- Populated via script -->
-                        </div>
-                    </div>
-
-                    <!-- Right: Sequences -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">⚡ Sequences</h3>
-                            <button class="btn btn-sm btn-primary" onclick="showAddSequence()">+ New</button>
-                        </div>
-                        <p class="text-muted mb-4" style="font-size:13px;">Automation workflows untuk follow-up otomatis</p>
-                        
-                        <div class="list" id="crmSequencesList">
-                            <!-- Populated via script -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- View Mode: Kanban -->
-            <div id="crmKanbanView" class="kanban-container">
-                <div class="kanban-column" id="kanban-new" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="kanban-column-header">
-                        <div class="kanban-column-title">🆕 New <span class="kanban-count" id="count-new">0</span></div>
-                    </div>
-                    <div class="kanban-list" id="list-new"></div>
-                </div>
-                <div class="kanban-column" id="kanban-offered" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="kanban-column-header">
-                        <div class="kanban-column-title">📨 Offered <span class="kanban-count" id="count-offered">0</span></div>
-                    </div>
-                    <div class="kanban-list" id="list-offered"></div>
-                </div>
-                <div class="kanban-column" id="kanban-interested" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="kanban-column-header">
-                        <div class="kanban-column-title">🔥 Interested <span class="kanban-count" id="count-interested">0</span></div>
-                    </div>
-                    <div class="kanban-list" id="list-interested"></div>
-                </div>
-                <div class="kanban-column" id="kanban-closed" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="kanban-column-header">
-                        <div class="kanban-column-title">✅ Closed <span class="kanban-count" id="count-closed">0</span></div>
-                    </div>
-                    <div class="kanban-list" id="list-closed"></div>
-                </div>
-                <div class="kanban-column" id="kanban-dnc" ondrop="drop(event)" ondragover="allowDrop(event)">
-                    <div class="kanban-column-header">
-                        <div class="kanban-column-title">🚫 DNC <span class="kanban-count" id="count-dnc">0</span></div>
-                    </div>
-                    <div class="kanban-list" id="list-dnc"></div>
+                <div class="list" id="crmContactsList">
+                    <!-- Populated via script -->
                 </div>
             </div>
         </div>

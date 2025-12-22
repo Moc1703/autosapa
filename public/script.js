@@ -3233,15 +3233,26 @@ function toggleSleepMode() {
     }
 }
 
-// ===== CRM AUTOMATION =====
+// ===== CRM (SIMPLIFIED) =====
 let crmContacts = [];
-let crmSequences = [];
 let crmCurrentStage = 'all';
+
+// Stage mapping: old stages to new simplified stages
+const STAGE_MAP = {
+    'new': 'lead',
+    'offered': 'in_progress',
+    'interested': 'in_progress',
+    'closed': 'done',
+    'dnc': 'done',
+    // New stages
+    'lead': 'lead',
+    'in_progress': 'in_progress',
+    'done': 'done'
+};
 
 async function loadCrmData() {
     await loadCrmStats();
     await loadCrmContacts();
-    await loadCrmSequences();
 }
 
 async function loadCrmStats() {
@@ -3250,9 +3261,12 @@ async function loadCrmStats() {
         const data = await res.json();
         
         document.getElementById('crmTotalContacts').textContent = data.total || 0;
-        document.getElementById('crmInSequence').textContent = data.inSequence || 0;
-        document.getElementById('crmPendingFollowUp').textContent = data.pendingFollowUp || 0;
-        document.getElementById('crmClosed').textContent = data.byStage?.closed || 0;
+        // Calculate in_progress count (offered + interested OR in_progress)
+        const inProgress = (data.byStage?.offered || 0) + (data.byStage?.interested || 0) + (data.byStage?.in_progress || 0);
+        document.getElementById('crmInProgress').textContent = inProgress;
+        // Calculate done count (closed + dnc OR done)
+        const done = (data.byStage?.closed || 0) + (data.byStage?.dnc || 0) + (data.byStage?.done || 0);
+        document.getElementById('crmClosed').textContent = done;
     } catch (e) {
         console.error('Error loading CRM stats:', e);
     }
@@ -3276,33 +3290,36 @@ function renderCrmContacts() {
         list.innerHTML = `
             <div class="empty-state" style="text-align:center; padding:40px;">
                 <div class="empty-icon" style="font-size:48px; margin-bottom:16px;">🎯</div>
-                <div class="empty-title" style="font-weight:600; margin-bottom:8px;">No CRM contacts yet</div>
-                <p class="text-muted">Add contacts to start your sales pipeline</p>
-                <button class="btn btn-primary mt-4" onclick="showAddCrmContact()">+ Add First Contact</button>
+                <div class="empty-title" style="font-weight:600; margin-bottom:8px;">Belum ada kontak</div>
+                <p class="text-muted">Tambahkan kontak untuk memulai</p>
+                <button class="btn btn-primary mt-4" onclick="showAddCrmContact()">+ Tambah Kontak</button>
             </div>`;
         return;
     }
 
-    const stageIcons = { new: '🆕', offered: '📨', interested: '🔥', closed: '✅', dnc: '🚫' };
-    const stageColors = { new: '#888', offered: '#f59e0b', interested: '#10b981', closed: '#00ff88', dnc: '#ef4444' };
+    // Simplified stages with icons and colors
+    const stageIcons = { lead: '🆕', in_progress: '🔄', done: '✅', new: '🆕', offered: '🔄', interested: '🔄', closed: '✅', dnc: '✅' };
+    const stageColors = { lead: '#3b82f6', in_progress: '#f59e0b', done: '#10b981', new: '#3b82f6', offered: '#f59e0b', interested: '#f59e0b', closed: '#10b981', dnc: '#10b981' };
+    const stageLabels = { lead: 'Lead', in_progress: 'In Progress', done: 'Done', new: 'Lead', offered: 'In Progress', interested: 'In Progress', closed: 'Done', dnc: 'Done' };
 
-    list.innerHTML = crmContacts.map(c => `
+    list.innerHTML = crmContacts.map(c => {
+        const displayStage = STAGE_MAP[c.stage] || c.stage;
+        return `
         <div class="card-list-item" data-id="${c.id}" data-phone="${escapeAttr(c.phone)}" data-name="${escapeAttr(c.name || '')}">
             <div class="card-icon-large" style="background:${stageColors[c.stage] || '#888'}20; color:${stageColors[c.stage] || '#888'}">
                 ${stageIcons[c.stage] || '👤'}
             </div>
             <div class="card-info">
                 <div class="card-title">${escapeHtml(c.name || c.phone)}</div>
-                <div class="card-subtitle">${escapeHtml(c.phone)}${c.sequenceId ? ' • In Sequence' : ''}</div>
+                <div class="card-subtitle">${escapeHtml(c.phone)} • ${stageLabels[c.stage] || c.stage}</div>
             </div>
             <div class="flex gap-2">
-                ${c.stage !== 'closed' && c.stage !== 'dnc' ? `
-                    <button class="btn btn-sm btn-secondary" onclick="showCrmContactActions('${c.id}')" title="Actions">⚡</button>
-                ` : ''}
+                <button class="btn btn-sm btn-secondary" onclick="showCrmContactActions('${c.id}')" title="Actions">⚡</button>
                 <button class="btn btn-sm btn-danger btn-icon" onclick="deleteCrmContact('${c.id}')">🗑️</button>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function filterCrmStage(stage) {
@@ -3466,22 +3483,22 @@ function renderCrmSequences() {
 
 function showAddCrmContact() {
     Swal.fire({
-        title: '➕ Add CRM Contact',
+        title: '➕ Tambah Kontak',
         html: `
             <div style="text-align:left;">
-                <label style="display:block; margin-bottom:4px; color:#8696a0;">📱 Phone Number</label>
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">📱 Nomor HP</label>
                 <input id="swal-phone" class="swal2-input" placeholder="628123456789" style="width:100%; margin:0 0 12px 0;">
-                <label style="display:block; margin-bottom:4px; color:#8696a0;">👤 Name</label>
-                <input id="swal-name" class="swal2-input" placeholder="John Doe" style="width:100%; margin:0 0 12px 0;">
-                <label style="display:block; margin-bottom:4px; color:#8696a0;">🏷️ Tags (comma separated)</label>
-                <input id="swal-tags" class="swal2-input" placeholder="lead, vip, help" style="width:100%; margin:0 0 12px 0;">
-                <label style="display:block; margin-bottom:4px; color:#8696a0;">📝 Notes (optional)</label>
-                <textarea id="swal-notes" class="swal2-textarea" placeholder="Notes..." style="width:100%; margin:0;"></textarea>
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">👤 Nama</label>
+                <input id="swal-name" class="swal2-input" placeholder="Nama kontak" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">🏷️ Tags (pisahkan dengan koma)</label>
+                <input id="swal-tags" class="swal2-input" placeholder="lead, vip, customer" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">📝 Catatan (opsional)</label>
+                <textarea id="swal-notes" class="swal2-textarea" placeholder="Catatan..." style="width:100%; margin:0;"></textarea>
             </div>
         `,
         showCancelButton: true,
-        confirmButtonText: 'Save Contact',
-        cancelButtonText: 'Cancel',
+        confirmButtonText: 'Simpan',
+        cancelButtonText: 'Batal',
         confirmButtonColor: '#25D366',
         background: '#1f2c34',
         color: '#e9edef',
@@ -3491,10 +3508,10 @@ function showAddCrmContact() {
             const tags = document.getElementById('swal-tags').value.trim();
             const notes = document.getElementById('swal-notes').value.trim();
             if (!phone) {
-                Swal.showValidationMessage('Phone number is required');
+                Swal.showValidationMessage('Nomor HP harus diisi');
                 return false;
             }
-            return { phone, name, tags, notes };
+            return { phone, name, tags, notes, stage: 'lead' };
         }
     }).then(async (result) => {
         if (result.isConfirmed && result.value) {
@@ -3504,10 +3521,10 @@ function showAddCrmContact() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(result.value)
                 });
-                toast('Contact added!', 'success');
+                toast('Kontak berhasil ditambahkan!', 'success');
                 loadCrmData();
             } catch (e) {
-                toast('Failed to add contact', 'error');
+                toast('Gagal menambahkan kontak', 'error');
             }
         }
     });
@@ -3520,43 +3537,43 @@ async function saveCrmContactFromModal() {
 }
 
 async function deleteCrmContact(id) {
-    if (!confirm('Delete this contact?')) return;
+    if (!confirm('Hapus kontak ini?')) return;
     
     try {
         await apiFetch(getUserApi() + '/crm/contacts/' + id, { method: 'DELETE' });
-        toast('Contact deleted', 'success');
+        toast('Kontak berhasil dihapus', 'success');
         loadCrmData();
     } catch (e) {
-        toast('Failed to delete', 'error');
+        toast('Gagal menghapus kontak', 'error');
     }
 }
 
 function showImportCrmContacts() {
     Swal.fire({
-        title: '📥 Import Contacts',
+        title: '📥 Import Kontak',
         html: `
             <div style="text-align:left;">
-                <label style="display:block; margin-bottom:8px; color:#8696a0;">📁 Upload CSV File</label>
+                <label style="display:block; margin-bottom:8px; color:#8696a0;">📁 Upload File CSV</label>
                 <input type="file" id="swal-csv-file" accept=".csv,.txt" 
                     style="width:100%; padding:10px; background:#111b21; border:1px dashed #3b4a54; border-radius:8px; color:#e9edef; margin-bottom:16px;">
                 
-                <div style="text-align:center; color:#8696a0; margin-bottom:16px;">— OR —</div>
+                <div style="text-align:center; color:#8696a0; margin-bottom:16px;">— ATAU —</div>
                 
-                <label style="display:block; margin-bottom:4px; color:#8696a0;">📝 Paste Data (one per line)</label>
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">📝 Paste Data (satu per baris)</label>
                 <textarea id="swal-import-data" class="swal2-textarea" rows="6" 
-                    placeholder="628123456789,John Doe&#10;628987654321,Jane&#10;628111222333" 
+                    placeholder="628123456789,Nama&#10;628987654321,Nama Lain&#10;628111222333" 
                     style="width:100%; margin:0;"></textarea>
                 
                 <div style="margin-top:12px; padding:10px; background:#111b21; border-radius:8px; font-size:12px; color:#8696a0;">
-                    <strong>📋 CSV Format:</strong><br>
-                    phone,name (name is optional)<br>
-                    <code style="color:#25D366;">628123456789,John Doe</code>
+                    <strong>📋 Format CSV:</strong><br>
+                    nomor,nama (nama opsional)<br>
+                    <code style="color:#25D366;">628123456789,Budi</code>
                 </div>
             </div>
         `,
         showCancelButton: true,
         confirmButtonText: '📥 Import',
-        cancelButtonText: 'Cancel',
+        cancelButtonText: 'Batal',
         confirmButtonColor: '#25D366',
         background: '#1f2c34',
         color: '#e9edef',
@@ -3573,22 +3590,22 @@ function showImportCrmContacts() {
             } else if (textData) {
                 data = textData;
             } else {
-                Swal.showValidationMessage('Please upload a file or paste data');
+                Swal.showValidationMessage('Upload file atau paste data');
                 return false;
             }
             
             // Parse CSV/text data
             const contacts = data.split('\n')
                 .map(line => line.trim())
-                .filter(line => line && !line.toLowerCase().startsWith('phone')) // Skip header
+                .filter(line => line && !line.toLowerCase().startsWith('phone') && !line.toLowerCase().startsWith('nomor'))
                 .map(line => {
                     const parts = line.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
-                    return { phone: parts[0], name: parts[1] || '' };
+                    return { phone: parts[0], name: parts[1] || '', stage: 'lead' };
                 })
                 .filter(c => c.phone && /^[0-9+]+$/.test(c.phone));
             
             if (!contacts.length) {
-                Swal.showValidationMessage('No valid contacts found. Check format: phone,name');
+                Swal.showValidationMessage('Tidak ada kontak valid. Format: nomor,nama');
                 return false;
             }
             
@@ -3605,10 +3622,10 @@ function showImportCrmContacts() {
                     body: JSON.stringify({ contacts })
                 });
                 const data = await res.json();
-                toast(`✅ Imported ${data.success} contacts (${data.failed || 0} failed)`, 'success');
+                toast(`✅ Berhasil import ${data.success} kontak (${data.failed || 0} gagal)`, 'success');
                 loadCrmData();
             } catch (e) {
-                toast('Failed to import contacts', 'error');
+                toast('Gagal import kontak', 'error');
             }
         }
     });
@@ -3631,49 +3648,108 @@ function showCrmContactActions(contactId) {
     
     crmCurrentContactId = contactId;
     
+    // Simplified action menu with just 3 stage options + send message + delete
     Swal.fire({
-        title: '⚡ Contact Actions',
-        html: `<p style="margin-bottom:16px;color:#8696a0;">${contact.name || contact.phone}</p>`,
+        title: `⚡ ${contact.name || contact.phone}`,
+        html: `
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+                <button class="btn btn-primary btn-block" onclick="Swal.close(); crmSendMessage('${contact.phone}')">📱 Kirim Pesan</button>
+                <button class="btn btn-secondary btn-block" onclick="Swal.close(); crmEditContact('${contact.id}')">✏️ Edit Kontak</button>
+                <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:12px; margin-top:4px;">
+                    <p style="color:#8696a0; font-size:12px; margin-bottom:8px;">Pindahkan ke:</p>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-sm ${contact.stage === 'lead' || contact.stage === 'new' ? 'btn-primary' : 'btn-secondary'}" onclick="Swal.close(); crmSetStage('lead')">🆕 Lead</button>
+                        <button class="btn btn-sm ${contact.stage === 'in_progress' || contact.stage === 'offered' || contact.stage === 'interested' ? 'btn-primary' : 'btn-secondary'}" onclick="Swal.close(); crmSetStage('in_progress')">🔄 In Progress</button>
+                        <button class="btn btn-sm ${contact.stage === 'done' || contact.stage === 'closed' || contact.stage === 'dnc' ? 'btn-primary' : 'btn-secondary'}" onclick="Swal.close(); crmSetStage('done')">✅ Done</button>
+                    </div>
+                </div>
+                <button class="btn btn-danger btn-block" style="margin-top:8px;" onclick="Swal.close(); deleteCrmContactAlert()">🗑️ Hapus</button>
+            </div>
+        `,
+        showConfirmButton: false,
         showCancelButton: true,
-        showDenyButton: false,
-        confirmButtonText: '🔄 Change Stage',
-        cancelButtonText: 'Close',
-        showCloseButton: true,
+        cancelButtonText: 'Tutup',
         customClass: {
             popup: 'swal-dark',
-            confirmButton: 'swal-btn-primary',
             cancelButton: 'swal-btn-secondary'
-        },
-        footer: `
-            <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
-                <button class="swal-action-btn" onclick="Swal.close(); crmActionStartSequenceAlert()">▶️ Start Sequence</button>
-                <button class="swal-action-btn" onclick="Swal.close(); crmActionStopSequenceAlert()">⏹️ Stop Sequence</button>
-                <button class="swal-action-btn success" onclick="Swal.close(); crmActionMarkAsAlert('interested')">🔥 Interested</button>
-                <button class="swal-action-btn primary" onclick="Swal.close(); crmActionMarkAsAlert('closed')">✅ Closed</button>
-                <button class="swal-action-btn danger" onclick="Swal.close(); crmActionMarkAsAlert('dnc')">🚫 DNC</button>
-                <button class="swal-action-btn danger" onclick="Swal.close(); deleteCrmContactAlert()">🗑️ Delete</button>
-            </div>
-        `
-    }).then((result) => {
-        if (result.isConfirmed) {
-            crmActionChangeStageAlert();
         }
     });
 }
 
-// SweetAlert versions of CRM actions
+// Send message to contact via WhatsApp
+function crmSendMessage(phone) {
+    // Switch to broadcast tab and prefill the number
+    switchTab('broadcast');
+    switchTargetTab('manual');
+    const manualInput = document.getElementById('manualNumbers');
+    if (manualInput) {
+        manualInput.value = phone;
+        updateManualCount();
+    }
+    toast('Nomor sudah diisi. Tulis pesan dan kirim!', 'success');
+}
+
+// Edit contact
+function crmEditContact(contactId) {
+    const contact = crmContacts.find(c => c.id === contactId);
+    if (!contact) return;
+    
+    Swal.fire({
+        title: '✏️ Edit Kontak',
+        html: `
+            <div style="text-align:left;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">📱 Nomor HP</label>
+                <input id="swal-phone" class="swal2-input" value="${contact.phone}" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">👤 Nama</label>
+                <input id="swal-name" class="swal2-input" value="${contact.name || ''}" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">🏷️ Tags</label>
+                <input id="swal-tags" class="swal2-input" value="${contact.tags || ''}" style="width:100%; margin:0 0 12px 0;">
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">📝 Notes</label>
+                <textarea id="swal-notes" class="swal2-textarea" style="width:100%; margin:0;">${contact.notes || ''}</textarea>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Simpan',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#25D366',
+        background: '#1f2c34',
+        color: '#e9edef',
+        preConfirm: () => {
+            return {
+                phone: document.getElementById('swal-phone').value.trim(),
+                name: document.getElementById('swal-name').value.trim(),
+                tags: document.getElementById('swal-tags').value.trim(),
+                notes: document.getElementById('swal-notes').value.trim()
+            };
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed && result.value) {
+            try {
+                await apiFetch(getUserApi() + '/crm/contacts/' + contactId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(result.value)
+                });
+                toast('Kontak berhasil diupdate!', 'success');
+                loadCrmData();
+            } catch (e) {
+                toast('Gagal update kontak', 'error');
+            }
+        }
+    });
+}
+
+// Legacy function kept for compatibility
 function crmActionChangeStageAlert() {
     Swal.fire({
-        title: '🔄 Select Stage',
+        title: '🔄 Pilih Stage',
         input: 'select',
         inputOptions: {
-            'new': '🆕 New',
-            'offered': '📨 Offered',
-            'interested': '🔥 Interested',
-            'closed': '✅ Closed',
-            'dnc': '🚫 Do Not Contact'
+            'lead': '🆕 Lead',
+            'in_progress': '🔄 In Progress',
+            'done': '✅ Done'
         },
-        inputPlaceholder: 'Select a stage',
+        inputPlaceholder: 'Pilih stage',
         showCancelButton: true,
         customClass: {
             popup: 'swal-dark',

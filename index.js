@@ -901,7 +901,7 @@ const CRM = {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     const now = new Date().toISOString()
-    stmt.run(id, userId, data.phone, data.name || null, data.stage || 'new', data.notes || null, data.tags || null, now, now)
+    stmt.run(id, userId, data.phone, data.name || null, data.stage || 'lead', data.notes || null, data.tags || null, now, now)
     return CRM.getContact(userId, id)
   },
 
@@ -941,7 +941,7 @@ const CRM = {
       LEFT JOIN crm_sequences s ON c.sequenceId = s.id
       WHERE c.nextFollowUpAt IS NOT NULL 
         AND c.nextFollowUpAt <= ?
-        AND c.stage NOT IN ('closed', 'dnc')
+        AND c.stage NOT IN ('closed', 'dnc', 'done')
     `).all(now)
   },
 
