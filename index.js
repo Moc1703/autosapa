@@ -871,6 +871,13 @@ setInterval(() => {
 }, 24 * 60 * 60 * 1000)
 
 // ===== CRM HELPER FUNCTIONS =====
+// Stage mapping: new stages to old stages for filter
+const STAGE_FILTER_MAP = {
+  'lead': ['new', 'lead'],
+  'in_progress': ['offered', 'interested', 'in_progress'],
+  'done': ['closed', 'dnc', 'done']
+}
+
 const CRM = {
   // Contacts
   getContacts: (userId, filters = {}) => {
@@ -878,8 +885,18 @@ const CRM = {
     const params = [userId]
     
     if (filters.stage) {
-      query += " AND stage = ?"
-      params.push(filters.stage)
+      // Check if stage is a mapped stage (lead, in_progress, done)
+      const mappedStages = STAGE_FILTER_MAP[filters.stage]
+      if (mappedStages) {
+        // Use IN clause for mapped stages
+        const placeholders = mappedStages.map(() => '?').join(', ')
+        query += ` AND stage IN (${placeholders})`
+        params.push(...mappedStages)
+      } else {
+        // Exact match for old stages
+        query += " AND stage = ?"
+        params.push(filters.stage)
+      }
     }
     if (filters.sequenceId) {
       query += " AND sequenceId = ?"
