@@ -846,27 +846,24 @@ function renderGroupsList() {
     const list = document.getElementById('groupsList');
     if (!groups.length) {
         list.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">👥</div>
-                <div class="empty-title">No groups yet</div>
-                <p class="empty-text">Add groups manually or discover from WhatsApp</p>
+            <div class="empty-state" style="text-align:center; padding:40px;">
+                <div style="font-size:48px; margin-bottom:16px;">👥</div>
+                <div style="font-weight:600; margin-bottom:8px;">Belum ada grup</div>
+                <p class="text-muted">Klik Sync untuk import grup dari WhatsApp</p>
             </div>`;
         return;
     }
 
-    list.innerHTML = groups.map(g => `
-        <div class="group-item">
-            <div class="group-icon">👥</div>
-            <div class="group-info">
-                <div class="group-name">${escapeHtml(g.name)}</div>
-                <div class="group-meta">
-                    ID: ${escapeHtml(g.id.substring(0, 20))}...
-                    ${g.participants ? ` • ${g.participants} members` : ''}
-                </div>
+    // Compact row-based design
+    list.innerHTML = groups.map((g, idx) => `
+        <div class="group-row" style="display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--glass-1); border:1px solid var(--glass-border); border-radius:12px; margin-bottom:8px; transition:all 0.2s;" onmouseover="this.style.background='var(--glass-2)'" onmouseout="this.style.background='var(--glass-1)'">
+            <div style="width:36px; height:36px; background:rgba(0,255,136,0.1); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;">👥</div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(g.name)}</div>
+                <div style="font-size:11px; color:var(--text-muted);">${g.participants ? g.participants + ' members' : 'WhatsApp Group'}</div>
             </div>
-            <div class="group-actions">
-                <button class="btn btn-sm btn-danger" onclick="deleteGroup('${escapeAttr(g.id)}')">🗑️</button>
-            </div>
+            ${g.pinned ? '<span style="font-size:12px;" title="Pinned">📌</span>' : ''}
+            <button class="btn btn-sm" style="background:rgba(255,71,87,0.1); color:#ff4757; border:none; padding:6px 10px; font-size:14px;" onclick="deleteGroup('${escapeAttr(g.id)}')" title="Hapus">🗑️</button>
         </div>
     `).join('');
 }
