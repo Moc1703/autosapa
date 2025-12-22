@@ -871,16 +871,18 @@ function renderGroupsList() {
 function renderGroupSelect() {
     const list = document.getElementById('groupSelectList');
     if (!groups.length) {
-        list.innerHTML = `<div class="empty-state"><p class="text-muted">No groups yet</p></div>`;
+        list.innerHTML = `<div class="empty-state" style="text-align:center; padding:20px;"><p class="text-muted">Belum ada grup. Sync grup dulu.</p></div>`;
         return;
     }
 
+    // Compact row design matching groups list
     list.innerHTML = groups.map(g => `
-        <div class="group-select-item" onclick="toggleGroupSelect(this, '${escapeAttr(g.groupId || g.id)}')">
-            <input type="checkbox" value="${escapeAttr(g.groupId || g.id)}" onclick="event.stopPropagation(); updateSelectedCount()">
-            <div style="flex:1">
-                <div style="font-weight:500">${escapeHtml(g.name)}</div>
-                <div style="font-size:12px; color:var(--text-muted)">${escapeHtml(g.id)}</div>
+        <div class="group-select-item" style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--glass-1); border:1px solid var(--glass-border); border-radius:10px; margin-bottom:6px; cursor:pointer; transition:all 0.2s;" onclick="toggleGroupSelect(this, '${escapeAttr(g.groupId || g.id)}')" onmouseover="this.style.background='var(--glass-2)'" onmouseout="if(!this.classList.contains('selected')) this.style.background='var(--glass-1)'">
+            <input type="checkbox" value="${escapeAttr(g.groupId || g.id)}" style="width:18px; height:18px; accent-color:var(--primary); cursor:pointer;" onclick="event.stopPropagation(); updateSelectedCount()">
+            <div style="width:32px; height:32px; background:rgba(0,255,136,0.1); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">👥</div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:600; font-size:13px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(g.name)}</div>
+                <div style="font-size:11px; color:var(--text-muted);">${g.participants ? g.participants + ' members' : 'WhatsApp Group'}</div>
             </div>
         </div>
     `).join('');
