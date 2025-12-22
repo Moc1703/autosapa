@@ -3303,19 +3303,30 @@ function renderCrmContacts() {
 
     list.innerHTML = crmContacts.map(c => {
         const displayStage = STAGE_MAP[c.stage] || c.stage;
+        const notesPreview = c.notes ? (c.notes.length > 40 ? c.notes.substring(0, 40) + '...' : c.notes) : '';
         return `
-        <div class="card-list-item" data-id="${c.id}" data-phone="${escapeAttr(c.phone)}" data-name="${escapeAttr(c.name || '')}">
-            <div class="card-icon-large" style="background:${stageColors[c.stage] || '#888'}20; color:${stageColors[c.stage] || '#888'}">
-                ${stageIcons[c.stage] || '👤'}
+        <div class="crm-contact-card" style="background:var(--glass-1); border:1px solid var(--glass-border); border-radius:12px; padding:16px; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:42px; height:42px; background:${stageColors[c.stage] || '#888'}20; color:${stageColors[c.stage] || '#888'}; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;">
+                    ${stageIcons[c.stage] || '👤'}
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:600; color:var(--text-main); margin-bottom:2px;">${escapeHtml(c.name || c.phone)}</div>
+                    <div style="font-size:12px; color:var(--text-muted);">
+                        ${escapeHtml(c.phone)} 
+                        <span style="display:inline-block; padding:2px 8px; background:${stageColors[c.stage] || '#888'}20; color:${stageColors[c.stage] || '#888'}; border-radius:10px; font-size:10px; font-weight:600; margin-left:6px;">${stageLabels[c.stage] || c.stage}</span>
+                    </div>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button class="btn btn-sm" style="background:rgba(37,211,102,0.15); color:#25d366; border:none; padding:8px 12px;" onclick="quickChatCrm('${escapeAttr(c.phone)}')" title="Chat WhatsApp">💬</button>
+                    <button class="btn btn-sm btn-secondary" onclick="showCrmContactActions('${c.id}')" title="Menu">⚡</button>
+                    <button class="btn btn-sm" style="background:rgba(255,71,87,0.1); color:#ff4757; border:none;" onclick="deleteCrmContact('${c.id}')" title="Hapus">🗑️</button>
+                </div>
             </div>
-            <div class="card-info">
-                <div class="card-title">${escapeHtml(c.name || c.phone)}</div>
-                <div class="card-subtitle">${escapeHtml(c.phone)} • ${stageLabels[c.stage] || c.stage}</div>
-            </div>
-            <div class="flex gap-2">
-                <button class="btn btn-sm btn-secondary" onclick="showCrmContactActions('${c.id}')" title="Actions">⚡</button>
-                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteCrmContact('${c.id}')">🗑️</button>
-            </div>
+            ${notesPreview ? `
+            <div style="margin-top:10px; padding:10px 12px; background:rgba(0,0,0,0.2); border-radius:8px; font-size:12px; color:var(--text-muted);">
+                📝 ${escapeHtml(notesPreview)}
+            </div>` : ''}
         </div>
     `;
     }).join('');
@@ -3338,7 +3349,112 @@ function filterCrmStage(stage) {
     loadCrmContacts();
 }
 
-let crmViewMode = 'kanban'; // Default to kanban for v2.0
+// Broadcast to all contacts in a specific stage
+function showBroadcastByStage() {
+    Swal.fire({
+        title: '📢 Broadcast ke Stage',
+        html: `
+            <div style="text-align:left;">
+                <p style="color:#8696a0; font-size:13px; margin-bottom:16px;">Kirim pesan ke semua kontak dalam stage tertentu</p>
+                
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">Pilih Stage:</label>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+                    <button type="button" class="btn btn-sm btn-secondary stage-select-btn" data-stage="lead" onclick="selectBroadcastStage('lead', this)">🆕 Lead</button>
+                    <button type="button" class="btn btn-sm btn-secondary stage-select-btn" data-stage="in_progress" onclick="selectBroadcastStage('in_progress', this)">🔄 In Progress</button>
+                    <button type="button" class="btn btn-sm btn-secondary stage-select-btn" data-stage="done" onclick="selectBroadcastStage('done', this)">✅ Done</button>
+                </div>
+                <input type="hidden" id="swal-broadcast-stage" value="">
+                
+                <label style="display:block; margin-bottom:4px; color:#8696a0;">Pesan:</label>
+                <textarea id="swal-broadcast-message" class="swal2-textarea" placeholder="Tulis pesan yang akan dikirim..." style="width:100%; min-height:100px; margin:0;"></textarea>
+                
+                <p id="swal-broadcast-count" style="color:#8696a0; font-size:12px; margin-top:8px;">0 kontak akan menerima</p>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '🚀 Kirim Broadcast',
+        cancelButtonText: 'Batal',
+        customClass: {
+            popup: 'swal-dark',
+            confirmButton: 'swal-btn-primary',
+            cancelButton: 'swal-btn-secondary'
+        },
+        preConfirm: async () => {
+            const stage = document.getElementById('swal-broadcast-stage').value;
+            const message = document.getElementById('swal-broadcast-message').value;
+            
+            if (!stage) {
+                Swal.showValidationMessage('Pilih stage terlebih dahulu');
+                return false;
+            }
+            if (!message.trim()) {
+                Swal.showValidationMessage('Pesan tidak boleh kosong');
+                return false;
+            }
+            
+            return { stage, message };
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            const { stage, message } = result.value;
+            await executeBroadcastByStage(stage, message);
+        }
+    });
+}
+
+function selectBroadcastStage(stage, btn) {
+    document.getElementById('swal-broadcast-stage').value = stage;
+    document.querySelectorAll('.stage-select-btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-secondary');
+    });
+    btn.classList.remove('btn-secondary');
+    btn.classList.add('btn-primary');
+    
+    // Count contacts in this stage
+    const stageMap = {
+        'lead': ['lead', 'new'],
+        'in_progress': ['in_progress', 'offered', 'interested'],
+        'done': ['done', 'closed', 'dnc']
+    };
+    const matchStages = stageMap[stage] || [stage];
+    const count = crmContacts.filter(c => matchStages.includes(c.stage)).length;
+    document.getElementById('swal-broadcast-count').textContent = `${count} kontak akan menerima`;
+}
+
+async function executeBroadcastByStage(stage, message) {
+    // Get contacts for this stage
+    const stageMap = {
+        'lead': ['lead', 'new'],
+        'in_progress': ['in_progress', 'offered', 'interested'],
+        'done': ['done', 'closed', 'dnc']
+    };
+    const matchStages = stageMap[stage] || [stage];
+    const contacts = crmContacts.filter(c => matchStages.includes(c.stage));
+    
+    if (contacts.length === 0) {
+        toast('Tidak ada kontak di stage ini', 'error');
+        return;
+    }
+    
+    // Switch to broadcast and prefill numbers
+    switchTab('broadcast');
+    switchTargetTab('manual');
+    
+    const numbers = contacts.map(c => c.phone).join('\n');
+    const manualInput = document.getElementById('manualNumbers');
+    const messageInput = document.getElementById('quickMessage');
+    
+    if (manualInput) {
+        manualInput.value = numbers;
+        updateManualCount();
+    }
+    if (messageInput) {
+        messageInput.value = message;
+    }
+    
+    toast(`${contacts.length} nomor sudah diisi. Klik Send untuk kirim!`, 'success');
+}
 
 function switchCrmView(mode) {
     crmViewMode = mode;
@@ -3689,6 +3805,20 @@ function crmSendMessage(phone) {
         updateManualCount();
     }
     toast('Nomor sudah diisi. Tulis pesan dan kirim!', 'success');
+}
+
+// Quick chat - open WhatsApp directly
+function quickChatCrm(phone) {
+    // Clean phone number
+    let cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.startsWith('0')) {
+        cleanPhone = '62' + cleanPhone.substring(1);
+    }
+    
+    // Open WhatsApp Web in new tab
+    const waUrl = `https://wa.me/${cleanPhone}`;
+    window.open(waUrl, '_blank');
+    toast('Membuka WhatsApp...', 'success');
 }
 
 // Edit contact
