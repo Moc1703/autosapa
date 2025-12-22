@@ -69,7 +69,48 @@ async function requireAuth(req, res, next) {
 
 // Global requireUserAuth (same as requireAuth for personal)
 const requireUserAuth = requireAuth;
-const requireSession = requireAuth;
+
+// Middleware that requires an active WhatsApp session and attaches client to req
+async function requireSession(req, res, next) {
+  try {
+    // First verify authentication
+    const token = req.headers.authorization?.replace("Bearer ", "")
+    if (!token) return res.status(401).json({ error: "Authentication required" })
+
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (decoded.userId !== "owner") return res.status(403).json({ error: "Access denied" })
+
+    req.authUserId = "owner"
+    
+    // Get userId from params
+    const userId = req.params.userId || "owner"
+    
+    // Check if session exists and is connected
+    const client = sessions.get(userId)
+    const status = sessionStatuses.get(userId)
+    
+    if (!client) {
+      return res.status(400).json({ 
+        error: "No WhatsApp session found. Please scan QR code first.",
+        needsReconnect: true 
+      })
+    }
+    
+    if (status !== "connected") {
+      return res.status(400).json({ 
+        error: `WhatsApp session is ${status || 'not ready'}. Please reconnect.`,
+        status: status,
+        needsReconnect: true 
+      })
+    }
+    
+    // Attach client to request
+    req.client = client
+    next()
+  } catch (error) {
+    res.status(401).json({ error: "Invalid or expired token" })
+  }
+}
 
 // Simple Login Endpoint
 app.post("/api/auth/login", async (req, res) => {
@@ -2376,7 +2417,21 @@ app.post("/api/:userId/groups/sync", requireSession, async (req, res) => {
     }
 
     console.log(`[${userId}] Fetching groups from WhatsApp...`)
-    const chats = await req.client.getChats()
+    
+    // Add timeout to getChats to prevent indefinite hang
+    const SYNC_TIMEOUT = 60000 // 60 seconds
+    let chats
+    try {
+      chats = await Promise.race([
+        req.client.getChats(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: getChats took longer than 60 seconds')), SYNC_TIMEOUT)
+        )
+      ])
+    } catch (chatError) {
+      console.error(`[${userId}] getChats error:`, chatError.message)
+      throw chatError
+    }
 
     console.log(`[${userId}] Total chats: ${chats.length}`)
 
