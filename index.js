@@ -1548,8 +1548,41 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
   }
 
   try {
-    // Puppeteer config - let it auto-detect Chrome on Windows
-    // Only use custom path on Linux if CHROMIUM_PATH is set
+    // Detect OS and set appropriate Chromium path
+    const os = require('os')
+    const isLinux = os.platform() === 'linux'
+    
+    // Common Chromium paths on Linux
+    const linuxChromiumPaths = [
+      '/snap/bin/chromium',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable'
+    ]
+    
+    // Find available chromium on Linux
+    let chromiumPath = null
+    if (isLinux) {
+      // Use env var if set, otherwise find available chromium
+      if (process.env.CHROMIUM_PATH) {
+        chromiumPath = process.env.CHROMIUM_PATH
+      } else {
+        for (const p of linuxChromiumPaths) {
+          if (fs.existsSync(p)) {
+            chromiumPath = p
+            console.log(`🔍 Found Chromium at: ${p}`)
+            break
+          }
+        }
+        if (!chromiumPath) {
+          console.log('⚠️ No Chromium found, will use Puppeteer bundled browser')
+        }
+      }
+    }
+    // On Windows, let Puppeteer auto-detect Chrome
+
+    // Puppeteer config
     const puppeteerConfig = {
       headless: true,
       args: [
@@ -1581,9 +1614,9 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
       ],
     }
 
-    // Only set executablePath if CHROMIUM_PATH env var is explicitly set (for Linux servers)
-    if (process.env.CHROMIUM_PATH) {
-      puppeteerConfig.executablePath = process.env.CHROMIUM_PATH
+    // Set executablePath only if we found one (Linux) or env var is set
+    if (chromiumPath) {
+      puppeteerConfig.executablePath = chromiumPath
     }
 
     const client = new Client({
