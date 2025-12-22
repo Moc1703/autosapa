@@ -1548,44 +1548,50 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
   }
 
   try {
+    // Puppeteer config - let it auto-detect Chrome on Windows
+    // Only use custom path on Linux if CHROMIUM_PATH is set
+    const puppeteerConfig = {
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
+        "--disable-gpu",
+        "--disable-extensions",
+        "--disable-plugins",
+        "--disable-sync",
+        "--disable-translate",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--mute-audio",
+        "--no-default-browser-check",
+        "--autoplay-policy=no-user-gesture-required",
+        "--disable-background-timer-throttling",
+        "--disable-backgrounding-occluded-windows",
+        "--disable-renderer-backgrounding",
+        "--disable-software-rasterizer",
+        "--disable-features=TranslateUI",
+        "--disable-ipc-flooding-protection",
+        "--disable-hang-monitor",
+        "--memory-pressure-off",
+        "--max-old-space-size=256",
+        `--user-data-dir=${userDataDir}`,
+      ],
+    }
+
+    // Only set executablePath if CHROMIUM_PATH env var is explicitly set (for Linux servers)
+    if (process.env.CHROMIUM_PATH) {
+      puppeteerConfig.executablePath = process.env.CHROMIUM_PATH
+    }
+
     const client = new Client({
       authStrategy: new LocalAuth({
         clientId: userId,
         dataPath: path.join(__dirname, ".wwebjs_auth"),
       }),
-      puppeteer: {
-        headless: true,
-        executablePath: process.env.CHROMIUM_PATH || "/snap/bin/chromium",
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          // "--no-zygote", // Removed to fix SingletonLock error
-          // "--single-process", // Removed to fix SingletonLock crash
-          "--disable-gpu",
-          "--disable-extensions",
-          "--disable-plugins",
-          "--disable-sync",
-          "--disable-translate",
-          "--disable-background-networking",
-          "--disable-default-apps",
-          "--mute-audio",
-          "--no-default-browser-check",
-          "--autoplay-policy=no-user-gesture-required",
-          "--disable-background-timer-throttling",
-          "--disable-backgrounding-occluded-windows",
-          "--disable-renderer-backgrounding",
-          "--disable-software-rasterizer",
-          "--disable-features=TranslateUI",
-          "--disable-ipc-flooding-protection",
-          "--disable-hang-monitor",
-          "--memory-pressure-off",
-          "--max-old-space-size=256",
-          `--user-data-dir=${userDataDir}`,
-        ],
-      },
+      puppeteer: puppeteerConfig,
     })
 
     // QR Code Event
