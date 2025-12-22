@@ -79,7 +79,13 @@
         <header class="app-header">
             <button class="btn-icon" onclick="toggleSidebar()" id="hamburgerBtn"><ion-icon name="menu-outline"></ion-icon></button>
             <div class="sidebar-title" style="font-size:18px;">AutoSapa</div>
-            <div id="statusBadge" style="width:10px; height:10px; background:red; border-radius:50%;"></div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <button class="btn-icon notification-bell" onclick="showNotifications()" style="position:relative;">
+                    <ion-icon name="notifications-outline"></ion-icon>
+                    <span id="notifBadge" class="notif-badge hidden">0</span>
+                </button>
+                <div id="statusBadge" style="width:10px; height:10px; background:red; border-radius:50%;"></div>
+            </div>
         </header>
 
         <!-- TAB: DASHBOARD -->
@@ -469,6 +475,7 @@
             <div class="page-header flex justify-between align-center mb-4">
                 <h1 class="page-title">🎯 CRM</h1>
                 <div class="flex gap-2">
+                    <button class="btn btn-sm btn-secondary" onclick="exportCrmContacts()" title="Export ke CSV">📤 Export</button>
                     <button class="btn btn-sm btn-secondary" onclick="showBroadcastByStage()" title="Kirim pesan ke semua kontak di stage tertentu">📢 Broadcast</button>
                     <button class="btn btn-sm btn-secondary" onclick="showImportCrmContacts()">📥 Import</button>
                     <button class="btn btn-sm btn-primary" onclick="showAddCrmContact()">+ Add Contact</button>

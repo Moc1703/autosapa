@@ -42,6 +42,74 @@ function validateForm(fields) {
     return true;
 }
 
+// Show notifications popup
+async function showNotifications() {
+    try {
+        const res = await apiFetch(getUserApi() + '/history');
+        const data = await res.json();
+        const history = (data.history || []).slice(0, 10); // Get last 10
+        
+        if (!history.length) {
+            Swal.fire({
+                title: '🔔 Notifikasi',
+                html: '<p style="color:#8696a0; text-align:center; padding:20px;">Belum ada aktivitas terbaru</p>',
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'Tutup',
+                customClass: { popup: 'swal-dark' }
+            });
+            return;
+        }
+        
+        const listHtml = history.map(h => {
+            const date = new Date(h.timestamp);
+            const timeAgo = getTimeAgo(date);
+            return `
+                <div style="display:flex; align-items:center; gap:12px; padding:12px; background:rgba(0,0,0,0.2); border-radius:10px; margin-bottom:8px;">
+                    <div style="width:36px; height:36px; background:rgba(0,255,136,0.15); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                        ${h.type === 'image' ? '🖼️' : '📢'}
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:13px; color:#f8faff; margin-bottom:2px;">
+                            Broadcast ke ${h.groupCount} ${h.groupCount > 1 ? 'grup' : 'nomor'}
+                        </div>
+                        <div style="font-size:11px; color:#8696a0;">
+                            ${timeAgo} • ✅ ${h.successCount || 0} ${h.failCount > 0 ? `• ❌ ${h.failCount}` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        Swal.fire({
+            title: '🔔 Notifikasi',
+            html: `<div style="max-height:350px; overflow-y:auto; text-align:left;">${listHtml}</div>`,
+            showConfirmButton: false,
+            showCancelButton: true,
+            cancelButtonText: 'Tutup',
+            customClass: { popup: 'swal-dark', cancelButton: 'swal-btn-secondary' }
+        });
+        
+        // Clear badge
+        const badge = document.getElementById('notifBadge');
+        if (badge) badge.classList.add('hidden');
+    } catch (e) {
+        console.error('Failed to load notifications:', e);
+    }
+}
+
+// Time ago helper
+function getTimeAgo(date) {
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) return 'Baru saja';
+    if (diff < 3600) return `${Math.floor(diff/60)} menit lalu`;
+    if (diff < 86400) return `${Math.floor(diff/3600)} jam lalu`;
+    if (diff < 604800) return `${Math.floor(diff/86400)} hari lalu`;
+    return date.toLocaleDateString('id-ID');
+}
+
 // Custom confirm dialog (replaces native confirm)
 function showConfirm(message, onConfirm, onCancel = null) {
     const modal = document.getElementById('confirmModal');
@@ -3252,6 +3320,46 @@ const STAGE_MAP = {
 async function loadCrmData() {
     await loadCrmStats();
     await loadCrmContacts();
+}
+
+// Export CRM contacts to CSV
+function exportCrmContacts() {
+    if (!crmContacts.length) {
+        toast('Tidak ada kontak untuk di-export', 'warning');
+        return;
+    }
+    
+    // Stage label mapping
+    const stageLabels = {
+        'lead': 'Lead', 'new': 'Lead',
+        'in_progress': 'In Progress', 'offered': 'In Progress', 'interested': 'In Progress',
+        'done': 'Done', 'closed': 'Done', 'dnc': 'Done'
+    };
+    
+    // CSV header
+    let csv = 'Nama,Nomor HP,Stage,Catatan,Tanggal Ditambahkan\n';
+    
+    // Add each contact
+    crmContacts.forEach(c => {
+        const name = (c.name || '').replace(/"/g, '""');
+        const phone = c.phone || '';
+        const stage = stageLabels[c.stage] || c.stage;
+        const notes = (c.notes || '').replace(/"/g, '""').replace(/\n/g, ' ');
+        const date = c.createdAt ? new Date(c.createdAt).toLocaleDateString('id-ID') : '';
+        
+        csv += `"${name}","${phone}","${stage}","${notes}","${date}"\n`;
+    });
+    
+    // Create download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `crm-contacts-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    toast(`${crmContacts.length} kontak berhasil di-export!`, 'success');
 }
 
 async function loadCrmStats() {

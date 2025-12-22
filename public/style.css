@@ -944,3 +944,50 @@ input:checked + .slider:before { transform: translateX(20px); box-shadow: 0 0 5p
     border-color: rgba(255,71,87,0.3);
     color: #ff4757;
 }
+
+/* =========================================
+   14. NOTIFICATION BADGE
+   ========================================= */
+.notification-bell {
+    font-size: 20px;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+.notification-bell:hover {
+    color: var(--primary);
+}
+.notif-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background: #ff4757;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(255,71,87,0.4);
+}
+
+/* Loading Skeleton */
+.skeleton {
+    background: linear-gradient(90deg, var(--glass-1), var(--glass-2), var(--glass-1));
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 8px;
+}
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Glass Variables Additions */
+:root {
+    --glass-1: rgba(255,255,255,0.03);
+    --glass-2: rgba(255,255,255,0.06);
+}
