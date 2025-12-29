@@ -81,29 +81,29 @@ async function requireSession(req, res, next) {
     if (decoded.userId !== "owner") return res.status(403).json({ error: "Access denied" })
 
     req.authUserId = "owner"
-    
+
     // Get userId from params
     const userId = req.params.userId || "owner"
-    
+
     // Check if session exists and is connected
     const client = sessions.get(userId)
     const status = sessionStatuses.get(userId)
-    
+
     if (!client) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "No WhatsApp session found. Please scan QR code first.",
-        needsReconnect: true 
+        needsReconnect: true
       })
     }
-    
+
     if (status !== "connected") {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: `WhatsApp session is ${status || 'not ready'}. Please reconnect.`,
         status: status,
-        needsReconnect: true 
+        needsReconnect: true
       })
     }
-    
+
     // Attach client to request
     req.client = client
     next()
@@ -117,7 +117,7 @@ app.post("/api/auth/login", async (req, res) => {
   try {
     const { password } = req.body
     const owner = UserDB.findById("owner")
-    
+
     if (!owner) return res.status(404).json({ error: "System error: Owner not initialized" })
 
     const isMatch = await bcrypt.compare(password, owner.password)
@@ -140,26 +140,26 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
 app.post("/api/auth/change-password", requireAuth, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body
-    
+
     if (!oldPassword || !newPassword) {
       return res.status(400).json({ error: "Password lama dan baru harus diisi" })
     }
-    
+
     if (newPassword.length < 6) {
       return res.status(400).json({ error: "Password baru minimal 6 karakter" })
     }
-    
+
     const owner = UserDB.findById("owner")
     if (!owner) return res.status(404).json({ error: "User tidak ditemukan" })
-    
+
     const isMatch = await bcrypt.compare(oldPassword, owner.password)
     if (!isMatch) {
       return res.status(401).json({ error: "Password lama salah!" })
     }
-    
+
     const hashedPassword = bcrypt.hashSync(newPassword, 10)
     db.prepare("UPDATE users SET password = ? WHERE id = 'owner'").run(hashedPassword)
-    
+
     res.json({ success: true, message: "Password berhasil diubah!" })
   } catch (error) {
     console.error("Password change error:", error)
@@ -577,21 +577,21 @@ console.log("✅ CRM Automation tables initialized")
 
 // Initialize owner user if not exists
 try {
-    const owner = db.prepare("SELECT * FROM users WHERE id = 'owner'").get()
-    const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10)
-    
-    if (!owner) {
-        db.prepare(`
+  const owner = db.prepare("SELECT * FROM users WHERE id = 'owner'").get()
+  const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10)
+
+  if (!owner) {
+    db.prepare(`
             INSERT INTO users (id, email, name, password, plan, maxGroups, maxBroadcastPerDay)
             VALUES ('owner', 'owner@autosapa.tool', 'Owner', ?, 'pro', 999, 999)
         `).run(hashedPassword)
-        console.log("👤 Created default owner user")
-    } else {
-        // Update password if env changed or to ensure it's hashed correctly
-        db.prepare("UPDATE users SET password = ? WHERE id = 'owner'").run(hashedPassword)
-    }
+    console.log("👤 Created default owner user")
+  } else {
+    // Update password if env changed or to ensure it's hashed correctly
+    db.prepare("UPDATE users SET password = ? WHERE id = 'owner'").run(hashedPassword)
+  }
 } catch (e) {
-    console.error("❌ Failed to initialize owner user:", e.message)
+  console.error("❌ Failed to initialize owner user:", e.message)
 }
 
 // ===== USER HELPER FUNCTIONS (SQLite) =====
@@ -924,7 +924,7 @@ const CRM = {
   getContacts: (userId, filters = {}) => {
     let query = "SELECT * FROM crm_contacts WHERE userId = ?"
     const params = [userId]
-    
+
     if (filters.stage) {
       // Check if stage is a mapped stage (lead, in_progress, done)
       const mappedStages = STAGE_FILTER_MAP[filters.stage]
@@ -943,7 +943,7 @@ const CRM = {
       query += " AND sequenceId = ?"
       params.push(filters.sequenceId)
     }
-    
+
     query += " ORDER BY createdAt DESC"
     return db.prepare(query).all(...params)
   },
@@ -966,7 +966,7 @@ const CRM = {
   updateContact: (userId, contactId, data) => {
     const updates = []
     const params = []
-    
+
     if (data.name !== undefined) { updates.push("name = ?"); params.push(data.name) }
     if (data.phone !== undefined) { updates.push("phone = ?"); params.push(data.phone) }
     if (data.stage !== undefined) { updates.push("stage = ?"); params.push(data.stage) }
@@ -977,11 +977,11 @@ const CRM = {
     if (data.followUpCount !== undefined) { updates.push("followUpCount = ?"); params.push(data.followUpCount) }
     if (data.notes !== undefined) { updates.push("notes = ?"); params.push(data.notes) }
     if (data.tags !== undefined) { updates.push("tags = ?"); params.push(data.tags) }
-    
+
     updates.push("updatedAt = ?")
     params.push(new Date().toISOString())
     params.push(userId, contactId)
-    
+
     db.prepare(`UPDATE crm_contacts SET ${updates.join(", ")} WHERE userId = ? AND id = ?`).run(...params)
     return CRM.getContact(userId, contactId)
   },
@@ -1046,7 +1046,7 @@ const CRM = {
   updateSequence: (userId, sequenceId, data) => {
     const updates = []
     const params = []
-    
+
     if (data.name !== undefined) { updates.push("name = ?"); params.push(data.name) }
     if (data.description !== undefined) { updates.push("description = ?"); params.push(data.description) }
     if (data.steps !== undefined) { updates.push("steps = ?"); params.push(JSON.stringify(data.steps)) }
@@ -1054,11 +1054,11 @@ const CRM = {
     if (data.stopKeywords !== undefined) { updates.push("stopKeywords = ?"); params.push(JSON.stringify(data.stopKeywords)) }
     if (data.maxFollowUps !== undefined) { updates.push("maxFollowUps = ?"); params.push(data.maxFollowUps) }
     if (data.isActive !== undefined) { updates.push("isActive = ?"); params.push(data.isActive ? 1 : 0) }
-    
+
     updates.push("updatedAt = ?")
     params.push(new Date().toISOString())
     params.push(userId, sequenceId)
-    
+
     db.prepare(`UPDATE crm_sequences SET ${updates.join(", ")} WHERE userId = ? AND id = ?`).run(...params)
     return CRM.getSequence(userId, sequenceId)
   },
@@ -1073,17 +1073,17 @@ const CRM = {
   startSequence: (userId, contactId, sequenceId) => {
     const sequence = CRM.getSequence(userId, sequenceId)
     if (!sequence || !sequence.steps.length) return null
-    
+
     const firstStep = sequence.steps[0]
     const nextFollowUp = new Date(Date.now() + (firstStep.delay || 0) * (firstStep.delayUnit === 'hours' ? 3600000 : 86400000))
-    
+
     CRM.updateContact(userId, contactId, {
       sequenceId,
       sequenceStep: 0,
       nextFollowUpAt: nextFollowUp.toISOString(),
       stage: 'offered'
     })
-    
+
     return CRM.getContact(userId, contactId)
   },
 
@@ -1102,12 +1102,12 @@ const CRM = {
   advanceSequence: (userId, contactId) => {
     const contact = CRM.getContact(userId, contactId)
     if (!contact || !contact.sequenceId) return null
-    
+
     const sequence = CRM.getSequence(userId, contact.sequenceId)
     if (!sequence) return null
-    
+
     const nextStep = contact.sequenceStep + 1
-    
+
     // Check if we've completed all steps or hit max follow-ups
     if (nextStep >= sequence.steps.length || contact.followUpCount >= sequence.maxFollowUps) {
       CRM.updateContact(userId, contactId, {
@@ -1117,16 +1117,16 @@ const CRM = {
       })
       return CRM.getContact(userId, contactId)
     }
-    
+
     const step = sequence.steps[nextStep]
     const nextFollowUp = new Date(Date.now() + (step.delay || 1) * (step.delayUnit === 'hours' ? 3600000 : 86400000))
-    
+
     CRM.updateContact(userId, contactId, {
       sequenceStep: nextStep,
       nextFollowUpAt: nextFollowUp.toISOString(),
       followUpCount: contact.followUpCount + 1
     })
-    
+
     return CRM.getContact(userId, contactId)
   },
 
@@ -1138,22 +1138,22 @@ const CRM = {
       inSequence: 0,
       pendingFollowUp: 0
     }
-    
+
     const rows = db.prepare(`
       SELECT stage, COUNT(*) as count FROM crm_contacts WHERE userId = ? GROUP BY stage
     `).all(userId)
-    
+
     rows.forEach(row => {
       stats.byStage[row.stage] = row.count
       stats.total += row.count
     })
-    
+
     const inSeq = db.prepare("SELECT COUNT(*) as count FROM crm_contacts WHERE userId = ? AND sequenceId IS NOT NULL").get(userId)
     stats.inSequence = inSeq?.count || 0
-    
+
     const pending = db.prepare("SELECT COUNT(*) as count FROM crm_contacts WHERE userId = ? AND nextFollowUpAt IS NOT NULL AND nextFollowUpAt <= ?").get(userId, new Date().toISOString())
     stats.pendingFollowUp = pending?.count || 0
-    
+
     return stats
   },
 
@@ -1173,7 +1173,7 @@ const CRM = {
       try {
         const steps = JSON.parse(contact.steps || '[]')
         const step = steps[contact.sequenceStep]
-        
+
         if (!step || !step.message) {
           CRM.updateContact(contact.userId, contact.id, { nextFollowUpAt: null })
           continue
@@ -1181,7 +1181,7 @@ const CRM = {
 
         const message = processMessageVariables(step.message, contact)
         const chatId = contact.phone.includes('@') ? contact.phone : `${contact.phone}@c.us`
-        
+
         await client.sendMessage(chatId, message)
         console.log(`✅ CRM: Sent follow-up to ${contact.phone}`)
 
@@ -1204,10 +1204,10 @@ const CRM = {
     try {
       const senderPhone = msg.from.replace('@c.us', '').replace('@g.us', '')
       const msgText = msg.body.toLowerCase()
-      
+
       // 1. Find contact in CRM
       let contact = CRM.getContactByPhone(userId, senderPhone)
-      
+
       // 2. If contact found, check for stop keywords or active sequence triggers
       if (contact) {
         // If in sequence, check for stop keywords
@@ -1245,8 +1245,8 @@ const CRM = {
           if (triggers.some(k => msgText.includes(k))) {
             console.log(`[${userId}] ✨ Auto-adding ${senderPhone} to CRM via trigger: ${seq.name}`)
             const contactName = (await msg.getContact()).pushname || senderPhone
-            const newContact = CRM.createContact(userId, { 
-              phone: senderPhone, 
+            const newContact = CRM.createContact(userId, {
+              phone: senderPhone,
               name: contactName,
               stage: 'new',
               notes: `Auto-added via trigger: ${seq.name}`
@@ -1457,7 +1457,7 @@ function cleanupChromiumLocks() {
     '/root/.config/chromium/SingletonLock',
     '/home/*/.config/chromium/SingletonLock'
   ]
-  
+
   // Also try to kill any orphaned chromium processes that might be holding locks
   try {
     const { execSync } = require('child_process')
@@ -1466,7 +1466,7 @@ function cleanupChromiumLocks() {
   } catch (err) {
     // Ignore - pkill might not exist or no processes found
   }
-  
+
   for (const lockPath of lockPaths) {
     try {
       // Handle glob patterns
@@ -1495,11 +1495,11 @@ function cleanupChromiumLocks() {
       console.log(`⚠️ Could not clean SingletonLock at ${lockPath}: ${err.message}`)
     }
   }
-  
+
   // Also clean /tmp chromium directories
   try {
-    const tmpDirs = fs.readdirSync('/tmp').filter(d => 
-      d.startsWith('.org.chromium.Chromium') || 
+    const tmpDirs = fs.readdirSync('/tmp').filter(d =>
+      d.startsWith('.org.chromium.Chromium') ||
       d.startsWith('puppeteer_dev_chrome_profile')
     )
     for (const dir of tmpDirs) {
@@ -1592,7 +1592,7 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
     // Detect OS and set appropriate Chromium path
     const os = require('os')
     const isLinux = os.platform() === 'linux'
-    
+
     // Common Chromium paths on Linux
     const linuxChromiumPaths = [
       '/snap/bin/chromium',
@@ -1601,7 +1601,7 @@ async function initSession(userId, forceRestart = false, clearAuth = false) {
       '/usr/bin/google-chrome',
       '/usr/bin/google-chrome-stable'
     ]
-    
+
     // Find available chromium on Linux
     let chromiumPath = null
     if (isLinux) {
@@ -2417,14 +2417,14 @@ app.post("/api/:userId/groups/sync", requireSession, async (req, res) => {
     }
 
     console.log(`[${userId}] Fetching groups from WhatsApp...`)
-    
+
     // Add timeout to getChats to prevent indefinite hang
     const SYNC_TIMEOUT = 60000 // 60 seconds
     let chats
     try {
       chats = await Promise.race([
         req.client.getChats(),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Timeout: getChats took longer than 60 seconds')), SYNC_TIMEOUT)
         )
       ])
@@ -3259,7 +3259,7 @@ app.post("/api/:userId/crm/contacts", requireUserAuth, (req, res) => {
   try {
     const { phone, name, stage, notes, tags } = req.body
     if (!phone) return res.status(400).json({ error: "Phone is required" })
-    
+
     const contact = CRM.createContact(req.params.userId, { phone, name, stage, notes, tags })
     res.json({ success: true, contact })
   } catch (error) {
@@ -3295,9 +3295,9 @@ app.post("/api/:userId/crm/contacts/import", requireUserAuth, (req, res) => {
     if (!contacts || !Array.isArray(contacts)) {
       return res.status(400).json({ error: "Contacts array is required" })
     }
-    
+
     const results = { success: 0, failed: 0, errors: [] }
-    
+
     for (const c of contacts) {
       try {
         if (!c.phone) {
@@ -3312,7 +3312,7 @@ app.post("/api/:userId/crm/contacts/import", requireUserAuth, (req, res) => {
         results.errors.push(`${c.phone}: ${e.message}`)
       }
     }
-    
+
     res.json({ success: true, ...results })
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -3324,10 +3324,10 @@ app.post("/api/:userId/crm/contacts/:contactId/start-sequence", requireUserAuth,
   try {
     const { sequenceId } = req.body
     if (!sequenceId) return res.status(400).json({ error: "sequenceId is required" })
-    
+
     const contact = CRM.startSequence(req.params.userId, req.params.contactId, sequenceId)
     if (!contact) return res.status(404).json({ error: "Contact or sequence not found" })
-    
+
     res.json({ success: true, contact })
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -3340,7 +3340,7 @@ app.post("/api/:userId/crm/contacts/:contactId/stop-sequence", requireUserAuth, 
     const { reason } = req.body
     const contact = CRM.stopSequence(req.params.userId, req.params.contactId, reason)
     if (!contact) return res.status(404).json({ error: "Contact not found" })
-    
+
     res.json({ success: true, contact })
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -3376,7 +3376,7 @@ app.post("/api/:userId/crm/sequences", requireUserAuth, (req, res) => {
     if (!steps || !Array.isArray(steps) || steps.length === 0) {
       return res.status(400).json({ error: "At least one step is required" })
     }
-    
+
     const sequence = CRM.createSequence(req.params.userId, {
       name, description, steps, triggerKeywords, stopKeywords, maxFollowUps
     })
@@ -3613,8 +3613,253 @@ setInterval(checkSchedules, 60000)
 
 // Run CRM Queue processor every minute
 cron.schedule('* * * * *', () => {
-    CRM.processQueue().catch(err => console.error("❌ CRM Cron Error:", err));
+  CRM.processQueue().catch(err => console.error("❌ CRM Cron Error:", err));
 });
+
+
+// =============================================
+// ===== ZAPIER WEBHOOK ENDPOINT =====
+// =============================================
+// Webhook Secret for Zapier (set in .env or use default)
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || crypto.randomBytes(16).toString('hex')
+console.log(`🔑 Webhook Secret: ${WEBHOOK_SECRET}`)
+
+// Helper: Normalize phone number to WhatsApp format
+function normalizePhoneToWA(phone) {
+  if (!phone) return null
+
+  // Remove all non-numeric characters
+  let cleaned = phone.replace(/\D/g, '')
+
+  // Handle Indonesian format
+  if (cleaned.startsWith('0')) {
+    cleaned = '62' + cleaned.substring(1)
+  }
+
+  // Add 62 if doesn't start with country code
+  if (!cleaned.startsWith('62') && !cleaned.startsWith('1')) {
+    // Assume Indonesian if no country code
+    cleaned = '62' + cleaned
+  }
+
+  return cleaned + '@c.us'
+}
+
+/**
+ * Zapier Webhook Endpoint
+ * 
+ * Receives data from Zapier and sends WhatsApp messages
+ * 
+ * Expected JSON body:
+ * {
+ *   "phone": "+1234567890",        // Required: recipient phone number
+ *   "name": "Sarah",               // Optional: recipient name for personalization
+ *   "message": "Your reminder",    // Required: message to send
+ *   "reminder_type": "first_reminder", // Optional: type of reminder
+ *   "image": "base64 or URL"       // Optional: image to attach
+ * }
+ * 
+ * Headers:
+ *   x-webhook-secret: YOUR_WEBHOOK_SECRET
+ * 
+ * OR Query param:
+ *   ?secret=YOUR_WEBHOOK_SECRET
+ */
+app.post('/api/webhook/zapier', async (req, res) => {
+  try {
+    // 1. Verify webhook secret
+    const secretFromHeader = req.headers['x-webhook-secret']
+    const secretFromQuery = req.query.secret
+    const providedSecret = secretFromHeader || secretFromQuery
+
+    if (!providedSecret || providedSecret !== WEBHOOK_SECRET) {
+      console.log('⚠️ Webhook: Invalid or missing secret')
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Invalid webhook secret'
+      })
+    }
+
+    // 2. Parse request body
+    const { phone, name, message, reminder_type, image } = req.body
+
+    // Validate required fields
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: phone'
+      })
+    }
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: message'
+      })
+    }
+
+    // 3. Find active WhatsApp session (use "owner" for personal app)
+    const userId = 'owner'
+    const client = sessions.get(userId)
+
+    if (!client) {
+      return res.status(503).json({
+        success: false,
+        error: 'WhatsApp session not connected. Please scan QR code first.'
+      })
+    }
+
+    const status = sessionStatuses.get(userId)
+    if (status !== 'connected') {
+      return res.status(503).json({
+        success: false,
+        error: `WhatsApp session status: ${status}. Please reconnect.`
+      })
+    }
+
+    // 4. Normalize phone number
+    const waNumber = normalizePhoneToWA(phone)
+    if (!waNumber) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid phone number format'
+      })
+    }
+
+    // 5. Process message with variables
+    let processedMessage = message
+    if (name) {
+      processedMessage = processedMessage
+        .replace(/{name}/g, name)
+        .replace(/{first_name}/g, name.split(' ')[0] || name)
+    }
+    processedMessage = processMessageVariables(processedMessage)
+
+    // 6. Add reminder type prefix or suffix if needed
+    if (reminder_type) {
+      console.log(`📌 Webhook: Processing ${reminder_type} for ${phone}`)
+    }
+
+    // 7. Prepare media if image provided
+    let media = null
+    if (image) {
+      try {
+        if (image.startsWith('data:')) {
+          // Base64 image
+          const matches = image.match(/^data:(.+);base64,(.+)$/)
+          if (matches) {
+            media = new MessageMedia(matches[1], matches[2])
+          }
+        } else if (image.startsWith('http')) {
+          // URL image - download it
+          media = await MessageMedia.fromUrl(image)
+        }
+      } catch (imgError) {
+        console.error('⚠️ Webhook: Failed to process image:', imgError.message)
+        // Continue without image
+      }
+    }
+
+    // 8. Add typing indicator (human-like behavior)
+    try {
+      const settings = readSettings(userId)
+      if (settings.typing?.enabled) {
+        const chat = await client.getChatById(waNumber)
+        if (chat) {
+          await chat.sendStateTyping()
+          await delay(settings.typing.durationMs || 1500)
+        }
+      }
+    } catch (typingError) {
+      // Ignore typing errors
+    }
+
+    // 9. Send message
+    let sentMessage
+    if (media) {
+      sentMessage = await client.sendMessage(waNumber, media, {
+        caption: processedMessage
+      })
+    } else {
+      sentMessage = await client.sendMessage(waNumber, processedMessage)
+    }
+
+    console.log(`✅ Webhook: Message sent to ${phone} (${reminder_type || 'custom'})`)
+
+    // 10. Log activity
+    ActivityLog.log(userId, 'webhook_send', `Zapier: ${reminder_type || 'message'} to ${phone}`, 1, null)
+
+    // 11. Return success
+    res.json({
+      success: true,
+      message: 'Message sent successfully',
+      details: {
+        phone: phone,
+        waNumber: waNumber,
+        reminderType: reminder_type,
+        messageId: sentMessage?.id?._serialized || null,
+        timestamp: new Date().toISOString()
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Webhook Error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send message',
+      details: error.message
+    })
+  }
+})
+
+// Webhook health check / info endpoint
+app.get('/api/webhook/zapier', (req, res) => {
+  const userId = 'owner'
+  const status = sessionStatuses.get(userId) || 'not_initialized'
+  const phone = sessionPhones.get(userId) || null
+
+  res.json({
+    success: true,
+    endpoint: '/api/webhook/zapier',
+    method: 'POST',
+    whatsappStatus: status,
+    connectedPhone: phone ? phone.substring(0, 4) + '****' + phone.substring(phone.length - 4) : null,
+    requiredHeaders: {
+      'Content-Type': 'application/json',
+      'x-webhook-secret': 'YOUR_WEBHOOK_SECRET'
+    },
+    bodyFormat: {
+      phone: '(required) Recipient phone number e.g. +628123456789',
+      message: '(required) Message text to send',
+      name: '(optional) Recipient name for {name} variable',
+      reminder_type: '(optional) For logging e.g. first_reminder, second_reminder',
+      image: '(optional) Base64 data URL or image URL'
+    },
+    example: {
+      phone: '+628123456789',
+      name: 'Sarah',
+      reminder_type: 'first_reminder',
+      message: 'Hi {name}, this is your reminder to complete yoga membership!'
+    }
+  })
+})
+
+// Get webhook secret (admin only - for setting up Zapier)
+app.get('/api/webhook/secret', requireAuth, (req, res) => {
+  res.json({
+    success: true,
+    webhookUrl: `${req.protocol}://${req.get('host')}/api/webhook/zapier`,
+    webhookSecret: WEBHOOK_SECRET,
+    instructions: [
+      '1. Di Zapier, gunakan "Webhooks by Zapier" action',
+      '2. Set Method: POST',
+      '3. Set URL: <webhookUrl>',
+      '4. Set Headers: x-webhook-secret: <webhookSecret>',
+      '5. Set Body: JSON dengan phone, message, name (opsional)',
+      '6. Test dengan "Test action"'
+    ]
+  })
+})
 
 
 // ===== START SERVER =====
