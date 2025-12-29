@@ -3667,6 +3667,17 @@ function normalizePhoneToWA(phone) {
  */
 app.post('/api/webhook/zapier', async (req, res) => {
   try {
+    // Log incoming webhook request
+    console.log('\n📥 ========== WEBHOOK REQUEST ==========')
+    console.log('📅 Time:', new Date().toISOString())
+    console.log('🌐 IP:', req.ip || req.connection.remoteAddress)
+    console.log('📦 Body:', JSON.stringify(req.body, null, 2))
+    console.log('🔑 Headers:', JSON.stringify({
+      'content-type': req.headers['content-type'],
+      'x-webhook-secret': req.headers['x-webhook-secret'] ? '***' + req.headers['x-webhook-secret'].slice(-4) : 'NOT SET'
+    }))
+    console.log('========================================\n')
+
     // 1. Verify webhook secret
     const secretFromHeader = req.headers['x-webhook-secret']
     const secretFromQuery = req.query.secret
